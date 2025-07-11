@@ -1,79 +1,94 @@
 import { Button } from "@/components/ui/button";
-import { MapPin, MessageCircle, LogOut, User, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { LogOut, User, FileText } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Desconectado com sucesso",
+        description: "Você foi desconectado da sua conta.",
+      });
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível desconectar. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Only show header content when sidebar is not present (public pages)
+  if (user) {
+    return (
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <FileText className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <div className="font-bold text-xl text-foreground">
+            Portal Municipal - Itanhemi
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <div className="hidden md:flex flex-col text-right">
+            <span className="text-sm font-medium text-foreground">
+              {profile?.full_name || user.email}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {profile?.role === 'admin' ? 'Administrador' : 
+               profile?.role === 'moderator' ? 'Moderador' : 'Cidadão'}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <header className="bg-card border-b border-border shadow-sm">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-white" />
+    <header className="bg-card border-b border-border sticky top-0 z-50">
+      <div className="container mx-auto px-6">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Sistema Municipal</h1>
-              <p className="text-sm text-muted-foreground">Itanhemi - MG | CODEMA</p>
+            <div className="font-bold text-xl text-foreground">
+              Portal Municipal - Itanhemi
             </div>
           </Link>
-          
-          <nav className="flex items-center space-x-4">
-            {user ? (
-              <>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/meus-relatorios">
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Meus Relatórios
-                  </Link>
+
+          <div className="flex items-center space-x-4">
+            <nav className="hidden md:flex space-x-6">
+              <Link to="/" className="text-foreground hover:text-primary transition-colors">
+                Início
+              </Link>
+              <Link to="/relatorios" className="text-foreground hover:text-primary transition-colors">
+                Relatórios
+              </Link>
+            </nav>
+            
+            <div className="flex items-center space-x-2">
+              <Link to="/auth">
+                <Button variant="ghost" size="sm">
+                  Entrar
                 </Button>
-                
-                {profile?.role === 'admin' && (
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to="/admin">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Administração
-                    </Link>
-                  </Button>
-                )}
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <User className="w-4 h-4 mr-2" />
-                      {profile?.full_name || user.email}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link to="/perfil">
-                        <User className="w-4 h-4 mr-2" />
-                        Meu Perfil
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={signOut}>
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sair
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/auth">Entrar</Link>
-              </Button>
-            )}
-          </nav>
+              </Link>
+              <Link to="/auth">
+                <Button size="sm">
+                  Cadastrar
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </header>
