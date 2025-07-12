@@ -57,32 +57,36 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch reports with categories
-      const { data: reports, error: reportsError } = await supabase
-        .from("reports")
-        .select(`
-          *,
-          service_categories(name, icon)
-        `)
-        .order("created_at", { ascending: false });
+      // Fetch CODEMA data in parallel
+      const [reportsResult, reunioesResult, documentosResult] = await Promise.all([
+        supabase.from("reports").select(`*, service_categories(name, icon)`).order("created_at", { ascending: false }),
+        supabase.from("reunioes").select("*").order("created_at", { ascending: false }),
+        supabase.from("documentos").select("*").order("created_at", { ascending: false })
+      ]);
 
-      if (reportsError) throw reportsError;
+      if (reportsResult.error) throw reportsResult.error;
+      if (reunioesResult.error) throw reunioesResult.error;
+      if (documentosResult.error) throw documentosResult.error;
 
-      // Calculate statistics
-      const totalReports = reports?.length || 0;
-      const pendingReports = reports?.filter(r => r.status === 'open' || r.status === 'in_progress').length || 0;
-      const resolvedReports = reports?.filter(r => r.status === 'resolved').length || 0;
-      const myReports = reports?.filter(r => r.user_id === user?.id).length || 0;
+      const reports = reportsResult.data || [];
+      const reunioes = reunioesResult.data || [];
+      const documentos = documentosResult.data || [];
+
+      // Calculate CODEMA statistics
+      const totalReports = reports.length;
+      const pendingReports = reports.filter(r => r.status === 'open' || r.status === 'in_progress').length;
+      const resolvedReports = reports.filter(r => r.status === 'resolved').length;
+      const myReports = reports.filter(r => r.user_id === user?.id).length;
 
       setStats({
         totalReports,
-        pendingReports,
-        resolvedReports,
+        pendingReports: reunioes.filter(r => r.status === 'agendada').length,
+        resolvedReports: documentos.filter(d => d.status === 'publicado').length,
         myReports
       });
 
-      // Set recent reports (limit to 5)
-      setRecentReports(reports?.slice(0, 5) || []);
+      // Set recent reports
+      setRecentReports(reports.slice(0, 5));
 
     } catch (error) {
       console.error("Erro ao carregar dados do dashboard:", error);
@@ -160,70 +164,84 @@ const Dashboard = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Dashboard
+            Dashboard CODEMA
           </h1>
           <p className="text-muted-foreground">
-            Bem-vindo de volta, {profile?.full_name || user?.email}!
+            Bem-vindo, {profile?.full_name || user?.email}! 
+            <span className="ml-2 text-primary font-medium">
+              {profile?.role === 'secretario' ? 'Secretário' :
+               profile?.role === 'presidente' ? 'Presidente' :
+               profile?.role === 'conselheiro_titular' ? 'Conselheiro Titular' :
+               profile?.role === 'conselheiro_suplente' ? 'Conselheiro Suplente' : 'Membro'}
+            </span>
           </p>
         </div>
-        <Link to="/criar-relatorio">
-          <Button className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Novo Relatório
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/reunioes/nova">
+            <Button variant="secondary" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Nova Reunião
+            </Button>
+          </Link>
+          <Link to="/documentos/novo">
+            <Button className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Novo Documento
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Relatórios</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Processos</CardTitle>
             <BarChart3 className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalReports}</div>
             <p className="text-xs text-muted-foreground">
-              Em toda a plataforma
+              Processos ambientais
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <CardTitle className="text-sm font-medium">Reuniões Agendadas</CardTitle>
+            <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingReports}</div>
             <p className="text-xs text-muted-foreground">
-              Aguardando resolução
+              Próximas reuniões
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolvidos</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium">Documentos Publicados</CardTitle>
+            <CheckCircle className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.resolvedReports}</div>
             <p className="text-xs text-muted-foreground">
-              Problemas solucionados
+              Atas e documentos
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Meus Relatórios</CardTitle>
+            <CardTitle className="text-sm font-medium">Minhas Contribuições</CardTitle>
             <User className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.myReports}</div>
             <p className="text-xs text-muted-foreground">
-              Criados por você
+              Suas participações
             </p>
           </CardContent>
         </Card>

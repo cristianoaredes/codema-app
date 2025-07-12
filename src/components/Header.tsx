@@ -54,40 +54,41 @@ const Header = () => {
   }
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-50">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="font-bold text-xl text-foreground">
-              Portal Municipal - Itanhemi
-            </div>
-          </Link>
+    <header className="bg-gradient-to-r from-primary via-primary-glow to-secondary shadow-lg">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-lg">C</span>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">
+              CODEMA Itanhemi
+            </h1>
+            <p className="text-white/80 text-sm">Conselho de Defesa do Meio Ambiente</p>
+          </div>
+        </div>
 
-          <div className="flex items-center space-x-4">
-            <nav className="hidden md:flex space-x-6">
-              <Link to="/" className="text-foreground hover:text-primary transition-colors">
-                Início
-              </Link>
-              <Link to="/relatorios" className="text-foreground hover:text-primary transition-colors">
-                Relatórios
-              </Link>
-            </nav>
-            
-            <div className="flex items-center space-x-2">
-              <Link to="/auth">
-                <Button variant="ghost" size="sm">
-                  Entrar
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button size="sm">
-                  Cadastrar
-                </Button>
-              </Link>
-            </div>
+        <div className="flex items-center space-x-4">
+          <nav className="hidden md:flex space-x-6">
+            <Link to="/" className="text-white hover:text-white/80 transition-colors">
+              Início
+            </Link>
+            <Link to="/relatorios" className="text-white hover:text-white/80 transition-colors">
+              Relatórios
+            </Link>
+          </nav>
+          
+          <div className="flex items-center space-x-2">
+            <Link to="/auth">
+              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+                Entrar
+              </Button>
+            </Link>
+            <Link to="/auth">
+              <Button size="sm" className="bg-white text-primary hover:bg-white/90">
+                Cadastrar
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

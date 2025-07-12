@@ -14,6 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      documentos: {
+        Row: {
+          arquivo_nome: string | null
+          arquivo_url: string | null
+          autor_id: string
+          created_at: string
+          id: string
+          palavras_chave: string[] | null
+          reuniao_id: string | null
+          status: string
+          tamanho_arquivo: number | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_nome?: string | null
+          arquivo_url?: string | null
+          autor_id: string
+          created_at?: string
+          id?: string
+          palavras_chave?: string[] | null
+          reuniao_id?: string | null
+          status?: string
+          tamanho_arquivo?: number | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_nome?: string | null
+          arquivo_url?: string | null
+          autor_id?: string
+          created_at?: string
+          id?: string
+          palavras_chave?: string[] | null
+          reuniao_id?: string | null
+          status?: string
+          tamanho_arquivo?: number | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_reuniao_id_fkey"
+            columns: ["reuniao_id"]
+            isOneToOne: false
+            referencedRelation: "reunioes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presencas: {
+        Row: {
+          created_at: string
+          id: string
+          observacoes: string | null
+          presente: boolean
+          reuniao_id: string
+          tipo_participacao: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          presente?: boolean
+          reuniao_id: string
+          tipo_participacao: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          presente?: boolean
+          reuniao_id?: string
+          tipo_participacao?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presencas_reuniao_id_fkey"
+            columns: ["reuniao_id"]
+            isOneToOne: false
+            referencedRelation: "reunioes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presencas_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -116,6 +221,56 @@ export type Database = {
           {
             foreignKeyName: "reports_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reunioes: {
+        Row: {
+          ata: string | null
+          created_at: string
+          data_reuniao: string
+          id: string
+          local: string
+          pauta: string | null
+          secretario_id: string
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ata?: string | null
+          created_at?: string
+          data_reuniao: string
+          id?: string
+          local: string
+          pauta?: string | null
+          secretario_id: string
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ata?: string | null
+          created_at?: string
+          data_reuniao?: string
+          id?: string
+          local?: string
+          pauta?: string | null
+          secretario_id?: string
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reunioes_secretario_id_fkey"
+            columns: ["secretario_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

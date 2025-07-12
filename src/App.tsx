@@ -12,6 +12,8 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import Reports from "./pages/Reports";
 import CreateReport from "./pages/CreateReport";
+import Reunioes from "./pages/Reunioes";
+import Documentos from "./pages/Documentos";
 import Profile from "./pages/Profile";
 import AuthPage from "./components/AuthPage";
 import NotFound from "./pages/NotFound";
@@ -112,6 +114,16 @@ const App = () => (
               <Route path="/criar-relatorio" element={
                 <ProtectedRoute>
                   <CreateReport />
+                </ProtectedRoute>
+              } />
+              <Route path="/reunioes" element={
+                <ProtectedRoute>
+                  <Reunioes />
+                </ProtectedRoute>
+              } />
+              <Route path="/documentos" element={
+                <ProtectedRoute>
+                  <Documentos />
                 </ProtectedRoute>
               } />
               <Route path="/perfil" element={

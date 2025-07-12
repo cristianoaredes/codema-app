@@ -40,20 +40,22 @@ export function AppSidebar() {
   // Public navigation items
   const publicItems = [
     { title: "Início", url: "/", icon: Home },
-    { title: "Relatórios", url: "/relatorios", icon: FileText },
+    { title: "Relatórios Públicos", url: "/relatorios", icon: FileText },
   ];
 
-  // User navigation items (when logged in)
-  const userItems = [
+  // CODEMA navigation items (when logged in)
+  const codemaItems = [
     { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
-    { title: "Criar Relatório", url: "/criar-relatorio", icon: PlusCircle },
-    { title: "Meus Relatórios", url: "/relatorios", icon: FileText },
+    { title: "Reuniões", url: "/reunioes", icon: Users },
+    { title: "Documentos", url: "/documentos", icon: FileText },
+    { title: "Novo Documento", url: "/documentos/novo", icon: PlusCircle },
     { title: "Meu Perfil", url: "/perfil", icon: User },
   ];
 
-  // Admin navigation items
+  // Secretary/Admin navigation items
   const adminItems = [
     { title: "Painel Admin", url: "/admin", icon: Shield },
+    { title: "Gerenciar Reuniões", url: "/admin/reunioes", icon: Users },
     { title: "Gerenciar Usuários", url: "/admin/usuarios", icon: Users },
     { title: "Configurações", url: "/admin/configuracoes", icon: Settings },
   ];
@@ -64,10 +66,10 @@ export function AppSidebar() {
       return publicItems;
     }
 
-    let items = [...userItems];
+    let items = [...codemaItems];
     
-    // Add admin items for admin/moderator users
-    if (profile.role && ['admin', 'moderator'].includes(profile.role)) {
+    // Add admin items for secretários, presidentes e admins
+    if (profile.role && ['admin', 'secretario', 'presidente'].includes(profile.role)) {
       items = [...items, ...adminItems];
     }
 
@@ -87,7 +89,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>
-            {profile ? "Navegação" : "Portal Municipal"}
+            {profile ? "CODEMA Itanhemi" : "Portal Municipal"}
           </SidebarGroupLabel>
 
           <SidebarGroupContent>
@@ -120,6 +122,10 @@ export function AppSidebar() {
                 </div>
                 <div className="text-xs text-sidebar-foreground/70 capitalize">
                   {profile.role === 'admin' ? 'Administrador' : 
+                   profile.role === 'secretario' ? 'Secretário' :
+                   profile.role === 'presidente' ? 'Presidente' :
+                   profile.role === 'conselheiro_titular' ? 'Conselheiro Titular' :
+                   profile.role === 'conselheiro_suplente' ? 'Conselheiro Suplente' :
                    profile.role === 'moderator' ? 'Moderador' : 'Cidadão'}
                 </div>
               </div>
