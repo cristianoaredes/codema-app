@@ -89,7 +89,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>
-            {profile ? "CODEMA Itanhemi" : "Portal Municipal"}
+            {profile ? "CODEMA Itanhomi" : "Portal Municipal"}
           </SidebarGroupLabel>
 
           <SidebarGroupContent>

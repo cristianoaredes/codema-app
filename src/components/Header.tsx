@@ -34,7 +34,7 @@ const Header = () => {
             <FileText className="w-5 h-5 text-primary-foreground" />
           </div>
           <div className="font-bold text-xl text-foreground">
-            Portal Municipal - Itanhemi
+            Portal Municipal - Itanhomi
           </div>
         </div>
         
@@ -62,7 +62,7 @@ const Header = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">
-              CODEMA Itanhemi
+              CODEMA Itanhomi
             </h1>
             <p className="text-white/80 text-sm">Conselho de Defesa do Meio Ambiente</p>
           </div>

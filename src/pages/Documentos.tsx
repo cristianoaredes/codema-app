@@ -9,6 +9,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Download, Search, Filter, Plus, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import {
+  spacingClasses,
+  typographyClasses,
+  elevationClasses,
+  cardVariants,
+  loadingClasses,
+  iconSizes,
+  animationClasses,
+  emptyStateClasses,
+  documentTypeStyles,
+  statusStyles,
+  generateStatusClass,
+  generateDocumentTypeClass
+} from "@/styles/component-styles";
 
 interface Documento {
   id: string;
@@ -96,36 +110,22 @@ const Documentos = () => {
     setFilteredDocumentos(filtered);
   };
 
-  const getTipoColor = (tipo: string) => {
-    switch (tipo) {
-      case "ata":
-        return "bg-primary/10 text-primary border-primary/20";
-      case "agenda":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "processo":
-        return "bg-orange-100 text-orange-800 border-orange-200";
-      case "parecer":
-        return "bg-purple-100 text-purple-800 border-purple-200";
-      case "licenca":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "resolucao":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
+  const getTipoBadgeStyle = (tipo: string) => {
+    const styles = documentTypeStyles[tipo as keyof typeof documentTypeStyles] || documentTypeStyles.ata;
+    return {
+      backgroundColor: styles.background,
+      color: styles.color,
+      borderColor: styles.border,
+    };
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "rascunho":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "publicado":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "arquivado":
-        return "bg-gray-100 text-gray-800 border-gray-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
+  const getStatusBadgeStyle = (status: string) => {
+    const styles = statusStyles.document[status as keyof typeof statusStyles.document] || statusStyles.document.arquivado;
+    return {
+      backgroundColor: styles.background,
+      color: styles.color,
+      borderColor: styles.border,
+    };
   };
 
   const getTipoLabel = (tipo: string) => {
@@ -161,28 +161,30 @@ const Documentos = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Carregando documentos...</div>
+      <div className={loadingClasses.container}>
+        <div className={loadingClasses.content}>
+          <div className={`${loadingClasses.text} ${animationClasses.fadeIn}`}>Carregando documentos...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className={`${spacingClasses.container.maxWidth} ${spacingClasses.container.padding}`}>
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
+      <div className={`flex justify-between items-center ${spacingClasses.header.marginBottom}`}>
+        <div className={spacingClasses.content.gap}>
+          <h1 className={typographyClasses.pageTitle}>
             Documentos CODEMA
           </h1>
-          <p className="text-muted-foreground">
+          <p className={typographyClasses.pageSubtitle}>
             Atas, agendas, processos e documentos do conselho
           </p>
         </div>
         {canManageDocumentos && (
           <Link to="/documentos/novo">
-            <Button className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
+            <Button className={`flex items-center ${spacingClasses.content.itemGap} ${animationClasses.hoverScale}`}>
+              <Plus className={iconSizes.sm} />
               Novo Documento
             </Button>
           </Link>
@@ -190,9 +192,15 @@ const Documentos = () => {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <Card className={`${cardVariants.filter} ${spacingClasses.card.marginBottom}`}>
+        <CardHeader>
+          <CardTitle className={`flex items-center ${spacingClasses.content.itemGap} ${typographyClasses.sectionTitle}`}>
+            <Filter className={iconSizes.md} />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className={`grid grid-cols-1 md:grid-cols-4 ${spacingClasses.content.gap}`}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
@@ -233,11 +241,15 @@ const Documentos = () => {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" onClick={() => {
-              setSearchTerm("");
-              setTipoFilter("all");
-              setStatusFilter("all");
-            }}>
+            <Button
+              variant="outline"
+              className={animationClasses.hoverScale}
+              onClick={() => {
+                setSearchTerm("");
+                setTipoFilter("all");
+                setStatusFilter("all");
+              }}
+            >
               Limpar Filtros
             </Button>
           </div>
@@ -245,16 +257,22 @@ const Documentos = () => {
       </Card>
 
       {/* Documentos List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${spacingClasses.section.gap}`}>
         {filteredDocumentos.length > 0 ? (
           filteredDocumentos.map((documento) => (
-            <Card key={documento.id} className="hover:shadow-md transition-shadow">
+            <Card key={documento.id} className={`${cardVariants.document} ${animationClasses.fadeIn}`}>
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
-                  <Badge className={getTipoColor(documento.tipo)}>
+                  <Badge
+                    className={generateDocumentTypeClass(documento.tipo)}
+                    style={getTipoBadgeStyle(documento.tipo)}
+                  >
                     {getTipoLabel(documento.tipo)}
                   </Badge>
-                  <Badge className={getStatusColor(documento.status)}>
+                  <Badge
+                    className={generateStatusClass('document', documento.status)}
+                    style={getStatusBadgeStyle(documento.status)}
+                  >
                     {getStatusLabel(documento.status)}
                   </Badge>
                 </div>
@@ -317,20 +335,20 @@ const Documentos = () => {
           ))
         ) : (
           <div className="col-span-full">
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="w-16 h-16 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum documento encontrado</h3>
-                <p className="text-muted-foreground text-center mb-4">
-                  {searchTerm || tipoFilter !== "all" || statusFilter !== "all" 
+            <Card className={cardVariants.default}>
+              <CardContent className={emptyStateClasses.container}>
+                <FileText className={emptyStateClasses.icon} />
+                <h3 className={emptyStateClasses.title}>Nenhum documento encontrado</h3>
+                <p className={emptyStateClasses.description}>
+                  {searchTerm || tipoFilter !== "all" || statusFilter !== "all"
                     ? "Tente ajustar os filtros de busca."
                     : "Ainda não há documentos cadastrados no sistema."
                   }
                 </p>
                 {canManageDocumentos && !searchTerm && tipoFilter === "all" && statusFilter === "all" && (
                   <Link to="/documentos/novo">
-                    <Button>
-                      <Plus className="w-4 h-4 mr-2" />
+                    <Button className={animationClasses.hoverScale}>
+                      <Plus className={`${iconSizes.sm} mr-2`} />
                       Criar primeiro documento
                     </Button>
                   </Link>

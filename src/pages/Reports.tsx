@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  MapPin, 
+import {
+  MapPin,
   Calendar,
   Clock,
   Search,
@@ -17,6 +17,20 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import {
+  spacingClasses,
+  typographyClasses,
+  elevationClasses,
+  cardVariants,
+  loadingClasses,
+  iconSizes,
+  animationClasses,
+  emptyStateClasses,
+  statusStyles,
+  priorityStyles,
+  generateStatusClass,
+  generatePriorityClass
+} from "@/styles/component-styles";
 
 interface Report {
   id: string;
@@ -111,34 +125,22 @@ const Reports = () => {
     return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "in_progress":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "resolved":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "closed":
-        return "bg-gray-100 text-gray-800 border-gray-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
+  const getStatusBadgeStyle = (status: string) => {
+    const styles = statusStyles.report[status as keyof typeof statusStyles.report] || statusStyles.report.closed;
+    return {
+      backgroundColor: styles.background,
+      color: styles.color,
+      borderColor: styles.border,
+    };
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "urgent":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "high":
-        return "bg-orange-100 text-orange-800 border-orange-200";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low":
-        return "bg-gray-100 text-gray-800 border-gray-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
+  const getPriorityBadgeStyle = (priority: string) => {
+    const styles = priorityStyles[priority as keyof typeof priorityStyles] || priorityStyles.low;
+    return {
+      backgroundColor: styles.background,
+      color: styles.color,
+      borderColor: styles.border,
+    };
   };
 
   const getStatusLabel = (status: string) => {
@@ -163,44 +165,46 @@ const Reports = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Carregando relatórios...</div>
+      <div className={loadingClasses.container}>
+        <div className={loadingClasses.content}>
+          <div className={`${loadingClasses.text} ${animationClasses.fadeIn}`}>Carregando relatórios...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className={`${spacingClasses.container.maxWidth} ${spacingClasses.container.padding}`}>
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
+      <div className={`flex justify-between items-center ${spacingClasses.header.marginBottom}`}>
+        <div className={spacingClasses.content.gap}>
+          <h1 className={typographyClasses.pageTitle}>
             Relatórios da Comunidade
           </h1>
-          <p className="text-muted-foreground">
+          <p className={typographyClasses.pageSubtitle}>
             Acompanhe todos os relatórios enviados pela comunidade
           </p>
         </div>
         <Link to="/criar-relatorio">
-          <Button className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
+          <Button className={`flex items-center ${spacingClasses.content.itemGap} ${animationClasses.hoverScale}`}>
+            <Plus className={iconSizes.sm} />
             Novo Relatório
           </Button>
         </Link>
       </div>
 
       {/* Filters */}
-      <Card className="mb-8">
+      <Card className={`${cardVariants.filter} ${spacingClasses.card.marginBottom}`}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
+          <CardTitle className={`flex items-center ${spacingClasses.content.itemGap} ${typographyClasses.sectionTitle}`}>
+            <Filter className={iconSizes.md} />
             Filtros
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 ${spacingClasses.content.gap}`}>
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+              <Search className={`${iconSizes.sm} absolute left-3 top-3 text-muted-foreground`} />
               <Input
                 placeholder="Buscar relatórios..."
                 value={searchTerm}
@@ -249,8 +253,9 @@ const Reports = () => {
               </SelectContent>
             </Select>
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
+              className={animationClasses.hoverScale}
               onClick={() => {
                 setSearchTerm("");
                 setStatusFilter("all");
@@ -265,18 +270,22 @@ const Reports = () => {
       </Card>
 
       {/* Reports List */}
-      <div className="space-y-6">
+      <div className={spacingClasses.section.gap}>
         {filteredReports.length > 0 ? (
           filteredReports.map((report) => (
-            <Card key={report.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
+            <Card key={report.id} className={`${cardVariants.listItem} ${animationClasses.fadeIn}`}>
+              <CardContent className={spacingClasses.card.padding}>
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-xl font-semibold text-foreground">
                         {report.title}
                       </h3>
-                      <Badge variant="outline" className={getPriorityColor(report.priority)}>
+                      <Badge
+                        variant="outline"
+                        className={generatePriorityClass(report.priority)}
+                        style={getPriorityBadgeStyle(report.priority)}
+                      >
                         {getPriorityLabel(report.priority)}
                       </Badge>
                     </div>
@@ -298,7 +307,10 @@ const Reports = () => {
                   </div>
                   
                   <div className="flex flex-col gap-2 items-end">
-                    <Badge className={getStatusColor(report.status)}>
+                    <Badge
+                      className={generateStatusClass('report', report.status)}
+                      style={getStatusBadgeStyle(report.status)}
+                    >
                       {getStatusLabel(report.status)}
                     </Badge>
                     
@@ -330,10 +342,16 @@ const Reports = () => {
             </Card>
           ))
         ) : (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground text-lg">
-                Nenhum relatório encontrado com os filtros aplicados.
+          <Card className={cardVariants.default}>
+            <CardContent className={emptyStateClasses.container}>
+              <div className={emptyStateClasses.icon}>
+                <Search className="w-16 h-16" />
+              </div>
+              <h3 className={emptyStateClasses.title}>
+                Nenhum relatório encontrado
+              </h3>
+              <p className={emptyStateClasses.description}>
+                Tente ajustar os filtros de busca ou criar um novo relatório.
               </p>
             </CardContent>
           </Card>

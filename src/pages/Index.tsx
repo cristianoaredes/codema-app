@@ -23,7 +23,7 @@ const Index = () => {
       <footer className="bg-card border-t border-border py-8">
         <div className="container mx-auto px-6 text-center">
           <p className="text-sm text-muted-foreground">
-            © 2024 Portal Municipal Itanhemi - Construindo uma cidade melhor juntos.
+            © 2024 Portal Municipal Itanhomi - Construindo uma cidade melhor juntos.
           </p>
         </div>
       </footer>

@@ -1,6 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, MapPin, User } from "lucide-react";
+import { Clock, MapPin, User, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  statusStyles,
+  priorityStyles,
+  spacingClasses,
+  typographyClasses,
+  cardVariants,
+  iconSizes,
+  animationClasses
+} from "@/styles/component-styles";
 
 interface Report {
   id: string;
@@ -77,97 +87,186 @@ const RecentReports = () => {
     }
   ];
 
-  const getStatusColor = (status: string) => {
+  const getStatusInfo = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'pending': 'open',
+      'in-progress': 'in_progress',
+      'resolved': 'resolved'
+    };
+    
+    const mappedStatus = statusMap[status] || 'closed';
+    const styles = statusStyles.report[mappedStatus as keyof typeof statusStyles.report] || statusStyles.report.closed;
+    
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return {
+          styles,
+          label: "Pendente",
+          description: "Aguardando análise da equipe municipal"
+        };
       case "in-progress":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return {
+          styles,
+          label: "Em Andamento",
+          description: "Sendo trabalhado pela equipe municipal"
+        };
       case "resolved":
-        return "bg-green-100 text-green-800 border-green-200";
+        return {
+          styles,
+          label: "Resolvido",
+          description: "Problema foi solucionado"
+        };
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return {
+          styles,
+          label: "Desconhecido",
+          description: "Status não definido"
+        };
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityInfo = (priority: string) => {
+    const styles = priorityStyles[priority as keyof typeof priorityStyles] || priorityStyles.low;
+    
     switch (priority) {
       case "urgent":
-        return "bg-red-100 text-red-800 border-red-200";
+        return {
+          styles,
+          label: "Urgente",
+          description: "Requer ação imediata"
+        };
       case "high":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return {
+          styles,
+          label: "Alta",
+          description: "Problema importante"
+        };
       case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return {
+          styles,
+          label: "Média",
+          description: "Prioridade normal"
+        };
       case "low":
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return {
+          styles,
+          label: "Baixa",
+          description: "Problema menor"
+        };
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return {
+          styles,
+          label: "Não definida",
+          description: "Prioridade não especificada"
+        };
     }
   };
 
   return (
-    <section className="py-16 bg-muted/30">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-foreground mb-4">Recent Community Reports</h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            See what issues your neighbors are reporting and track the progress of municipal services
+    <section
+      className={`${spacingClasses.section.marginBottom} bg-muted/30`}
+      aria-labelledby="recent-reports-title"
+    >
+      <div className={`${spacingClasses.container.maxWidth} ${spacingClasses.container.padding}`}>
+        <header className={`text-center ${spacingClasses.header.marginBottom}`}>
+          <h2
+            id="recent-reports-title"
+            className={`${typographyClasses.pageTitle} ${spacingClasses.content.gap}`}
+          >
+            Relatórios Recentes da Comunidade
+          </h2>
+          <p className={`${typographyClasses.pageSubtitle} max-w-2xl mx-auto`}>
+            Veja os problemas que seus vizinhos estão relatando e acompanhe o progresso dos serviços municipais
           </p>
-        </div>
+        </header>
         
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reports.map((report) => (
-              <Card key={report.id} className="hover:shadow-lg transition-shadow duration-300 border-0 bg-card">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
-                      {report.title}
-                    </CardTitle>
-                    <Badge 
-                      variant="outline" 
-                      className={`ml-2 ${getPriorityColor(report.priority)} text-xs shrink-0`}
-                    >
-                      {report.priority}
-                    </Badge>
-                  </div>
-                  <CardDescription className="text-sm text-muted-foreground">
-                    {report.category}
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4 mr-2 text-primary" />
-                    {report.location}
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Badge className={`${getStatusColor(report.status)} text-xs`}>
-                      {report.status.replace('-', ' ')}
-                    </Badge>
+          <div
+            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${spacingClasses.section.gap}`}
+            role="list"
+            aria-label="Lista de relatórios recentes"
+          >
+            {reports.map((report) => {
+              const statusInfo = getStatusInfo(report.status);
+              const priorityInfo = getPriorityInfo(report.priority);
+              
+              return (
+                <article
+                  key={report.id}
+                  role="listitem"
+                  className="focus-within:outline-none focus-within:ring-2 focus-within:ring-ring rounded-lg"
+                >
+                  <Card className={`${cardVariants.listItem} ${animationClasses.fadeIn} h-full`}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
+                          {report.title}
+                        </CardTitle>
+                        <Badge
+                          variant="outline"
+                          className="ml-2 text-xs shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full border"
+                          style={priorityInfo.styles}
+                          aria-label={`Prioridade: ${priorityInfo.label} - ${priorityInfo.description}`}
+                        >
+                          {priorityInfo.label}
+                        </Badge>
+                      </div>
+                      <CardDescription className="text-sm text-muted-foreground">
+                        {report.category}
+                      </CardDescription>
+                    </CardHeader>
                     
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {report.timeAgo}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center text-xs text-muted-foreground pt-2 border-t border-border">
-                    <User className="w-3 h-3 mr-1" />
-                    Reported by {report.submittedBy}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <MapPin className="w-4 h-4 mr-2 text-primary" aria-hidden="true" />
+                        <span aria-label={`Localização: ${report.location}`}>
+                          {report.location}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Badge
+                          className="text-xs inline-flex items-center px-2.5 py-0.5 rounded-full border"
+                          style={statusInfo.styles}
+                          aria-label={`Status: ${statusInfo.label} - ${statusInfo.description}`}
+                        >
+                          {statusInfo.label}
+                        </Badge>
+                        
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
+                          <time aria-label={`Reportado ${report.timeAgo}`}>
+                            {report.timeAgo}
+                          </time>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center text-xs text-muted-foreground pt-2 border-t border-border">
+                        <User className="w-3 h-3 mr-1" aria-hidden="true" />
+                        <span aria-label={`Reportado por ${report.submittedBy}`}>
+                          Reportado por {report.submittedBy}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </article>
+              );
+            })}
           </div>
           
-          <div className="text-center mt-8">
+          <footer className="text-center mt-8">
             <p className="text-sm text-muted-foreground">
-              Showing recent reports from your community • 
-              <span className="text-primary cursor-pointer hover:underline ml-1">View all reports</span>
+              Mostrando relatórios recentes da sua comunidade •
+              <Button
+                variant="link"
+                className="text-primary p-0 h-auto text-sm font-normal ml-1"
+                aria-label="Ver todos os relatórios da comunidade"
+              >
+                Ver todos os relatórios
+                <ExternalLink className="w-3 h-3 ml-1" aria-hidden="true" />
+              </Button>
             </p>
-          </div>
+          </footer>
         </div>
       </div>
     </section>
