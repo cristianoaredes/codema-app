@@ -48,7 +48,9 @@ export function AppSidebar() {
     { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
     { title: "Reuniões", url: "/reunioes", icon: Users },
     { title: "Documentos", url: "/documentos", icon: FileText },
-    { title: "Novo Documento", url: "/documentos/novo", icon: PlusCircle },
+    { title: "Processos", url: "/processos", icon: FileText },
+    { title: "FMA", url: "/fma", icon: Shield },
+    { title: "Ouvidoria", url: "/ouvidoria", icon: Bell },
     { title: "Meu Perfil", url: "/perfil", icon: User },
   ];
 

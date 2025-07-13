@@ -14,6 +14,9 @@ import Reports from "./pages/Reports";
 import CreateReport from "./pages/CreateReport";
 import Reunioes from "./pages/Reunioes";
 import Documentos from "./pages/Documentos";
+import Processos from "./pages/Processos";
+import FMA from "./pages/FMA";
+import Ouvidoria from "./pages/Ouvidoria";
 import Profile from "./pages/Profile";
 import AuthPage from "./components/AuthPage";
 import NotFound from "./pages/NotFound";
@@ -124,6 +127,21 @@ const App = () => (
               <Route path="/documentos" element={
                 <ProtectedRoute>
                   <Documentos />
+                </ProtectedRoute>
+              } />
+              <Route path="/processos" element={
+                <ProtectedRoute>
+                  <Processos />
+                </ProtectedRoute>
+              } />
+              <Route path="/fma" element={
+                <ProtectedRoute>
+                  <FMA />
+                </ProtectedRoute>
+              } />
+              <Route path="/ouvidoria" element={
+                <ProtectedRoute>
+                  <Ouvidoria />
                 </ProtectedRoute>
               } />
               <Route path="/perfil" element={
