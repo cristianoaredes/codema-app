@@ -1,0 +1,1 @@
+export { ImpedimentoForm } from './ImpedimentoForm';

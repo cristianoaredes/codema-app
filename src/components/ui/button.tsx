@@ -5,21 +5,21 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-smooth focus-ring button-press disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary-hover shadow-md hover:shadow-lg",
+        default: "bg-primary text-primary-foreground hover:bg-primary-hover shadow-md hover-lift success-ping",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md hover:shadow-lg",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md hover-lift",
         outline:
-          "border border-input bg-background hover:bg-muted hover:text-foreground shadow-sm hover:shadow-md",
+          "border border-input bg-background hover:bg-muted hover:text-foreground shadow-sm hover-lift",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary-hover shadow-md hover:shadow-lg",
-        ghost: "hover:bg-muted hover:text-foreground",
+          "bg-secondary text-secondary-foreground hover:bg-secondary-hover shadow-md hover-lift",
+        ghost: "hover:bg-muted hover:text-foreground hover-scale",
         link: "text-primary underline-offset-4 hover:underline",
-        hero: "bg-gradient-to-r from-primary to-secondary text-white hover:shadow-xl transform hover:scale-105 shadow-lg",
-        municipal: "bg-gradient-to-r from-primary via-primary to-secondary text-white hover:shadow-xl border border-primary/20",
+        hero: "bg-gradient-to-r from-primary to-secondary text-white hover:shadow-xl hover-scale shadow-lg",
+        municipal: "bg-gradient-to-r from-primary via-primary to-secondary text-white hover-glow border border-primary/20",
       },
       size: {
         default: "h-10 px-4 py-2",

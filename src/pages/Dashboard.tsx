@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DashboardCard, QuickActionCard } from "@/components/dashboard/DashboardCard";
+import { LoadingSpinner } from "@/components/ui/loading";
+import { CardSkeleton } from "@/components/ui/skeleton";
 import { 
   BarChart3, 
   MapPin, 
@@ -12,16 +15,27 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  Plus
+  Plus,
+  Users,
+  FileText,
+  Gavel,
+  Shield,
+  Eye
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { getRoleConfig, getCardsForRole, getQuickActionsForRole } from "@/config/dashboard";
 
 interface DashboardStats {
   totalReports: number;
-  pendingReports: number;
-  resolvedReports: number;
+  reunioesAgendadas: number;
+  atasPendentes: number;
+  resolucoesPendentes: number;
+  conselheiros: number;
   myReports: number;
+  reportGrowth: number;
+  fmaBalance: number;
+  auditAlerts: number;
 }
 
 interface Report {
@@ -38,16 +52,27 @@ interface Report {
 }
 
 const Dashboard = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, hasAdminAccess, hasCODEMAAccess } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalReports: 0,
-    pendingReports: 0,
-    resolvedReports: 0,
-    myReports: 0
+    reunioesAgendadas: 0,
+    atasPendentes: 0,
+    resolucoesPendentes: 0,
+    conselheiros: 0,
+    myReports: 0,
+    reportGrowth: 0,
+    fmaBalance: 0,
+    auditAlerts: 0
   });
   const [recentReports, setRecentReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Get role-specific configuration
+  const roleConfig = getRoleConfig(profile?.role || 'citizen');
+  const dashboardCards = getCardsForRole(profile?.role || 'citizen');
+  const quickActionsList = getQuickActionsForRole(profile?.role || 'citizen');
 
   useEffect(() => {
     if (user) {
@@ -58,31 +83,50 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       // Fetch CODEMA data in parallel
-      const [reportsResult, reunioesResult, documentosResult] = await Promise.all([
+      const queries = [
         supabase.from("reports").select(`*, service_categories(name, icon)`).order("created_at", { ascending: false }),
         supabase.from("reunioes").select("*").order("created_at", { ascending: false }),
-        supabase.from("documentos").select("*").order("created_at", { ascending: false })
-      ]);
+        supabase.from("atas").select("*").order("created_at", { ascending: false }),
+        supabase.from("resolucoes").select("*").order("created_at", { ascending: false })
+      ];
 
-      if (reportsResult.error) throw reportsResult.error;
-      if (reunioesResult.error) throw reunioesResult.error;
-      if (documentosResult.error) throw documentosResult.error;
+      // Add admin-only queries
+      if (hasAdminAccess) {
+        queries.push(supabase.from("conselheiros").select("*"));
+      }
 
-      const reports = reportsResult.data || [];
-      const reunioes = reunioesResult.data || [];
-      const documentos = documentosResult.data || [];
+      const results = await Promise.all(queries);
+      
+      const reports = results[0].data || [];
+      const reunioes = results[1].data || [];
+      const atas = results[2].data || [];
+      const resolucoes = results[3].data || [];
+      const conselheiros = hasAdminAccess ? (results[4]?.data || []) : [];
 
       // Calculate CODEMA statistics
       const totalReports = reports.length;
-      const pendingReports = reports.filter(r => r.status === 'open' || r.status === 'in_progress').length;
-      const resolvedReports = reports.filter(r => r.status === 'resolved').length;
+      const reunioesAgendadas = reunioes.filter(r => r.status === 'agendada').length;
+      const atasPendentes = atas.filter(a => a.status === 'rascunho').length;
+      const resolucoesPendentes = resolucoes.filter(r => r.status === 'em_votacao').length;
       const myReports = reports.filter(r => r.user_id === user?.id).length;
+
+      // Calculate growth (mockup - in real app, compare with previous period)
+      const reportGrowth = Math.floor(Math.random() * 20) - 10; // -10 to +10%
+      
+      // Mock FMA balance and audit alerts
+      const fmaBalance = 150000 + Math.floor(Math.random() * 50000);
+      const auditAlerts = Math.floor(Math.random() * 3);
 
       setStats({
         totalReports,
-        pendingReports: reunioes.filter(r => r.status === 'agendada').length,
-        resolvedReports: documentos.filter(d => d.status === 'publicado').length,
-        myReports
+        reunioesAgendadas,
+        atasPendentes,
+        resolucoesPendentes,
+        conselheiros: conselheiros.length,
+        myReports,
+        reportGrowth,
+        fmaBalance,
+        auditAlerts
       });
 
       // Set recent reports
@@ -152,8 +196,35 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Carregando dashboard...</div>
+      <div className="container mx-auto px-6 py-8">
+        {/* Header skeleton */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <div className="h-8 w-64 bg-muted animate-pulse rounded mb-2" />
+            <div className="h-5 w-48 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-10 w-24 bg-muted animate-pulse rounded" />
+            <div className="h-10 w-24 bg-muted animate-pulse rounded" />
+          </div>
+        </div>
+
+        {/* Cards skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+
+        {/* Quick Actions skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <CardSkeleton key={i} className="h-24" />
+          ))}
+        </div>
+
+        {/* Recent reports skeleton */}
+        <CardSkeleton className="h-96" />
       </div>
     );
   }
@@ -164,88 +235,110 @@ const Dashboard = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Dashboard CODEMA
+            {roleConfig.title}
           </h1>
           <p className="text-muted-foreground">
-            Bem-vindo, {profile?.full_name || user?.email}! 
-            <span className="ml-2 text-primary font-medium">
+            {roleConfig.description}
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Bem-vindo, {profile?.full_name || user?.email}!
+            </span>
+            <Badge variant="outline" className="text-xs">
               {profile?.role === 'secretario' ? 'Secretário' :
                profile?.role === 'presidente' ? 'Presidente' :
                profile?.role === 'conselheiro_titular' ? 'Conselheiro Titular' :
-               profile?.role === 'conselheiro_suplente' ? 'Conselheiro Suplente' : 'Membro'}
-            </span>
-          </p>
+               profile?.role === 'conselheiro_suplente' ? 'Conselheiro Suplente' :
+               profile?.role === 'admin' ? 'Administrador' : 'Cidadão'}
+            </Badge>
+          </div>
         </div>
         <div className="flex gap-2">
-          <Link to="/reunioes/nova">
-            <Button variant="secondary" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Nova Reunião
-            </Button>
-          </Link>
-          <Link to="/documentos/novo">
+          {hasCODEMAAccess && (
+            <>
+              <Link to="/reunioes">
+                <Button variant="secondary" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Reuniões
+                </Button>
+              </Link>
+              <Link to="/codema/atas">
+                <Button variant="secondary" className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Atas
+                </Button>
+              </Link>
+            </>
+          )}
+          <Link to="/criar-relatorio">
             <Button className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
-              Novo Documento
+              Novo Relatório
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Processos</CardTitle>
-            <BarChart3 className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalReports}</div>
-            <p className="text-xs text-muted-foreground">
-              Processos ambientais
-            </p>
-          </CardContent>
-        </Card>
+      {/* Role-specific Dashboard Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        {dashboardCards.map((cardConfig) => {
+          const IconComponent = cardConfig.icon;
+          const value = cardConfig.getValue(stats);
+          const change = cardConfig.change ? cardConfig.change(stats) : undefined;
+          const trend = cardConfig.trend ? cardConfig.trend(stats) : 'stable';
+          const priority = typeof cardConfig.priority === 'function' 
+            ? cardConfig.priority(stats) 
+            : cardConfig.priority;
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Reuniões Agendadas</CardTitle>
-            <Calendar className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingReports}</div>
-            <p className="text-xs text-muted-foreground">
-              Próximas reuniões
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Documentos Publicados</CardTitle>
-            <CheckCircle className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.resolvedReports}</div>
-            <p className="text-xs text-muted-foreground">
-              Atas e documentos
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Minhas Contribuições</CardTitle>
-            <User className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.myReports}</div>
-            <p className="text-xs text-muted-foreground">
-              Suas participações
-            </p>
-          </CardContent>
-        </Card>
+          return (
+            <DashboardCard
+              key={cardConfig.id}
+              title={cardConfig.title}
+              value={value}
+              description={cardConfig.description}
+              change={change}
+              trend={trend}
+              priority={priority}
+              icon={<IconComponent className="h-4 w-4" />}
+              action={cardConfig.action ? {
+                label: cardConfig.action.label,
+                onClick: () => navigate(cardConfig.action!.path)
+              } : undefined}
+              quickActions={cardConfig.quickActions?.map(action => ({
+                label: action.label,
+                onClick: () => navigate(action.path),
+                icon: action.icon ? <action.icon className="h-4 w-4" /> : undefined
+              }))}
+            />
+          );
+        })}
       </div>
+
+      {/* Quick Actions */}
+      {quickActionsList.length > 0 && (
+        <>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-foreground mb-2">Ações Rápidas</h2>
+            <p className="text-sm text-muted-foreground">
+              Acesse rapidamente as funções mais utilizadas
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {quickActionsList.map((action) => {
+              const IconComponent = action.icon;
+              return (
+                <QuickActionCard
+                  key={action.id}
+                  title={action.title}
+                  description={action.description}
+                  icon={<IconComponent className="h-5 w-5" />}
+                  onClick={() => navigate(action.path)}
+                />
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Recent Reports */}
       <Card>

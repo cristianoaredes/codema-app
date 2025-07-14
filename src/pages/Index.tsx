@@ -1,9 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
-import HeroSection from "@/components/HeroSection";
-import ReportForm from "@/components/ReportForm";
-import ServiceRating from "@/components/ServiceRating";
-import RecentReports from "@/components/RecentReports";
+import { HeroSection, ReportForm, RecentReports } from "@/components/dashboard";
+import { ServiceRating } from "@/components/forms";
 
 const Index = () => {
   const { user, loading } = useAuth();

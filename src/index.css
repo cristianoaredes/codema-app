@@ -2,6 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Micro-interações e animações globais */
+@layer utilities {
+  /* Hover effects consistentes */
+  .hover-lift {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .hover-scale {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+  
+  .hover-glow {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .hover-glow:hover {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+    border-color: hsl(var(--primary));
+  }
+
+  /* Focus states melhorados */
+  .focus-ring {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Animações de entrada */
+  .animate-slide-in {
+    animation: slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .animate-scale-in {
+    animation: scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Shimmer effect para loading */
+  .shimmer {
+    background: linear-gradient(
+      110deg,
+      hsl(var(--muted)) 8%,
+      hsl(var(--muted-foreground) / 0.1) 18%,
+      hsl(var(--muted)) 33%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Pulse melhorado */
+  .pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Feedback visual para interações */
+  .success-ping {
+    animation: success-ping 0.6s cubic-bezier(0, 0, 0.2, 1);
+  }
+  
+  .error-shake {
+    animation: error-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  /* Estados de loading específicos */
+  .loading-dots::after {
+    content: '';
+    animation: loading-dots 1.4s ease-in-out infinite;
+  }
+
+  /* Micro-feedback para botões */
+  .button-press {
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .button-press:active {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  /* Transitions suaves */
+  .transition-smooth {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .transition-fast {
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -9,31 +108,31 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 220 15% 25%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 220 15% 25%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 220 15% 25%;
     
-    /* Cores CODEMA - Verde escuro e dourado */
-    --primary: 156 60% 20%;
+    /* Cores CODEMA - Verde escuro e dourado com melhor contraste */
+    --primary: 156 70% 22%;
     --primary-foreground: 0 0% 98%;
-    --primary-hover: 156 60% 15%;
-    --primary-glow: 156 50% 35%;
+    --primary-hover: 156 70% 18%;
+    --primary-glow: 156 60% 35%;
     
-    --secondary: 45 80% 45%;
-    --secondary-foreground: 240 10% 3.9%;
-    --secondary-hover: 45 75% 40%;
+    --secondary: 45 85% 48%;
+    --secondary-foreground: 220 20% 20%;
+    --secondary-hover: 45 80% 44%;
     
-    --muted: 156 20% 95%;
-    --muted-foreground: 156 10% 45%;
-    --accent: 156 30% 90%;
-    --accent-foreground: 156 60% 20%;
-    --destructive: 0 72% 51%;
+    --muted: 156 15% 96%;
+    --muted-foreground: 220 10% 50%;
+    --accent: 156 25% 94%;
+    --accent-foreground: 156 70% 22%;
+    --destructive: 0 75% 52%;
     --destructive-foreground: 0 0% 98%;
-    --border: 156 15% 85%;
-    --input: 156 15% 90%;
-    --ring: 156 60% 20%;
+    --border: 156 12% 88%;
+    --input: 156 12% 92%;
+    --ring: 156 70% 22%;
     
     /* Gradientes CODEMA */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
@@ -41,58 +140,54 @@ All colors MUST be HSL.
     
     --radius: 0.5rem;
 
+    /* Sidebar com cores CODEMA melhoradas */
     --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-foreground: 220 15% 30%;
+    --sidebar-primary: 156 70% 22%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 156 20% 95%;
+    --sidebar-accent-foreground: 220 15% 30%;
+    --sidebar-border: 156 15% 88%;
+    --sidebar-ring: 156 70% 22%;
   }
 
   .dark {
-    --background: 156 20% 5%;
-    --foreground: 0 0% 98%;
-    --card: 156 15% 8%;
-    --card-foreground: 0 0% 98%;
-    --popover: 156 15% 8%;
-    --popover-foreground: 0 0% 98%;
+    --background: 156 25% 8%;
+    --foreground: 0 0% 95%;
+    --card: 156 20% 12%;
+    --card-foreground: 0 0% 95%;
+    --popover: 156 20% 12%;
+    --popover-foreground: 0 0% 95%;
     
-    /* Cores CODEMA modo escuro */
-    --primary: 156 50% 40%;
-    --primary-foreground: 156 20% 5%;
-    --primary-hover: 156 50% 45%;
-    --primary-glow: 156 40% 50%;
+    /* Cores CODEMA modo escuro melhoradas */
+    --primary: 156 60% 45%;
+    --primary-foreground: 156 25% 8%;
+    --primary-hover: 156 60% 50%;
+    --primary-glow: 156 50% 55%;
     
-    --secondary: 45 70% 50%;
-    --secondary-foreground: 240 10% 3.9%;
-    --secondary-hover: 45 65% 55%;
+    --secondary: 45 75% 55%;
+    --secondary-foreground: 156 25% 8%;
+    --secondary-hover: 45 70% 60%;
     
-    --muted: 156 10% 15%;
-    --muted-foreground: 156 5% 64.9%;
-    --accent: 156 20% 20%;
-    --accent-foreground: 156 50% 70%;
-    --destructive: 0 62.8% 50%;
+    --muted: 156 15% 18%;
+    --muted-foreground: 156 8% 65%;
+    --accent: 156 25% 22%;
+    --accent-foreground: 156 60% 75%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 156 10% 20%;
-    --input: 156 10% 20%;
-    --ring: 156 50% 70%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 156 15% 25%;
+    --input: 156 15% 25%;
+    --ring: 156 60% 75%;
+    
+    /* Sidebar modo escuro CODEMA */
+    --sidebar-background: 156 20% 10%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 156 60% 45%;
+    --sidebar-primary-foreground: 156 25% 8%;
+    --sidebar-accent: 156 20% 18%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 156 15% 25%;
+    --sidebar-ring: 156 60% 75%;
   }
 }
 
@@ -102,6 +197,229 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus outline for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Prevent layout shift from scrollbar */
+  body {
+    overflow-y: scroll;
+  }
+
+  /* Animation utilities */
+  .animate-in {
+    animation: fade-in 0.3s ease-in;
+  }
+
+  .animate-out {
+    animation: fade-out 0.3s ease-out;
+  }
+
+  /* Responsive text sizing */
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+    }
+  }
+}
+
+@layer utilities {
+  /* Custom scrollbar styling */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+
+  /* Better gradients */
+  .gradient-primary {
+    @apply bg-gradient-primary;
+  }
+
+  .gradient-codema {
+    @apply bg-gradient-codema;
+  }
+
+  /* Text gradients */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply backdrop-blur-sm bg-background/80 border border-border/50;
+  }
+
+  /* Responsive padding */
+  .responsive-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+}
+
+/* Keyframe animations para micro-interações */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes success-ping {
+  0% {
+    transform: scale(1);
+    background-color: hsl(var(--primary));
+  }
+  50% {
+    transform: scale(1.1);
+    background-color: hsl(var(--primary) / 0.8);
+  }
+  100% {
+    transform: scale(1);
+    background-color: hsl(var(--primary));
+  }
+}
+
+@keyframes error-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes loading-dots {
+  0%, 20% {
+    content: '';
+  }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75%, 100% {
+    content: '...';
+  }
+}
+
+/* Celebration animations */
+@keyframes celebration-bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@keyframes celebration-confetti {
+  0% {
+    transform: rotate(0deg) translateY(0px);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) translateY(-100px);
+    opacity: 0;
+  }
+}
+
+/* Loading specific animations */
+@keyframes progress-bar {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+/* Hover animations */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px hsl(var(--primary) / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.8);
   }
 }

@@ -12,4 +12,67 @@ function Skeleton({
   )
 }
 
-export { Skeleton }
+// Skeleton específico para cards do dashboard
+function CardSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn("rounded-lg border bg-card p-6 shadow-sm", className)}>
+      <div className="space-y-3">
+        <Skeleton className="h-4 w-[200px]" />
+        <Skeleton className="h-8 w-[100px]" />
+        <div className="flex items-center space-x-2">
+          <Skeleton className="h-4 w-[60px]" />
+          <Skeleton className="h-4 w-[40px]" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Skeleton para linhas de tabela
+function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
+  return (
+    <tr className="border-b border-border/50">
+      {Array.from({ length: columns }).map((_, i) => (
+        <td key={i} className="p-4">
+          <Skeleton className="h-4 w-full" />
+        </td>
+      ))}
+    </tr>
+  )
+}
+
+// Skeleton para formulários
+function FormSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Skeleton className="h-4 w-[100px] mb-2" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+      <div>
+        <Skeleton className="h-4 w-[120px] mb-2" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+      <div>
+        <Skeleton className="h-4 w-[80px] mb-2" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+      <Skeleton className="h-11 w-[120px]" />
+    </div>
+  )
+}
+
+// Skeleton para lista de notificações
+function NotificationSkeleton() {
+  return (
+    <div className="flex items-start space-x-3 p-3">
+      <Skeleton className="h-8 w-8 rounded-full" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
+    </div>
+  )
+}
+
+export { Skeleton, CardSkeleton, TableRowSkeleton, FormSkeleton, NotificationSkeleton }
