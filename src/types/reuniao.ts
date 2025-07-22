@@ -1,17 +1,18 @@
 export interface Reuniao {
   id: string;
   titulo: string;
-  tipo: 'ordinaria' | 'extraordinaria' | 'audiencia_publica';
-  data_reuniao: string;
+  tipo: string; // Mudado para string para maior flexibilidade
+  data_hora: string; // Corrigido de data_reuniao
   local: string;
-  pauta: string;
-  ata?: string;
-  status: 'agendada' | 'realizada' | 'cancelada';
+  pauta: string | null;
+  ata: string | null;
+  status: string; // Mudado para string
   created_at: string;
+  updated_at: string;
+  secretario_id: string;
   
-  // Enhanced fields from migration
+  // Mantendo campos opcionais para retrocompatibilidade, se necessário
   numero_reuniao?: string;
-  tipo_reuniao?: 'ordinaria' | 'extraordinaria' | 'publica';
   quorum_presente?: number;
   quorum_necessario?: number;
   ata_aprovada?: boolean;

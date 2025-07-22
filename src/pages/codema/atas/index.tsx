@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BreadcrumbWithActions, SmartBreadcrumb } from "@/components/navigation/SmartBreadcrumb";
 
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -142,39 +144,27 @@ export default function AtasPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Atas</h1>
-          <p className="text-muted-foreground">
-            Gestão de atas eletrônicas das reuniões do CODEMA
-          </p>
-        </div>
-        {canEdit && (
-          <Dialog open={showAtaForm} onOpenChange={setShowAtaForm}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Ata
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedAta ? 'Editar Ata' : 'Nova Ata'}
-                </DialogTitle>
-              </DialogHeader>
-              <AtaForm
-                ata={selectedAta}
-                onClose={() => {
-                  setShowAtaForm(false);
-                  setSelectedAta(null);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
+    <TooltipProvider>
+      <div className="space-y-6">
+        <BreadcrumbWithActions
+          title="Atas do CODEMA"
+          description="Gestão de atas eletrônicas das reuniões do conselho."
+          actions={
+            canEdit && (
+              <Dialog open={showAtaForm} onOpenChange={setShowAtaForm}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="w-4 h-4 mr-2" />Nova Ata</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader><DialogTitle>{selectedAta ? 'Editar Ata' : 'Nova Ata'}</DialogTitle></DialogHeader>
+                  <AtaForm ata={selectedAta} onClose={() => { setShowAtaForm(false); setSelectedAta(null); }} />
+                </DialogContent>
+              </Dialog>
+            )
+          }
+        >
+          <SmartBreadcrumb />
+        </BreadcrumbWithActions>
 
         {/* Review System Dialog */}
         <Dialog open={showReviewSystem} onOpenChange={setShowReviewSystem}>
@@ -190,195 +180,193 @@ export default function AtasPage() {
             )}
           </DialogContent>
         </Dialog>
-      </div>
-
-      {/* Stats Cards */}
-      {stats && (
-        <div className="grid gap-4 md:grid-cols-5">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Atas</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Rascunhos</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.rascunhos}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Aprovadas</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.aprovadas}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Assinadas</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.assinadas}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Com PDF</CardTitle>
-              <Download className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.comPdf}</div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-          <CardDescription>
-            Pesquise e filtre as atas por diferentes critérios
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Buscar por número ou local..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="rascunho">Rascunho</SelectItem>
-                <SelectItem value="em_revisao">Em Revisão</SelectItem>
-                <SelectItem value="aprovada">Aprovada</SelectItem>
-                <SelectItem value="assinada">Assinada</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={tipoFilter} onValueChange={setTipoFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="ordinaria">Ordinária</SelectItem>
-                <SelectItem value="extraordinaria">Extraordinária</SelectItem>
-                <SelectItem value="publica">Audiência Pública</SelectItem>
-              </SelectContent>
-            </Select>
+        
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid gap-4 md:grid-cols-5">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Atas</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Rascunhos</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.rascunhos}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Aprovadas</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.aprovadas}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Assinadas</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.assinadas}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Com PDF</CardTitle>
+                <Download className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.comPdf}</div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        )}
 
-      {/* Atas List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Atas</CardTitle>
-          <CardDescription>
-            {atas.length} ata(s) encontrada(s)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Local</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Versão</TableHead>
-                <TableHead>Criado por</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {atas.map((ata) => (
-                <TableRow key={ata.id}>
-                  <TableCell className="font-medium">{ata.numero}</TableCell>
-                  <TableCell>
-                    {format(new Date(ata.data_reuniao), "dd/MM/yyyy", { locale: ptBR })}
-                  </TableCell>
-                  <TableCell>{getTipoLabel(ata.tipo_reuniao)}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{ata.local_reuniao}</TableCell>
-                  <TableCell>{getStatusBadge(ata.status, ata.rascunho)}</TableCell>
-                  <TableCell>v{ata.versao}</TableCell>
-                  <TableCell>{ata.profiles?.full_name || 'Sistema'}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      {canEdit && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedAta(ata);
-                            setShowAtaForm(true);
-                          }}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {(canReview || canEdit) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setReviewAtaId(ata.id);
-                            setShowReviewSystem(true);
-                          }}
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {ata.pdf_gerado && (
-                        <Button variant="outline" size="sm">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {atas.length === 0 && (
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+            <CardDescription>
+              Pesquise e filtre as atas por diferentes critérios
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Buscar por número ou local..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="rascunho">Rascunho</SelectItem>
+                  <SelectItem value="em_revisao">Em Revisão</SelectItem>
+                  <SelectItem value="aprovada">Aprovada</SelectItem>
+                  <SelectItem value="assinada">Assinada</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={tipoFilter} onValueChange={setTipoFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  <SelectItem value="ordinaria">Ordinária</SelectItem>
+                  <SelectItem value="extraordinaria">Extraordinária</SelectItem>
+                  <SelectItem value="publica">Audiência Pública</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Atas List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Lista de Atas</CardTitle>
+            <CardDescription>
+              {atas.length} ata(s) encontrada(s)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    <div className="flex flex-col items-center gap-2">
-                      <FileText className="h-8 w-8 text-muted-foreground" />
-                      <p className="text-muted-foreground">Nenhuma ata encontrada</p>
-                      {canEdit && (
-                        <p className="text-sm text-muted-foreground">
-                          Clique em "Nova Ata" para criar a primeira ata
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
+                  <TableHead>Número</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Local</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Versão</TableHead>
+                  <TableHead>Criado por</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+              </TableHeader>
+              <TableBody>
+                {atas.map((ata) => (
+                  <TableRow key={ata.id}>
+                    <TableCell className="font-medium">{ata.numero}</TableCell>
+                    <TableCell>
+                      {format(new Date(ata.data_reuniao), "dd/MM/yyyy", { locale: ptBR })}
+                    </TableCell>
+                    <TableCell>{getTipoLabel(ata.tipo_reuniao)}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">{ata.local_reuniao}</TableCell>
+                    <TableCell>{getStatusBadge(ata.status, ata.rascunho)}</TableCell>
+                    <TableCell>v{ata.versao}</TableCell>
+                    <TableCell>{ata.profiles?.full_name || 'Sistema'}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild><Button variant="outline" size="icon"><Eye className="w-4 h-4" /></Button></TooltipTrigger>
+                          <TooltipContent><p>Visualizar Detalhes</p></TooltipContent>
+                        </Tooltip>
+                        {canEdit && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="icon" onClick={() => { setSelectedAta(ata); setShowAtaForm(true); }}>
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Editar Ata</p></TooltipContent>
+                          </Tooltip>
+                        )}
+                        {(canReview || canEdit) && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="icon" onClick={() => { setReviewAtaId(ata.id); setShowReviewSystem(true); }}>
+                                <MessageSquare className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Revisar e Comentar</p></TooltipContent>
+                          </Tooltip>
+                        )}
+                        {ata.pdf_gerado && (
+                          <Tooltip>
+                            <TooltipTrigger asChild><Button variant="outline" size="icon"><Download className="w-4 h-4" /></Button></TooltipTrigger>
+                            <TooltipContent><p>Baixar PDF</p></TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {atas.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2">
+                        <FileText className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-muted-foreground">Nenhuma ata encontrada</p>
+                        {canEdit && (
+                          <p className="text-sm text-muted-foreground">
+                            Clique em "Nova Ata" para criar a primeira ata
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </TooltipProvider>
   );
 }
