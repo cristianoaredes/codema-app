@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   ShieldCheck, 
   BarChart3, 
@@ -11,39 +11,66 @@ import {
   FileText, 
   MessageSquare, 
   Zap,
-  CheckCircle,
   Mail,
   MapPin,
-  Phone
+  Phone,
+  Quote
 } from "lucide-react";
 import logo from "@/assets/logo_municonnect.png";
+
+// --- Framer Motion Variants ---
+
+const containerVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+    },
+  },
+};
 
 // --- Seções como Componentes ---
 
 const HeroSection = () => {
   const navigate = useNavigate();
   return (
-    <section className="bg-gradient-to-br from-green-50 via-emerald-50 to-blue-50 py-24 md:py-32 text-center">
+    <section className="relative overflow-hidden bg-gradient-to-b from-green-50 to-emerald-100 py-32 md:py-40 text-center">
+      {/* Abstract background shapes */}
+      <div className="absolute top-0 left-0 w-64 h-64 bg-green-200 rounded-full opacity-30 blur-3xl animate-blob"></div>
+      <div className="absolute bottom-0 right-0 w-64 h-64 bg-emerald-200 rounded-full opacity-30 blur-3xl animate-blob animation-delay-4000"></div>
+      
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="container"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="container relative"
       >
-        <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
+        <motion.h1 variants={itemVariants} className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
           Modernize a Gestão de Conselhos do seu Município
-        </h1>
-        <p className="text-lg md:text-xl text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed">
+        </motion.h1>
+        <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed">
           MuniConnect é a solução completa que organiza, digitaliza e dá transparência aos conselhos municipais, destravando eficiência e novas receitas.
-        </p>
-        <div className="flex justify-center gap-4">
-          <Button size="lg" onClick={() => navigate('/auth')} className="bg-green-600 hover:bg-green-700 text-white shadow-lg">
+        </motion.p>
+        <motion.div variants={itemVariants} className="flex justify-center gap-4">
+          <Button size="lg" onClick={() => navigate('/auth')} className="bg-green-600 hover:bg-green-700 text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
             Solicitar Demonstração
           </Button>
-          <Button size="lg" variant="outline" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>
+          <Button size="lg" variant="outline" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="bg-white/50 backdrop-blur-sm border-gray-300 hover:bg-white/80 transition-all duration-300">
             Conhecer Funcionalidades
           </Button>
-        </div>
+        </motion.div>
       </motion.div>
     </section>
   );
@@ -63,20 +90,20 @@ const FeaturesSection = () => {
     <section id="features" className="py-24 bg-white">
       <div className="container">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Tudo o que seu Conselho precisa</h2>
-          <p className="text-lg text-gray-600 mt-4 max-w-2xl mx-auto">Uma plataforma robusta para transformar a gestão e a transparência.</p>
+          <motion.h2 variants={itemVariants} className="text-3xl md:text-4xl font-bold text-gray-900">Tudo o que seu Conselho precisa</motion.h2>
+          <motion.p variants={itemVariants} className="text-lg text-gray-600 mt-4 max-w-2xl mx-auto">Uma plataforma robusta para transformar a gestão e a transparência.</motion.p>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
           {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <Card className="text-center p-8 border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="mb-4 inline-block p-4 bg-green-100 text-green-600 rounded-full">
+            <motion.div key={index} variants={itemVariants}>
+              <Card className="text-center p-8 border-0 shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
+                <div className="mb-4 inline-block p-4 bg-gradient-to-br from-green-100 to-emerald-100 text-green-600 rounded-full">
                   {feature.icon}
                 </div>
                 <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
@@ -84,7 +111,7 @@ const FeaturesSection = () => {
               </Card>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -99,25 +126,34 @@ const TestimonialsSection = () => {
     <section className="py-24 bg-gray-50">
       <div className="container">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">O que dizem os gestores públicos</h2>
-          <p className="text-lg text-gray-600 mt-4 max-w-2xl mx-auto">Resultados reais em municípios que já transformaram seus conselhos.</p>
+          <motion.h2 variants={itemVariants} className="text-3xl md:text-4xl font-bold text-gray-900">O que dizem os gestores públicos</motion.h2>
+          <motion.p variants={itemVariants} className="text-lg text-gray-600 mt-4 max-w-2xl mx-auto">Resultados reais em municípios que já transformaram seus conselhos.</motion.p>
         </div>
-        <div className="grid md:grid-cols-2 gap-8">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          className="grid md:grid-cols-2 gap-8"
+        >
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="p-8 border-0 shadow-lg">
-              <p className="text-gray-700 italic mb-6">"{testimonial.text}"</p>
-              <div className="flex items-center">
-                <Avatar>
-                  <AvatarFallback>{testimonial.avatar}</AvatarFallback>
-                </Avatar>
-                <div className="ml-4">
-                  <h4 className="font-bold">{testimonial.name}</h4>
-                  <p className="text-sm text-gray-600">{testimonial.role}, {testimonial.city}</p>
+            <motion.div key={index} variants={itemVariants}>
+              <Card className="p-8 border-0 shadow-lg h-full relative">
+                <Quote className="absolute top-6 left-6 w-12 h-12 text-gray-100" />
+                <p className="text-gray-700 italic mb-6 relative z-10">"{testimonial.text}"</p>
+                <div className="flex items-center relative z-10">
+                  <Avatar>
+                    <AvatarFallback>{testimonial.avatar}</AvatarFallback>
+                  </Avatar>
+                  <div className="ml-4">
+                    <h4 className="font-bold">{testimonial.name}</h4>
+                    <p className="text-sm text-gray-600">{testimonial.role}, {testimonial.city}</p>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -134,15 +170,17 @@ const FaqSection = () => {
     <section className="py-24 bg-white">
       <div className="container max-w-3xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Perguntas Frequentes</h2>
-          <p className="text-lg text-gray-600 mt-4">Respostas para as dúvidas mais comuns.</p>
+          <motion.h2 variants={itemVariants} className="text-3xl md:text-4xl font-bold text-gray-900">Perguntas Frequentes</motion.h2>
+          <motion.p variants={itemVariants} className="text-lg text-gray-600 mt-4">Respostas para as dúvidas mais comuns.</motion.p>
         </div>
         <Accordion type="single" collapsible className="w-full">
           {faqs.map((faq, index) => (
-            <AccordionItem key={index} value={`item-${index}`}>
-              <AccordionTrigger className="font-bold text-lg">{faq.q}</AccordionTrigger>
-              <AccordionContent className="text-gray-700 text-base">{faq.a}</AccordionContent>
-            </AccordionItem>
+            <motion.div key={index} variants={itemVariants}>
+              <AccordionItem value={`item-${index}`} className="border-b">
+                <AccordionTrigger className="font-bold text-lg hover:no-underline text-left">{faq.q}</AccordionTrigger>
+                <AccordionContent className="text-gray-700 text-base pt-2">{faq.a}</AccordionContent>
+              </AccordionItem>
+            </motion.div>
           ))}
         </Accordion>
       </div>
@@ -153,13 +191,15 @@ const FaqSection = () => {
 const CtaSection = () => {
   const navigate = useNavigate();
   return (
-    <section className="py-24 bg-green-600 text-white">
+    <section className="py-24 bg-green-700 text-white">
       <div className="container text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">Pronto para transformar a gestão do seu conselho?</h2>
-        <p className="text-lg text-green-100 mb-8 max-w-2xl mx-auto">Agende uma demonstração gratuita e veja como nossa plataforma pode aumentar sua receita, otimizar processos e fortalecer sua gestão.</p>
-        <Button size="lg" variant="secondary" onClick={() => navigate('/auth')}>
-          Solicitar Demonstração Gratuita
-        </Button>
+        <motion.h2 variants={itemVariants} className="text-3xl md:text-4xl font-bold mb-4">Pronto para transformar a gestão do seu conselho?</motion.h2>
+        <motion.p variants={itemVariants} className="text-lg text-green-100 mb-8 max-w-2xl mx-auto">Agende uma demonstração gratuita e veja como nossa plataforma pode aumentar sua receita, otimizar processos e fortalecer sua gestão.</motion.p>
+        <motion.div variants={itemVariants}>
+          <Button size="lg" variant="secondary" onClick={() => navigate('/auth')} className="transform hover:scale-105 transition-transform duration-300">
+            Solicitar Demonstração Gratuita
+          </Button>
+        </motion.div>
       </div>
     </section>
   );
@@ -176,17 +216,17 @@ const Footer = () => (
         <div>
           <h4 className="font-bold mb-4">Soluções</h4>
           <ul className="space-y-2 text-gray-400">
-            <li><a href="#features" className="hover:text-green-400">Gestão de Conselhos</a></li>
-            <li><a href="#features" className="hover:text-green-400">Portal da Transparência</a></li>
-            <li><a href="#features" className="hover:text-green-400">ICMS Ecológico</a></li>
+            <li><a href="#features" className="hover:text-green-400 transition-colors">Gestão de Conselhos</a></li>
+            <li><a href="#features" className="hover:text-green-400 transition-colors">Portal da Transparência</a></li>
+            <li><a href="#features" className="hover:text-green-400 transition-colors">ICMS Ecológico</a></li>
           </ul>
         </div>
         <div>
           <h4 className="font-bold mb-4">Empresa</h4>
           <ul className="space-y-2 text-gray-400">
-            <li><a href="#" className="hover:text-green-400">Sobre Nós</a></li>
-            <li><a href="#" className="hover:text-green-400">Contato</a></li>
-            <li><a href="#" className="hover:text-green-400">Política de Privacidade</a></li>
+            <li><a href="#" className="hover:text-green-400 transition-colors">Sobre Nós</a></li>
+            <li><a href="#" className="hover:text-green-400 transition-colors">Contato</a></li>
+            <li><a href="#" className="hover:text-green-400 transition-colors">Política de Privacidade</a></li>
           </ul>
         </div>
         <div>
@@ -207,14 +247,19 @@ const Footer = () => (
 
 const Index = () => {
   return (
-    <div className="bg-white">
+    <motion.div 
+      initial="hidden" 
+      animate="visible" 
+      variants={containerVariants} 
+      className="bg-white"
+    >
       <HeroSection />
       <FeaturesSection />
       <TestimonialsSection />
       <FaqSection />
       <CtaSection />
       <Footer />
-    </div>
+    </motion.div>
   );
 };
 
