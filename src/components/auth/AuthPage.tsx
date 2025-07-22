@@ -14,9 +14,9 @@ import { validateEmailForRole } from "@/utils/email";
 import { UserRole } from "@/types/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { createPersistentSession } from "@/utils/auth";
-import logo from "@/assets/logo_with_text.png";
+import logo from "@/assets/logo_municonnect_vert.png";
 
-const AuthPage = () => {
+export function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -265,296 +265,271 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50/30 to-blue-50/30">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <img src={logo} alt="MuniConnect Logo" className="h-10 w-auto" />
-              <div className="border-l border-gray-200 pl-4">
-                <h1 className="text-xl font-semibold text-gray-900">MuniConnect</h1>
-                <p className="text-sm text-gray-600">Gestão de Conselhos Municipais</p>
-              </div>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/')}
-              className="border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 transition-all duration-300"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao Início
-            </Button>
-          </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-green-50 via-emerald-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+            <img src={logo} alt="MuniConnect Logo" className="h-24 w-auto mx-auto" />
         </div>
-      </header>
 
-      {/* Main Content */}
-      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] py-12 px-6">
-        <div className="w-full max-w-md">
-          {/* Card Principal */}
-          <Card className="shadow-2xl border-0 backdrop-blur-sm bg-white/95">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="text-3xl font-bold text-gray-900">Acesse sua Plataforma</CardTitle>
-              <CardDescription className="text-lg text-gray-600">
-                Entre com suas credenciais para gerenciar seus conselhos.
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="p-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
-                  <TabsTrigger value="login">Entrar</TabsTrigger>
-                  <TabsTrigger value="register">Cadastrar</TabsTrigger>
-                  <TabsTrigger value="magic">Magic Link</TabsTrigger>
-                </TabsList>
-                
-                {/* Login Tab */}
-                <TabsContent value="login" className="space-y-4">
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="seu@email.com"
-                          value={loginData.email}
-                          onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                          className="pl-10"
-                          required
-                        />
-                      </div>
+        <Card className="shadow-2xl border-0 backdrop-blur-sm bg-white/95">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-3xl font-bold text-gray-900">Acesse sua Plataforma</CardTitle>
+            <CardDescription className="text-lg text-gray-600">
+              Entre com suas credenciais para gerenciar seus conselhos.
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="p-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsTrigger value="login">Entrar</TabsTrigger>
+                <TabsTrigger value="register">Cadastrar</TabsTrigger>
+                <TabsTrigger value="magic">Magic Link</TabsTrigger>
+              </TabsList>
+              
+              {/* Login Tab */}
+              <TabsContent value="login" className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                        className="pl-10"
+                        required
+                      />
                     </div>
-                    
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Senha</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={loginData.password}
+                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="remember-me"
+                        checked={rememberMeChecked}
+                        onCheckedChange={(checked) => setRememberMeChecked(checked as boolean)}
+                      />
+                      <Label htmlFor="remember-me" className="text-sm">Lembrar de mim</Label>
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="link"
+                      className="text-sm"
+                      onClick={handleForgotPassword}
+                      disabled={isLoading}
+                    >
+                      Esqueceu a senha?
+                    </Button>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Entrando...
+                      </>
+                    ) : (
+                      "Entrar"
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              {/* Register Tab */}
+              <TabsContent value="register" className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={registerData.email}
+                        onChange={(e) => {
+                          setRegisterData({ ...registerData, email: e.target.value });
+                          const validation = validateEmailForRole(e.target.value, "citizen");
+                          setEmailValidation({ isValid: validation.isValid, error: validation.error || "" });
+                        }}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                    {!emailValidation.isValid && (
+                      <p className="text-sm text-destructive">{emailValidation.error}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="login-password">Senha</Label>
+                      <Label htmlFor="register-password">Senha</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
-                          id="login-password"
+                          id="register-password"
                           type="password"
                           placeholder="••••••••"
-                          value={loginData.password}
-                          onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                          value={registerData.password}
+                          onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                           className="pl-10"
                           required
                         />
                       </div>
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="remember-me"
-                          checked={rememberMeChecked}
-                          onCheckedChange={(checked) => setRememberMeChecked(checked as boolean)}
-                        />
-                        <Label htmlFor="remember-me" className="text-sm">Lembrar de mim</Label>
-                      </div>
-                      <Button 
-                        type="button" 
-                        variant="link"
-                        className="text-sm"
-                        onClick={handleForgotPassword}
-                        disabled={isLoading}
-                      >
-                        Esqueceu a senha?
-                      </Button>
-                    </div>
 
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Entrando...
-                        </>
-                      ) : (
-                        "Entrar"
-                      )}
-                    </Button>
-                  </form>
-                </TabsContent>
-                
-                {/* Register Tab */}
-                <TabsContent value="register" className="space-y-4">
-                  <form onSubmit={handleRegister} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="register-email">Email</Label>
+                      <Label htmlFor="register-confirm-password">Confirmar</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
-                          id="register-email"
-                          type="email"
-                          placeholder="seu@email.com"
-                          value={registerData.email}
-                          onChange={(e) => {
-                            setRegisterData({ ...registerData, email: e.target.value });
-                            const validation = validateEmailForRole(e.target.value, "citizen");
-                            setEmailValidation({ isValid: validation.isValid, error: validation.error || "" });
-                          }}
-                          className="pl-10"
-                          required
-                        />
-                      </div>
-                      {!emailValidation.isValid && (
-                        <p className="text-sm text-destructive">{emailValidation.error}</p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="register-password">Senha</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="register-password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={registerData.password}
-                            onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                            className="pl-10"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="register-confirm-password">Confirmar</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="register-confirm-password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={registerData.confirmPassword}
-                            onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-                            className="pl-10"
-                            required
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-name">Nome Completo</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="register-name"
-                          type="text"
-                          placeholder="Seu nome completo"
-                          value={registerData.fullName}
-                          onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+                          id="register-confirm-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={registerData.confirmPassword}
+                          onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
                           className="pl-10"
                           required
                         />
                       </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-phone">Telefone</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="register-phone"
-                          type="tel"
-                          placeholder="(11) 99999-9999"
-                          value={registerData.phone}
-                          onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-address">Endereço</Label>
-                      <div className="relative">
-                        <Home className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="register-address"
-                          type="text"
-                          placeholder="Rua, número, bairro"
-                          value={registerData.address}
-                          onChange={(e) => setRegisterData({ ...registerData, address: e.target.value })}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-                    
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Cadastrando...
-                        </>
-                      ) : (
-                        "Cadastrar"
-                      )}
-                    </Button>
-                  </form>
-                </TabsContent>
-
-                {/* Magic Link Tab */}
-                <TabsContent value="magic" className="space-y-4">
-                  <div className="text-center mb-4">
-                    <p className="text-sm text-muted-foreground">
-                      Digite seu email para receber um link de acesso sem senha
-                    </p>
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="magic-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="magic-email"
-                          type="email"
-                          placeholder="seu@email.com"
-                          value={magicLinkEmail}
-                          onChange={(e) => setMagicLinkEmail(e.target.value)}
-                          className="pl-10"
-                          required
-                        />
-                      </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-name">Nome Completo</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-name"
+                        type="text"
+                        placeholder="Seu nome completo"
+                        value={registerData.fullName}
+                        onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+                        className="pl-10"
+                        required
+                      />
                     </div>
-                    
-                    <Button 
-                      type="button" 
-                      className="w-full" 
-                      onClick={handleMagicLink}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Enviando...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="mr-2 h-4 w-4" />
-                          Enviar Magic Link
-                        </>
-                      )}
-                    </Button>
                   </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-phone">Telefone</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-phone"
+                        type="tel"
+                        placeholder="(11) 99999-9999"
+                        value={registerData.phone}
+                        onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-address">Endereço</Label>
+                    <div className="relative">
+                      <Home className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-address"
+                        type="text"
+                        placeholder="Rua, número, bairro"
+                        value={registerData.address}
+                        onChange={(e) => setRegisterData({ ...registerData, address: e.target.value })}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Cadastrando...
+                      </>
+                    ) : (
+                      "Cadastrar"
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
 
-          {/* Footer */}
-          <div className="text-center mt-8">
-            <p className="text-sm text-gray-600">
-              © 2024 MuniConnect - Gestão Inteligente para Municípios
-            </p>
-          </div>
+              {/* Magic Link Tab */}
+              <TabsContent value="magic" className="space-y-4">
+                <div className="text-center mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Digite seu email para receber um link de acesso sem senha
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="magic-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="magic-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={magicLinkEmail}
+                        onChange={(e) => setMagicLinkEmail(e.target.value)}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="button" 
+                    className="w-full" 
+                    onClick={handleMagicLink}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Enviar Magic Link
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-sm text-gray-600">
+            © 2024 MuniConnect - Gestão Inteligente para Municípios
+          </p>
         </div>
       </div>
     </div>
   );
-};
-
-export default AuthPage;
+}

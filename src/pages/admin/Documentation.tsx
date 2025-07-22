@@ -366,11 +366,19 @@ export default function Documentation() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h4 className="font-semibold mb-2">Suporte Técnico</h4>
-                <ul className="space-y-1 text-sm">
-                  <li>Email: suporte@codema.itanhomi.sp.gov.br</li>
-                  <li>Telefone: (11) 1234-5678</li>
-                  <li>Horário: Segunda a Sexta, 8h às 17h</li>
-                </ul>
+                <ul className="list-disc list-inside space-y-2 text-gray-600">
+                    <li>Através da plataforma, na seção "Suporte".</li>
+                    <li>
+                      Email:{" "}
+                      <a
+                        href="mailto:suporte@municonnect.com.br"
+                        className="text-blue-600 hover:underline"
+                      >
+                        suporte@municonnect.com.br
+                      </a>
+                    </li>
+                    <li>Telefone: (31) 99999-9999 (fictício)</li>
+                  </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">Ouvidoria</h4>
