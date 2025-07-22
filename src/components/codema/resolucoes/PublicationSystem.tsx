@@ -17,11 +17,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { logAction } from "@/utils/auditLogger";
+import { logAction } from "@/utils/monitoring";
+
+interface Resolucao {
+  id: string;
+  numero: string;
+  titulo: string;
+  conteudo: string;
+  status: string;
+  data_aprovacao?: string;
+  tipo: string;
+  [key: string]: unknown;
+}
 
 interface PublicationSystemProps {
   resolucaoId: string;
-  resolucao: any;
+  resolucao: Resolucao;
 }
 
 interface Publicacao {

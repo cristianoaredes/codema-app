@@ -40,7 +40,7 @@ const errorTypeColors = {
   offline: 'border-gray-200 bg-gray-50 text-gray-800'
 };
 
-const errorTypeIcons = {
+const errorTypeIcons: Record<ErrorInfo['type'], React.ComponentType<{ className?: string }>> = {
   network: Wifi,
   validation: AlertTriangle,
   permission: AlertTriangle,
@@ -229,7 +229,7 @@ function ErrorFallback({
 }
 
 // User-Friendly Error Display Component
-export function UserError({ errorInfo, className }: { errorInfo: ErrorInfo; className?: string }) {
+export function UserError({ errorInfo, className }: { errorInfo: ErrorInfo; className?: string }): JSX.Element {
   const IconComponent = errorTypeIcons[errorInfo.type];
   
   return (
@@ -339,34 +339,4 @@ export function NetworkError({
       </div>
     </Alert>
   );
-}
-
-// Hook for Error Handling
-export function useErrorHandler() {
-  const [error, setError] = React.useState<ErrorInfo | null>(null);
-
-  const handleError = React.useCallback((errorInfo: ErrorInfo) => {
-    setError(errorInfo);
-  }, []);
-
-  const clearError = React.useCallback(() => {
-    setError(null);
-  }, []);
-
-  const retry = React.useCallback(() => {
-    if (error?.retry) {
-      error.retry();
-      clearError();
-    }
-  }, [error, clearError]);
-
-  return {
-    error,
-    handleError,
-    clearError,
-    retry,
-    ErrorComponent: error ? (
-      <UserError errorInfo={error} />
-    ) : null
-  };
 }

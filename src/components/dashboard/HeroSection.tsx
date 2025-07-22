@@ -19,7 +19,7 @@ const HeroSection = () => {
       <div className="absolute inset-0 opacity-10">
         <img 
           src={heroImage} 
-          alt="Serviços municipais de Itanhemi" 
+          alt="Serviços municipais de Itanhomi" 
           className="w-full h-full object-cover"
         />
       </div>
@@ -28,11 +28,11 @@ const HeroSection = () => {
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl font-bold text-foreground mb-6">
             Construindo uma
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"> Itanhemi Melhor</span>
+            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"> Itanhomi Melhor</span>
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Relate problemas nos serviços municipais e avalie a qualidade dos serviços públicos em Itanhemi-MG. 
+            Relate problemas nos serviços municipais e avalie a qualidade dos serviços públicos em Itanhomi-MG. 
             Sua participação é fundamental para construir uma cidade melhor.
           </p>
           

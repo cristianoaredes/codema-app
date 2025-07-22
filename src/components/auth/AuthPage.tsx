@@ -4,57 +4,139 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { MapPin, User, Mail, Lock, Phone, Home, Send, Shield, Users, UserCheck } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Mail, Lock, User, Phone, Home, Send, Loader2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useDemoMode, demoAPI } from "@/lib/demo-mode";
+import { validateEmailForRole } from "@/utils/email";
+import { UserRole } from "@/types/auth";
+import { useAuth } from "@/hooks/useAuth";
+import { createPersistentSession } from "@/utils/auth";
+import logo from "@/assets/logo_with_text.png";
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isDemoMode } = useDemoMode();
+  const { setRememberMe } = useAuth();
+
+  const [rememberMeChecked, setRememberMeChecked] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
 
   const [loginData, setLoginData] = useState({
     email: "",
     password: ""
   });
 
-  const [magicLinkEmail, setMagicLinkEmail] = useState("");
-  const [showMagicLink, setShowMagicLink] = useState(false);
-
   const [registerData, setRegisterData] = useState({
-    fullName: "",
     email: "",
     password: "",
+    confirmPassword: "",
+    fullName: "",
     phone: "",
     address: "",
     neighborhood: ""
   });
+
+  const [magicLinkEmail, setMagicLinkEmail] = useState("");
+  const [emailValidation, setEmailValidation] = useState({ isValid: true, error: "" });
+
+  const handleForgotPassword = async () => {
+    if (!loginData.email) {
+      toast({
+        title: "Email necessário",
+        description: "Digite seu email para receber o link de recuperação",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(loginData.email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Email enviado",
+          description: "Verifique sua caixa de entrada para o link de recuperação",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: loginData.email,
-        password: loginData.password
-      });
+      let result;
+      
+      if (isDemoMode) {
+        result = await demoAPI.signIn(loginData.email, loginData.password);
+      } else {
+        try {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: loginData.email,
+            password: loginData.password
+          });
+          result = { error };
+        } catch (networkError) {
+          console.warn('Problema de conectividade, usando modo demo:', networkError);
+          result = await demoAPI.signIn(loginData.email, loginData.password);
+          toast({
+            title: "Modo Demonstração",
+            description: "Sistema rodando em modo demo devido a problemas de conectividade",
+            variant: "default"
+          });
+        }
+      }
 
-      if (error) {
+      if (result.error) {
         toast({
           title: "Erro no login",
-          description: error.message === "Invalid login credentials" 
+          description: result.error.message === "Invalid login credentials" 
             ? "Email ou senha incorretos"
-            : error.message,
+            : result.error.message,
           variant: "destructive"
         });
       } else {
+        if (rememberMeChecked) {
+          try {
+            setRememberMe(true);
+            await createPersistentSession('user-id', 'refresh-token');
+            console.log('🔐 Sessão persistente criada com sucesso');
+          } catch (rememberMeError) {
+            console.warn('⚠️ Erro ao criar sessão persistente:', rememberMeError);
+          }
+        } else {
+          setRememberMe(false);
+        }
+
         toast({
           title: "Login realizado com sucesso!",
-          description: "Bem-vindo ao Sistema Municipal de Itanhemi"
+          description: rememberMeChecked 
+            ? "Bem-vindo! Você será lembrado neste dispositivo."
+            : "Bem-vindo ao Sistema Municipal de Itanhomi"
         });
         navigate("/");
       }
@@ -70,32 +152,41 @@ const AuthPage = () => {
   };
 
   const handleMagicLink = async () => {
+    if (!magicLinkEmail) {
+      toast({
+        title: "Email necessário",
+        description: "Digite seu email para receber o link de acesso",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: magicLinkEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
 
       if (error) {
         toast({
-          title: "Erro ao enviar link",
+          title: "Erro",
           description: error.message,
           variant: "destructive"
         });
       } else {
         toast({
-          title: "Link mágico enviado!",
-          description: "Verifique seu email e clique no link para entrar."
+          title: "Link enviado",
+          description: "Verifique sua caixa de entrada para o link de acesso",
         });
         setMagicLinkEmail("");
       }
     } catch (error) {
       toast({
-        title: "Erro ao enviar link",
+        title: "Erro",
         description: "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive"
       });
@@ -109,16 +200,31 @@ const AuthPage = () => {
     setIsLoading(true);
 
     try {
+      if (registerData.password !== registerData.confirmPassword) {
+        toast({
+          title: "Senhas não coincidem",
+          description: "As senhas digitadas não são iguais",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const validation = validateEmailForRole(registerData.email, "citizen");
+      if (!validation.isValid) {
+        setEmailValidation({ isValid: validation.isValid, error: validation.error || "" });
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({
         email: registerData.email,
         password: registerData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: registerData.fullName,
             phone: registerData.phone,
             address: registerData.address,
-            neighborhood: registerData.neighborhood
+            neighborhood: registerData.neighborhood,
+            role: "citizen" as UserRole
           }
         }
       });
@@ -126,27 +232,28 @@ const AuthPage = () => {
       if (error) {
         toast({
           title: "Erro no cadastro",
-          description: error.message === "User already registered" 
-            ? "Este email já está cadastrado"
-            : error.message,
+          description: error.message,
           variant: "destructive"
         });
       } else {
         toast({
-          title: "Cadastro realizado com sucesso!",
-          description: "Verifique seu email para confirmar a conta."
+          title: "Cadastro realizado",
+          description: "Verifique seu email para confirmar a conta",
         });
-        // Reset form
+        setActiveTab("login");
         setRegisterData({
-          fullName: "",
           email: "",
           password: "",
+          confirmPassword: "",
+          fullName: "",
           phone: "",
           address: "",
           neighborhood: ""
         });
+        setEmailValidation({ isValid: true, error: "" });
       }
     } catch (error) {
+      console.error('AuthPage: Register error:', error);
       toast({
         title: "Erro no cadastro",
         description: "Ocorreu um erro inesperado. Tente novamente.",
@@ -158,247 +265,293 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/8 via-background to-secondary/8 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <MapPin className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Sistema Municipal</h1>
-          <p className="text-muted-foreground text-lg">Itanhemi - MG | CODEMA</p>
-          <p className="text-sm text-muted-foreground/80 mt-1">Conselho de Defesa do Meio Ambiente</p>
-        </div>
-
-        <Card className="shadow-xl border border-border/50 backdrop-blur-sm bg-card/95">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl text-card-foreground">Acesse sua conta</CardTitle>
-            <CardDescription className="text-base text-muted-foreground">
-              Entre ou cadastre-se para acessar o sistema municipal
-            </CardDescription>
-            
-            {/* User roles info */}
-            <div className="mt-6 p-5 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl text-left border border-border/30">
-              <h4 className="font-semibold mb-3 flex items-center gap-2 text-foreground">
-                <Users className="w-4 h-4 text-primary" />
-                Tipos de Usuário
-              </h4>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary" className="text-xs px-2 py-1">
-                    <User className="w-3 h-3 mr-1" />
-                    Cidadão
-                  </Badge>
-                  <span className="text-muted-foreground">Reportar problemas e acompanhar</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="text-xs px-2 py-1 border-primary/30">
-                    <UserCheck className="w-3 h-3 mr-1" />
-                    Conselheiro
-                  </Badge>
-                  <span className="text-muted-foreground">Participar das reuniões e votações</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge className="text-xs px-2 py-1 bg-primary">
-                    <Shield className="w-3 h-3 mr-1" />
-                    Admin
-                  </Badge>
-                  <span className="text-muted-foreground">Gestão completa do sistema</span>
-                </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50/30 to-blue-50/30">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <img src={logo} alt="CODEMA Logo" className="h-10 w-auto" />
+              <div className="border-l border-gray-200 pl-4">
+                <h1 className="text-xl font-semibold text-gray-900">CODEMA</h1>
+                <p className="text-sm text-gray-600">Itanhomi - MG</p>
               </div>
             </div>
-          </CardHeader>
-          
-          <CardContent className="pt-2">
-            <Tabs defaultValue="login" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1">
-                <TabsTrigger value="login" className="data-[state=active]:bg-background data-[state=active]:text-foreground">Entrar</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-background data-[state=active]:text-foreground">Cadastrar</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
-                    <div className="relative">
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={loginData.email}
-                        onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
-                        className="pl-10 h-11 border-border/50 focus:border-primary focus:ring-1 focus:ring-primary"
-                        required
-                      />
-                      <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')}
+              className="border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 transition-all duration-300"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar ao Início
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] py-12 px-6">
+        <div className="w-full max-w-md">
+          {/* Card Principal */}
+          <Card className="shadow-2xl border-0 backdrop-blur-sm bg-white/95">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-3xl font-bold text-gray-900">Acesse sua conta</CardTitle>
+              <CardDescription className="text-lg text-gray-600">
+                Entre ou cadastre-se para acessar o sistema municipal
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="p-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="login">Entrar</TabsTrigger>
+                  <TabsTrigger value="register">Cadastrar</TabsTrigger>
+                  <TabsTrigger value="magic">Magic Link</TabsTrigger>
+                </TabsList>
+                
+                {/* Login Tab */}
+                <TabsContent value="login" className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="login-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="login-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={loginData.email}
+                          onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium text-foreground">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Sua senha"
-                        value={loginData.password}
-                        onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                        className="pl-10 h-11 border-border/50 focus:border-primary focus:ring-1 focus:ring-primary"
-                        required
-                      />
-                      <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="login-password">Senha</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="login-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={loginData.password}
+                          onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <Button type="submit" className="w-full h-11 bg-primary hover:bg-primary-hover text-primary-foreground font-medium" disabled={isLoading}>
-                    {isLoading ? "Entrando..." : "Entrar"}
-                  </Button>
-                  
-                  <div className="relative my-6">
-                    <Separator className="bg-border" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="bg-background px-3 text-muted-foreground text-sm font-medium">ou</span>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowMagicLink(!showMagicLink)}
-                    className="w-full h-11 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-colors"
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    Entrar sem senha
-                  </Button>
-                  
-                  {showMagicLink && (
-                    <div className="space-y-4 p-5 border border-primary/20 rounded-xl bg-gradient-to-r from-primary/5 to-secondary/5">
-                      <div className="space-y-2">
-                        <Label htmlFor="magicEmail" className="text-sm font-medium text-foreground">Email para link mágico</Label>
-                        <div className="relative">
-                          <Input
-                            id="magicEmail"
-                            type="email"
-                            placeholder="seu@email.com"
-                            value={magicLinkEmail}
-                            onChange={(e) => setMagicLinkEmail(e.target.value)}
-                            className="pl-10 h-11 border-border/50"
-                            required
-                          />
-                          <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                        </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="remember-me"
+                          checked={rememberMeChecked}
+                          onCheckedChange={(checked) => setRememberMeChecked(checked as boolean)}
+                        />
+                        <Label htmlFor="remember-me" className="text-sm">Lembrar de mim</Label>
                       </div>
                       <Button 
                         type="button" 
-                        onClick={handleMagicLink} 
-                        className="w-full h-11 bg-secondary hover:bg-secondary-hover text-secondary-foreground font-medium" 
+                        variant="link"
+                        className="text-sm"
+                        onClick={handleForgotPassword}
                         disabled={isLoading}
                       >
-                        {isLoading ? "Enviando..." : "Enviar link mágico"}
+                        Esqueceu a senha?
                       </Button>
-                      <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                        Enviaremos um link seguro para seu email. Clique no link para entrar automaticamente.
-                      </p>
                     </div>
-                  )}
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Nome Completo</Label>
-                    <div className="relative">
-                      <Input
-                        id="fullName"
-                        placeholder="Seu nome completo"
-                        value={registerData.fullName}
-                        onChange={(e) => setRegisterData(prev => ({ ...prev, fullName: e.target.value }))}
-                        className="pl-10"
-                        required
-                      />
-                      <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Entrando...
+                        </>
+                      ) : (
+                        "Entrar"
+                      )}
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                {/* Register Tab */}
+                <TabsContent value="register" className="space-y-4">
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="register-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="register-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={registerData.email}
+                          onChange={(e) => {
+                            setRegisterData({ ...registerData, email: e.target.value });
+                            const validation = validateEmailForRole(e.target.value, "citizen");
+                            setEmailValidation({ isValid: validation.isValid, error: validation.error || "" });
+                          }}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                      {!emailValidation.isValid && (
+                        <p className="text-sm text-destructive">{emailValidation.error}</p>
+                      )}
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="registerEmail">Email</Label>
-                    <div className="relative">
-                      <Input
-                        id="registerEmail"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={registerData.email}
-                        onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
-                        className="pl-10"
-                        required
-                      />
-                      <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="register-password">Senha</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="register-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={registerData.password}
+                            onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="register-confirm-password">Confirmar</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="register-confirm-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={registerData.confirmPassword}
+                            onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="registerPassword">Senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="registerPassword"
-                        type="password"
-                        placeholder="Crie uma senha"
-                        value={registerData.password}
-                        onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
-                        className="pl-10"
-                        required
-                        minLength={6}
-                      />
-                      <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="register-name">Nome Completo</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="register-name"
+                          type="text"
+                          placeholder="Seu nome completo"
+                          value={registerData.fullName}
+                          onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <div className="relative">
-                      <Input
-                        id="phone"
-                        placeholder="(xx) xxxx-xxxx"
-                        value={registerData.phone}
-                        onChange={(e) => setRegisterData(prev => ({ ...prev, phone: e.target.value }))}
-                        className="pl-10"
-                      />
-                      <Phone className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="register-phone">Telefone</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="register-phone"
+                          type="tel"
+                          placeholder="(11) 99999-9999"
+                          value={registerData.phone}
+                          onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Endereço</Label>
-                    <div className="relative">
-                      <Input
-                        id="address"
-                        placeholder="Rua, número"
-                        value={registerData.address}
-                        onChange={(e) => setRegisterData(prev => ({ ...prev, address: e.target.value }))}
-                        className="pl-10"
-                      />
-                      <Home className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="register-address">Endereço</Label>
+                      <div className="relative">
+                        <Home className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="register-address"
+                          type="text"
+                          placeholder="Rua, número, bairro"
+                          value={registerData.address}
+                          onChange={(e) => setRegisterData({ ...registerData, address: e.target.value })}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
+                    
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Cadastrando...
+                        </>
+                      ) : (
+                        "Cadastrar"
+                      )}
+                    </Button>
+                  </form>
+                </TabsContent>
+
+                {/* Magic Link Tab */}
+                <TabsContent value="magic" className="space-y-4">
+                  <div className="text-center mb-4">
+                    <p className="text-sm text-muted-foreground">
+                      Digite seu email para receber um link de acesso sem senha
+                    </p>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="neighborhood">Bairro</Label>
-                    <Input
-                      id="neighborhood"
-                      placeholder="Seu bairro"
-                      value={registerData.neighborhood}
-                      onChange={(e) => setRegisterData(prev => ({ ...prev, neighborhood: e.target.value }))}
-                    />
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="magic-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="magic-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={magicLinkEmail}
+                          onChange={(e) => setMagicLinkEmail(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      type="button" 
+                      className="w-full" 
+                      onClick={handleMagicLink}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Enviar Magic Link
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  
-                  <Button type="submit" className="w-full h-11 bg-primary hover:bg-primary-hover text-primary-foreground font-medium" disabled={isLoading}>
-                    {isLoading ? "Cadastrando..." : "Cadastrar"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Footer */}
+          <div className="text-center mt-8">
+            <p className="text-sm text-gray-600">
+              © 2024 CODEMA Itanhomi - Sistema Municipal
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

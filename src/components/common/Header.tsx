@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import logo from "@/assets/logo.png";
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
@@ -34,7 +35,7 @@ const Header = () => {
             <FileText className="w-5 h-5 text-primary-foreground" />
           </div>
           <div className="font-bold text-xl text-foreground">
-            Portal Municipal - Itanhemi
+            Portal Municipal - Itanhomi
           </div>
         </div>
         
@@ -44,8 +45,15 @@ const Header = () => {
               {profile?.full_name || user.email}
             </span>
             <span className="text-xs text-muted-foreground">
-              {profile?.role === 'admin' ? 'Administrador' : 
-               profile?.role === 'moderator' ? 'Moderador' : 'Cidadão'}
+              {(() => {
+                if (profile?.role === 'admin') return 'Administrador';
+                if (profile?.role === 'secretario') return 'Secretário';
+                if (profile?.role === 'presidente') return 'Presidente';
+                if (profile?.role === 'conselheiro_titular') return 'Conselheiro Titular';
+                if (profile?.role === 'conselheiro_suplente') return 'Conselheiro Suplente';
+                if (profile?.role === 'moderator') return 'Moderador';
+                return 'Cidadão';
+              })()}
             </span>
           </div>
         </div>
@@ -53,42 +61,25 @@ const Header = () => {
     );
   }
 
+  // Public header - simplified for landing page
   return (
-    <header className="bg-gradient-to-r from-primary via-primary-glow to-secondary shadow-lg">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">C</span>
+    <header className="bg-white/80 backdrop-blur-sm border-b border-border/50">
+      <div className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-200">
+              <img src={logo} alt="CODEMA Logo" className="w-7 h-7 object-contain" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">CODEMA</h1>
+              <p className="text-xs text-muted-foreground">Itanhomi - MG</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">
-              CODEMA Itanhemi
-            </h1>
-            <p className="text-white/80 text-sm">Conselho de Defesa do Meio Ambiente</p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <nav className="hidden md:flex space-x-6">
-            <Link to="/" className="text-white hover:text-white/80 transition-colors">
-              Início
-            </Link>
-            <Link to="/relatorios" className="text-white hover:text-white/80 transition-colors">
-              Relatórios
-            </Link>
-          </nav>
           
-          <div className="flex items-center space-x-2">
-            <Link to="/auth">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                Entrar
-              </Button>
-            </Link>
-            <Link to="/auth">
-              <Button size="sm" className="bg-white text-primary hover:bg-white/90">
-                Cadastrar
-              </Button>
-            </Link>
+          <div className="flex items-center gap-4">
+            <Button asChild>
+              <Link to="/auth">Acessar Sistema</Link>
+            </Button>
           </div>
         </div>
       </div>

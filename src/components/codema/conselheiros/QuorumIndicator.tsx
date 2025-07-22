@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui';
 import { Users, Check, X } from 'lucide-react';
 
 interface QuorumIndicatorProps {

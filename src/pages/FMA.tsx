@@ -1,16 +1,7 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState, useCallback } from "react";
+import { useAuth, useToast } from "@/hooks";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, Tabs, TabsContent, TabsList, TabsTrigger, Label, Progress } from "@/components/ui";
 import { 
   DollarSign, 
   Plus, 
@@ -24,7 +15,6 @@ import {
   Clock,
   Target
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -85,11 +75,7 @@ const FMA = () => {
 
   const isSecretary = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
 
-  useEffect(() => {
-    fetchFMAData();
-  }, []);
-
-  const fetchFMAData = async () => {
+  const fetchFMAData = useCallback(async () => {
     try {
       const [receitasData, projetosData] = await Promise.all([
         supabase.from("fma_receitas").select("*").order("data_entrada", { ascending: false }),
@@ -111,7 +97,11 @@ const FMA = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase, toast]);
+
+  useEffect(() => {
+    fetchFMAData();
+  }, [fetchFMAData]);
 
   const createReceita = async () => {
     try {

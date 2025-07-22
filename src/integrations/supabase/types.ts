@@ -65,17 +65,10 @@ export type Database = {
         Row: {
           arquivo_nome: string | null
           arquivo_url: string | null
-          assinatura_digital: string | null
           autor_id: string
-          categoria: string | null
           created_at: string
-          data_assinatura: string | null
-          data_publicacao: string | null
           id: string
-          numero_documento: string | null
           palavras_chave: string[] | null
-          processo_id: string | null
-          publicado: boolean | null
           reuniao_id: string | null
           status: string
           tamanho_arquivo: number | null
@@ -86,17 +79,10 @@ export type Database = {
         Insert: {
           arquivo_nome?: string | null
           arquivo_url?: string | null
-          assinatura_digital?: string | null
           autor_id: string
-          categoria?: string | null
           created_at?: string
-          data_assinatura?: string | null
-          data_publicacao?: string | null
           id?: string
-          numero_documento?: string | null
           palavras_chave?: string[] | null
-          processo_id?: string | null
-          publicado?: boolean | null
           reuniao_id?: string | null
           status?: string
           tamanho_arquivo?: number | null
@@ -107,17 +93,10 @@ export type Database = {
         Update: {
           arquivo_nome?: string | null
           arquivo_url?: string | null
-          assinatura_digital?: string | null
           autor_id?: string
-          categoria?: string | null
           created_at?: string
-          data_assinatura?: string | null
-          data_publicacao?: string | null
           id?: string
-          numero_documento?: string | null
           palavras_chave?: string[] | null
-          processo_id?: string | null
-          publicado?: boolean | null
           reuniao_id?: string | null
           status?: string
           tamanho_arquivo?: number | null
@@ -134,17 +113,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "documentos_processo_id_fkey"
-            columns: ["processo_id"]
-            isOneToOne: false
-            referencedRelation: "processos"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "documentos_reuniao_id_fkey"
             columns: ["reuniao_id"]
             isOneToOne: false
             referencedRelation: "reunioes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_queue: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          created_by: string | null
+          email_type: string
+          error_details: Json | null
+          error_message: string | null
+          failed_at: string | null
+          html_content: string
+          id: string
+          max_attempts: number | null
+          scheduled_for: string
+          sent_at: string | null
+          status: string | null
+          subject: string
+          text_content: string | null
+          to_email: string
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          email_type: string
+          error_details?: Json | null
+          error_message?: string | null
+          failed_at?: string | null
+          html_content: string
+          id?: string
+          max_attempts?: number | null
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          text_content?: string | null
+          to_email: string
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          email_type?: string
+          error_details?: Json | null
+          error_message?: string | null
+          failed_at?: string | null
+          html_content?: string
+          id?: string
+          max_attempts?: number | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          text_content?: string | null
+          to_email?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_queue_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -451,6 +491,51 @@ export type Database = {
           },
         ]
       }
+      password_reset_requests: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          expires_at: string
+          id: string
+          reset_token: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          reset_token: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          reset_token?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_reset_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "password_reset_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presencas: {
         Row: {
           created_at: string
@@ -585,70 +670,85 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
-          ativo: boolean | null
-          cpf: string | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
+          deactivation_reason: string | null
           email: string | null
-          entidade_representada: string | null
-          fim_mandato: string | null
           full_name: string | null
           id: string
-          inicio_mandato: string | null
-          motivo_inativacao: string | null
+          is_active: boolean | null
           neighborhood: string | null
           phone: string | null
           role: string | null
-          substituido_por: string | null
-          telefone_institucional: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
-          ativo?: boolean | null
-          cpf?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           email?: string | null
-          entidade_representada?: string | null
-          fim_mandato?: string | null
           full_name?: string | null
           id: string
-          inicio_mandato?: string | null
-          motivo_inativacao?: string | null
+          is_active?: boolean | null
           neighborhood?: string | null
           phone?: string | null
           role?: string | null
-          substituido_por?: string | null
-          telefone_institucional?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
-          ativo?: boolean | null
-          cpf?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           email?: string | null
-          entidade_representada?: string | null
-          fim_mandato?: string | null
           full_name?: string | null
           id?: string
-          inicio_mandato?: string | null
-          motivo_inativacao?: string | null
+          is_active?: boolean | null
           neighborhood?: string | null
           phone?: string | null
           role?: string | null
-          substituido_por?: string | null
-          telefone_institucional?: string | null
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_substituido_por_fkey"
-            columns: ["substituido_por"]
+            foreignKeyName: "profiles_deactivated_by_fkey"
+            columns: ["deactivated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      protocolos_sequencia: {
+        Row: {
+          ano: number
+          created_at: string | null
+          id: string
+          tipo: string
+          ultimo_numero: number
+          updated_at: string | null
+        }
+        Insert: {
+          ano: number
+          created_at?: string | null
+          id?: string
+          tipo: string
+          ultimo_numero?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ano?: number
+          created_at?: string | null
+          id?: string
+          tipo?: string
+          ultimo_numero?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       reports: {
         Row: {
@@ -725,61 +825,40 @@ export type Database = {
       reunioes: {
         Row: {
           ata: string | null
-          ata_aprovada: boolean | null
           created_at: string
-          data_aprovacao_ata: string | null
           data_reuniao: string
           id: string
           local: string
-          numero_reuniao: string | null
           pauta: string | null
-          quorum_necessario: number | null
-          quorum_presente: number | null
-          resolucoes_geradas: string[] | null
           secretario_id: string
           status: string
           tipo: string
-          tipo_reuniao: string | null
           titulo: string
           updated_at: string
         }
         Insert: {
           ata?: string | null
-          ata_aprovada?: boolean | null
           created_at?: string
-          data_aprovacao_ata?: string | null
           data_reuniao: string
           id?: string
           local: string
-          numero_reuniao?: string | null
           pauta?: string | null
-          quorum_necessario?: number | null
-          quorum_presente?: number | null
-          resolucoes_geradas?: string[] | null
           secretario_id: string
           status?: string
           tipo: string
-          tipo_reuniao?: string | null
           titulo: string
           updated_at?: string
         }
         Update: {
           ata?: string | null
-          ata_aprovada?: boolean | null
           created_at?: string
-          data_aprovacao_ata?: string | null
           data_reuniao?: string
           id?: string
           local?: string
-          numero_reuniao?: string | null
           pauta?: string | null
-          quorum_necessario?: number | null
-          quorum_presente?: number | null
-          resolucoes_geradas?: string[] | null
           secretario_id?: string
           status?: string
           tipo?: string
-          tipo_reuniao?: string | null
           titulo?: string
           updated_at?: string
         }
@@ -862,6 +941,156 @@ export type Database = {
           },
         ]
       }
+      user_activity_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_invitations: {
+        Row: {
+          accepted_at: string | null
+          address: string | null
+          created_at: string | null
+          created_by: string
+          email: string
+          expires_at: string
+          full_name: string
+          id: string
+          invitation_token: string
+          message: string | null
+          neighborhood: string | null
+          phone: string | null
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          address?: string | null
+          created_at?: string | null
+          created_by: string
+          email: string
+          expires_at: string
+          full_name: string
+          id?: string
+          invitation_token: string
+          message?: string | null
+          neighborhood?: string | null
+          phone?: string | null
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          address?: string | null
+          created_at?: string | null
+          created_by?: string
+          email?: string
+          expires_at?: string
+          full_name?: string
+          id?: string
+          invitation_token?: string
+          message?: string | null
+          neighborhood?: string | null
+          phone?: string | null
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_sessions: {
+        Row: {
+          device_info: Json | null
+          id: string
+          ip_address: unknown | null
+          is_active: boolean | null
+          location_info: Json | null
+          login_at: string | null
+          logout_at: string | null
+          session_token: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          device_info?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          location_info?: Json | null
+          login_at?: string | null
+          logout_at?: string | null
+          session_token?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          device_info?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          location_info?: Json | null
+          login_at?: string | null
+          logout_at?: string | null
+          session_token?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -871,8 +1100,20 @@ export type Database = {
         Args: { meeting_id: string }
         Returns: boolean
       }
+      cleanup_old_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      consultar_proximo_protocolo: {
+        Args: { tipo_protocolo: string }
+        Returns: string
+      }
       generate_document_number: {
         Args: { doc_type: string; year?: number }
+        Returns: string
+      }
+      gerar_proximo_protocolo: {
+        Args: { tipo_protocolo: string }
         Returns: string
       }
       log_audit_event: {
@@ -883,6 +1124,41 @@ export type Database = {
           p_dados_anteriores?: Json
           p_dados_novos?: Json
         }
+        Returns: undefined
+      }
+      obter_estatisticas_protocolos: {
+        Args: { ano_filtro?: number }
+        Returns: {
+          tipo: string
+          ano: number
+          total_gerados: number
+          ultimo_gerado: string
+        }[]
+      }
+      process_email_queue: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      resetar_sequencia_protocolo: {
+        Args: { tipo_protocolo: string; novo_ano?: number }
+        Returns: undefined
+      }
+      retry_failed_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      track_user_login: {
+        Args: {
+          p_user_id: string
+          p_ip_address?: unknown
+          p_user_agent?: string
+          p_device_info?: Json
+          p_location_info?: Json
+        }
+        Returns: string
+      }
+      track_user_logout: {
+        Args: { p_user_id: string; p_session_id?: string }
         Returns: undefined
       }
     }

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { Badge } from '@/components/ui';
+import { Checkbox } from '@/components/ui';
+import { Textarea } from '@/components/ui';
+import { Input } from '@/components/ui';
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui';
 import { QuorumIndicator } from '@/components/codema/conselheiros';
-import { useConselheiros } from '@/hooks/useConselheiros';
-import { usePresencas, useMarcarPresenca, useConvocacoes } from '@/hooks/useReunioes';
+import { useConselheiros } from '@/hooks';
+import { usePresencas, useMarcarPresenca, useConvocacoes } from '@/hooks';
 import { Users, Clock, AlertTriangle, CheckCircle, XCircle, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';

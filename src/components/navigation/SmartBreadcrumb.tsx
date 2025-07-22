@@ -1,14 +1,7 @@
 import * as React from "react";
 import { Home, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { 
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { cn } from "@/lib/utils";
 
 export interface BreadcrumbItemConfig {
@@ -93,43 +86,20 @@ export function SmartBreadcrumb({
     return null;
   }
 
+  // Convert to the format expected by Breadcrumbs component
+  const breadcrumbData = breadcrumbItems.map((item, index) => ({
+    label: item.label,
+    href: item.href,
+    icon: item.icon,
+    current: index === breadcrumbItems.length - 1
+  }));
+
   return (
-    <Breadcrumb className={cn("", className)} {...props}>
-      <BreadcrumbList>
-        {breadcrumbItems.map((item, index) => {
-          const isLast = index === breadcrumbItems.length - 1;
-          
-          return (
-            <React.Fragment key={index}>
-              <BreadcrumbItem>
-                {isLast ? (
-                  <BreadcrumbPage className="flex items-center gap-1.5">
-                    {item.icon}
-                    {item.label}
-                  </BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <Link 
-                      to={item.href || '#'}
-                      className="flex items-center gap-1.5"
-                    >
-                      {item.icon}
-                      {item.label}
-                    </Link>
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-              
-              {!isLast && (
-                <BreadcrumbSeparator>
-                  <ChevronRight className="h-4 w-4" />
-                </BreadcrumbSeparator>
-              )}
-            </React.Fragment>
-          );
-        })}
-      </BreadcrumbList>
-    </Breadcrumb>
+    <Breadcrumbs 
+      items={breadcrumbData} 
+      className={cn("", className)} 
+      {...props}
+    />
   );
 }
 

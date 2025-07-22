@@ -22,7 +22,8 @@ import { RevocationSystem } from "./RevocationSystem";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { logAction } from "@/utils/auditLogger";
+import { logAction } from "@/utils/monitoring";
+import { gerarProtocolo } from "@/utils/generators";
 
 const resolucaoSchema = z.object({
   template_id: z.string().optional(),
@@ -38,8 +39,20 @@ const resolucaoSchema = z.object({
 
 type ResolucaoFormData = z.infer<typeof resolucaoSchema>;
 
+interface ResolucaoData {
+  id?: string;
+  numero: string;
+  titulo: string;
+  conteudo: string;
+  status: string;
+  data_aprovacao?: string;
+  tipo: string;
+  considerandos?: Considerando[];
+  [key: string]: unknown;
+}
+
 interface ResolucaoFormProps {
-  resolucao?: any;
+  resolucao?: ResolucaoData;
   onClose: () => void;
 }
 
@@ -85,7 +98,7 @@ export function ResolucaoForm({ resolucao, onClose }: ResolucaoFormProps) {
   const { data: templates = [] } = useQuery({
     queryKey: ['resolucoes-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('resolucoes_templates')
         .select('*')
         .eq('ativo', true)
@@ -115,18 +128,18 @@ export function ResolucaoForm({ resolucao, onClose }: ResolucaoFormProps) {
   useEffect(() => {
     if (resolucao) {
       form.reset({
-        template_id: resolucao.template_id,
-        reuniao_id: resolucao.reuniao_id,
-        titulo: resolucao.titulo,
-        ementa: resolucao.ementa,
-        tipo: resolucao.tipo,
-        base_legal: resolucao.base_legal,
-        disposicoes_finais: resolucao.disposicoes_finais,
+        template_id: resolucao.template_id as string,
+        reuniao_id: resolucao.reuniao_id as string,
+        titulo: resolucao.titulo as string,
+        ementa: resolucao.ementa as string,
+        tipo: resolucao.tipo as "normativa" | "deliberativa" | "administrativa",
+        base_legal: resolucao.base_legal as string,
+        disposicoes_finais: resolucao.disposicoes_finais as string,
       });
 
       setConsiderandos(resolucao.considerandos || []);
-      setArtigos(resolucao.artigos || []);
-      setReferenciasLegais(resolucao.referencias_legais || []);
+      setArtigos((resolucao.artigos || []) as Artigo[]);
+      setReferenciasLegais((resolucao.referencias_legais || []) as ReferenciaLegal[]);
     }
   }, [resolucao, form]);
 
@@ -140,7 +153,7 @@ export function ResolucaoForm({ resolucao, onClose }: ResolucaoFormProps) {
       };
 
       if (resolucao) {
-        const { data: updatedResolucao, error } = await supabase
+        const { data: updatedResolucao, error } = await (supabase as any)
           .from('resolucoes')
           .update({
             ...resolucaoData,
@@ -156,19 +169,21 @@ export function ResolucaoForm({ resolucao, onClose }: ResolucaoFormProps) {
           'update_resolucao',
           'resolucoes',
           resolucao.id,
-          { numero: resolucao.numero, titulo: data.titulo }
+          { numero: resolucao.numero, versao: (resolucao.versao as number) + 1 }
         );
 
         return updatedResolucao;
       } else {
         // Gerar número da resolução
-        const { data: numero } = await supabase.rpc('gerar_proximo_numero_resolucao');
+        const { data: numero } = await supabase.rpc('generate_document_number', { doc_type: 'resolucao' });
+        const protocoloResolucao = `RES-${new Date().getFullYear()}-${numero}`;
 
-        const { data: newResolucao, error } = await supabase
+        const { data: newResolucao, error } = await (supabase as any)
           .from('resolucoes')
           .insert({
             ...resolucaoData,
             numero,
+            protocolo: protocoloResolucao,
             created_by: profile?.id,
           })
           .select()
@@ -180,7 +195,7 @@ export function ResolucaoForm({ resolucao, onClose }: ResolucaoFormProps) {
           'create_resolucao',
           'resolucoes',
           newResolucao.id,
-          { numero: newResolucao.numero, titulo: data.titulo }
+          { protocolo: protocoloResolucao, titulo: data.titulo }
         );
 
         return newResolucao;
@@ -234,7 +249,7 @@ export function ResolucaoForm({ resolucao, onClose }: ResolucaoFormProps) {
     setArtigos(artigos.filter(a => a.id !== id).map((a, index) => ({ ...a, numero: index + 1 })));
   };
 
-  const atualizarArtigo = (id: string, campo: keyof Artigo, valor: any) => {
+  const atualizarArtigo = (id: string, campo: keyof Artigo, valor: string | number | string[]) => {
     setArtigos(artigos.map(a => a.id === id ? { ...a, [campo]: valor } : a));
   };
 
@@ -335,7 +350,7 @@ export function ResolucaoForm({ resolucao, onClose }: ResolucaoFormProps) {
                       <SelectContent>
                         {templates.map((template) => (
                           <SelectItem key={template.id} value={template.id}>
-                            {template.nome}
+                            {template.titulo || template.nome || 'Template sem nome'}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -729,14 +744,14 @@ export function ResolucaoForm({ resolucao, onClose }: ResolucaoFormProps) {
           {/* Publicação Tab */}
           {resolucao && (
             <TabsContent value="publicacao">
-              <PublicationSystem resolucaoId={resolucao.id} resolucao={resolucao} />
+              <PublicationSystem resolucaoId={resolucao.id} resolucao={resolucao as any} />
             </TabsContent>
           )}
 
           {/* Revogação Tab */}
           {resolucao && (
             <TabsContent value="revogacao">
-              <RevocationSystem resolucaoId={resolucao.id} resolucao={resolucao} />
+              <RevocationSystem resolucaoId={resolucao.id} resolucao={resolucao as any} />
             </TabsContent>
           )}
         </Tabs>

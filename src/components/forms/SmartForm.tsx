@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useForm, UseFormReturn, FieldValues, FieldPath, Path } from "react-hook-form";
+import { useForm, UseFormReturn, FieldValues, FieldPath, Path, DefaultValues, ControllerRenderProps } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { 
@@ -31,13 +31,13 @@ export interface AutoSaveConfig {
   enabled: boolean;
   interval?: number; // ms
   key: string; // localStorage key
-  onSave?: (data: any) => Promise<void>;
+  onSave?: (data: Record<string, unknown>) => Promise<void>;
   onError?: (error: Error) => void;
 }
 
 export interface SmartFormProps<T extends FieldValues> {
   schema: z.ZodSchema<T>;
-  defaultValues?: Partial<T>;
+  defaultValues?: DefaultValues<T>;
   onSubmit: (data: T) => Promise<void>;
   autoSave?: AutoSaveConfig;
   className?: string;
@@ -287,6 +287,19 @@ export function SmartForm<T extends FieldValues>({
   );
 }
 
+// Generic type for form field components that accept basic form props
+type FormFieldComponent = React.ComponentType<{
+  placeholder?: string;
+  type?: string;
+  className?: string;
+  value?: string | number | readonly string[] | undefined;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onBlur?: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  name?: string;
+  disabled?: boolean;
+  id?: string;
+}>;
+
 // Enhanced form field components with validation feedback
 export function SmartFormField<T extends FieldValues>({
   form,
@@ -305,7 +318,7 @@ export function SmartFormField<T extends FieldValues>({
   description?: string;
   placeholder?: string;
   type?: string;
-  component?: React.ComponentType<any>;
+  component?: FormFieldComponent;
   required?: boolean;
   className?: string;
 }) {

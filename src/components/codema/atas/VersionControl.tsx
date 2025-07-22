@@ -20,17 +20,54 @@ interface VersionControlProps {
   currentVersion: number;
 }
 
-interface AtaVersion {
+interface RawAtaVersion {
   id: string;
   versao: number;
-  conteudo: any;
+  conteudo: Record<string, unknown>;
   modificacoes: string;
   created_at: string;
   created_by: string;
-  profiles: {
-    full_name: string;
-    role: string;
-  };
+}
+
+interface RawProfile {
+  id: string;
+  full_name: string;
+  role: string;
+}
+
+// Define the items within the content structure
+interface PautaItem {
+  titulo: string;
+  descricao: string;
+}
+
+interface DeliberacaoItem {
+  status: string;
+  numero: string;
+  titulo: string;
+  descricao: string;
+}
+
+interface AnexoItem {
+  nome: string;
+  url?: string;
+}
+
+// Type for Supabase response to avoid 'any' usage
+type SupabaseResponse<T> = {
+  data: T | null;
+  error: Error | null;
+};
+
+// Resulting enhanced version type - matches how it's used in the code
+interface AtaVersion {
+  id: string;
+  versao: number;
+  conteudo: Record<string, unknown>;
+  modificacoes: string;
+  created_at: string;
+  created_by: string;
+  profiles: RawProfile | null;
 }
 
 export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
@@ -41,18 +78,77 @@ export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
   // Buscar versões da ata
   const { data: versions = [], isLoading } = useQuery({
     queryKey: ['ata-versions', ataId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('atas_versoes')
-        .select(`
-          *,
-          profiles:created_by(full_name, role)
-        `)
-        .eq('ata_id', ataId)
-        .order('versao', { ascending: false });
+    queryFn: async (): Promise<AtaVersion[]> => {
+      try {
+        // Step 1: Get versions data with proper typing
+        const versionsResponse = await (supabase as unknown as {
+          from: (table: string) => {
+            select: (columns: string) => {
+              eq: (column: string, value: string) => {
+                order: (column: string, options: { ascending: boolean }) => Promise<SupabaseResponse<RawAtaVersion[]>>;
+              };
+            };
+          };
+        })
+          .from('atas_versoes')
+          .select('id, versao, conteudo, modificacoes, created_at, created_by')
+          .eq('ata_id', ataId)
+          .order('versao', { ascending: false });
 
-      if (error) throw error;
-      return data as AtaVersion[];
+        if (versionsResponse.error) throw versionsResponse.error;
+        
+        const versionsData = versionsResponse.data;
+        
+        if (!versionsData || versionsData.length === 0) {
+          return [];
+        }
+
+        // Step 2: Get profiles data separately
+        const userIds = versionsData.map((v: RawAtaVersion) => v.created_by).filter(Boolean);
+        
+        if (userIds.length === 0) {
+          return versionsData.map((version: RawAtaVersion) => ({
+            id: version.id,
+            versao: version.versao,
+            conteudo: version.conteudo || {},
+            modificacoes: version.modificacoes || '',
+            created_at: version.created_at,
+            created_by: version.created_by,
+            profiles: null
+          })) as AtaVersion[];
+        }
+
+        const profilesResponse = await (supabase as unknown as {
+          from: (table: string) => {
+            select: (columns: string) => {
+              in: (column: string, values: string[]) => Promise<SupabaseResponse<RawProfile[]>>;
+            };
+          };
+        })
+          .from('profiles')
+          .select('id, full_name, role')
+          .in('id', userIds);
+
+        if (profilesResponse.error) throw profilesResponse.error;
+        
+        const profilesData = profilesResponse.data;
+
+        // Step 3: Combine data manually with explicit typing
+        const result: AtaVersion[] = versionsData.map((version: RawAtaVersion) => ({
+          id: version.id,
+          versao: version.versao,
+          conteudo: version.conteudo || {},
+          modificacoes: version.modificacoes || '',
+          created_at: version.created_at,
+          created_by: version.created_by,
+          profiles: profilesData?.find((p: RawProfile) => p.id === version.created_by) || null
+        }));
+
+        return result;
+      } catch (error) {
+        console.error('Error fetching ata versions:', error);
+        return [];
+      }
     },
   });
 
@@ -74,6 +170,22 @@ export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
     return roleMap[role] || role;
   };
 
+  // Helper function to safely convert unknown to array
+  const ensureArray = (value: unknown): unknown[] => {
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return [];
+  };
+
+  // Helper function to ensure unknown values are safely rendered as strings
+  const ensureString = (value: unknown): string => {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value);
+  };
+
   const compareVersions = (v1: number, v2: number) => {
     const version1 = versions.find(v => v.versao === v1);
     const version2 = versions.find(v => v.versao === v2);
@@ -81,21 +193,30 @@ export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
     if (!version1 || !version2) return null;
 
     const changes = {
-      pauta: compareArrays(version1.conteudo.pauta || [], version2.conteudo.pauta || []),
-      presentes: compareArrays(version1.conteudo.presentes || [], version2.conteudo.presentes || []),
-      deliberacoes: compareArrays(version1.conteudo.deliberacoes || [], version2.conteudo.deliberacoes || []),
+      pauta: compareArrays(
+        ensureArray(version1.conteudo.pauta), 
+        ensureArray(version2.conteudo.pauta)
+      ),
+      presentes: compareArrays(
+        ensureArray(version1.conteudo.presentes), 
+        ensureArray(version2.conteudo.presentes)
+      ),
+      deliberacoes: compareArrays(
+        ensureArray(version1.conteudo.deliberacoes), 
+        ensureArray(version2.conteudo.deliberacoes)
+      ),
       observacoes: version1.conteudo.observacoes !== version2.conteudo.observacoes,
     };
 
     return changes;
   };
 
-  const compareArrays = (arr1: any[], arr2: any[]) => {
+  const compareArrays = (arr1: unknown[], arr2: unknown[]) => {
     if (arr1.length !== arr2.length) return true;
     return JSON.stringify(arr1) !== JSON.stringify(arr2);
   };
 
-  const formatJsonContent = (content: any) => {
+  const formatJsonContent = (content: unknown) => {
     return JSON.stringify(content, null, 2);
   };
 
@@ -238,7 +359,7 @@ export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
                               <TabsContent value="pauta">
                                 <ScrollArea className="h-[400px]">
                                   <div className="space-y-2">
-                                    {(version.conteudo.pauta || []).map((item: any, index: number) => (
+                                    {ensureArray(version.conteudo.pauta).map((item: PautaItem, index: number) => (
                                       <Card key={index}>
                                         <CardContent className="pt-4">
                                           <h4 className="font-medium">{item.titulo}</h4>
@@ -255,10 +376,12 @@ export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
                               <TabsContent value="presentes">
                                 <ScrollArea className="h-[400px]">
                                   <div className="space-y-2">
-                                    {(version.conteudo.presentes || []).map((presente: any, index: number) => (
-                                      <div key={index} className="flex items-center justify-between p-2 border rounded">
-                                        <span>{presente.nome}</span>
-                                        <Badge variant="outline">{presente.cargo}</Badge>
+                                    {ensureArray(version.conteudo.presentes).map((presente: { nome: string; cargo: string }, index: number) => (
+                                      <div key={index} className="flex justify-between items-center py-2 border-b">
+                                        <div>
+                                          <h4 className="font-medium">{presente.nome}</h4>
+                                          <p className="text-sm text-muted-foreground">{presente.cargo}</p>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
@@ -268,15 +391,21 @@ export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
                               <TabsContent value="deliberacoes">
                                 <ScrollArea className="h-[400px]">
                                   <div className="space-y-2">
-                                    {(version.conteudo.deliberacoes || []).map((delib: any, index: number) => (
+                                    {ensureArray(version.conteudo.deliberacoes).map((deliberacao: DeliberacaoItem, index: number) => (
                                       <Card key={index}>
                                         <CardContent className="pt-4">
-                                          <p className="text-sm">{delib.decisao}</p>
-                                          <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                                            <span>Favor: {delib.votos_favor}</span>
-                                            <span>Contra: {delib.votos_contra}</span>
-                                            <span>Abstenções: {delib.abstencoes}</span>
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <Badge variant={deliberacao.status === 'aprovado' ? 'default' : (deliberacao.status === 'reprovado' ? 'destructive' : 'secondary')}>
+                                              {deliberacao.status}
+                                            </Badge>
+                                            <span className="text-sm text-muted-foreground">
+                                              {deliberacao.numero}
+                                            </span>
                                           </div>
+                                          <h4 className="font-medium">{deliberacao.titulo}</h4>
+                                          <p className="text-sm text-muted-foreground mt-1">
+                                            {deliberacao.descricao}
+                                          </p>
                                         </CardContent>
                                       </Card>
                                     ))}
@@ -288,7 +417,7 @@ export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
                                 <ScrollArea className="h-[400px]">
                                   <div className="p-4 bg-gray-50 rounded-lg">
                                     <p className="text-sm whitespace-pre-wrap">
-                                      {version.conteudo.observacoes || 'Nenhuma observação registrada'}
+                                      {ensureString(version.conteudo.observacoes) || 'Nenhuma observação registrada'}
                                     </p>
                                   </div>
                                 </ScrollArea>

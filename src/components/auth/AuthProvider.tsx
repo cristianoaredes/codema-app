@@ -1,5 +1,5 @@
 import React from 'react';
-import { AuthContext, useAuthState } from '@/hooks/useAuth';
+import { AuthContext, useAuthState } from '@/hooks';
 
 interface AuthProviderProps {
   children: React.ReactNode;

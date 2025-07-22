@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Search, Filter, Download, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui';
+import { Input } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { Badge } from '@/components/ui';
 import {
   Table,
   TableBody,
@@ -11,15 +11,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/components/ui';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useAuditLogs } from '@/hooks/useAuditLogs';
+} from '@/components/ui';
+import { useAuditLogs } from '@/hooks';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 

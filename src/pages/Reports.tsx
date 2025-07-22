@@ -1,11 +1,7 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState, useCallback } from "react";
+import { useAuth, useToast } from "@/hooks";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { 
   MapPin, 
   Calendar,
@@ -15,7 +11,6 @@ import {
   Eye,
   Plus
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 
 interface Report {
@@ -55,12 +50,7 @@ const Reports = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchReports();
-    fetchCategories();
-  }, []);
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("reports")
@@ -83,7 +73,12 @@ const Reports = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchReports();
+    fetchCategories();
+  }, [fetchReports]);
 
   const fetchCategories = async () => {
     try {

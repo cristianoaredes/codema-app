@@ -1,15 +1,8 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth, useToast } from "@/hooks";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, RadioGroup, RadioGroupItem } from "@/components/ui";
 import { MapPin, FileText, Send, ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useNavigate, Link } from "react-router-dom";
 
 interface ServiceCategory {
@@ -34,11 +27,7 @@ const CreateReport = () => {
     priority: "medium"
   });
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("service_categories")
@@ -55,7 +44,11 @@ const CreateReport = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LucideIcon } from "lucide-react";
 import { 
   Home, 
   FileText, 
@@ -18,10 +19,24 @@ import {
   Archive,
   ClipboardCheck,
   MessageSquare,
-  LogOut
+  LogOut,
+  Database,
+  Book,
+  Hash
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { useLocation, NavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+
+interface MenuItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  requireAdmin?: boolean;
+  requireCODEMA?: boolean;
+  items?: MenuItem[];
+}
+
 import { useToast } from "@/hooks/use-toast";
 
 import {
@@ -62,11 +77,12 @@ export function AppSidebar() {
     }
   };
 
-  const isActive = (path: string) => currentPath === path;
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive 
-      ? "bg-primary text-primary-foreground font-medium" 
-      : "text-sidebar-foreground hover:bg-accent hover:text-accent-foreground transition-colors";
+  // Função corrigida para determinar classes CSS baseadas no estado ativo
+  const getNavLinkClass = ({ isActive }: { isActive: boolean }) => {
+    return isActive 
+      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm" 
+      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
+  };
 
   // Public navigation items
   const publicItems = [
@@ -85,6 +101,7 @@ export function AppSidebar() {
     { title: "Reuniões", url: "/reunioes", icon: Calendar, requireCODEMA: true },
     { title: "Atas", url: "/codema/atas", icon: FileText, requireCODEMA: true },
     { title: "Resoluções", url: "/codema/resolucoes", icon: Gavel, requireCODEMA: true },
+    { title: "Protocolos", url: "/codema/protocolos", icon: Hash, requireCODEMA: true },
     { title: "Processos", url: "/processos", icon: ClipboardCheck, requireCODEMA: true },
     { title: "Documentos", url: "/documentos", icon: FolderOpen, requireCODEMA: true },
     { title: "FMA", url: "/fma", icon: DollarSign, requireCODEMA: true },
@@ -101,6 +118,8 @@ export function AppSidebar() {
     { title: "Conselheiros", url: "/codema/conselheiros", icon: Users, requireAdmin: true },
     { title: "Auditoria", url: "/codema/auditoria", icon: Eye, requireAdmin: true },
     { title: "Usuários", url: "/admin/users", icon: UserCog, requireAdmin: true },
+    { title: "Dados de Exemplo", url: "/admin/data-seeder", icon: Database, requireAdmin: true },
+    { title: "Documentação", url: "/admin/documentation", icon: Book, requireAdmin: true },
   ];
 
   // User profile
@@ -109,7 +128,7 @@ export function AppSidebar() {
   ];
 
   // Filter items based on access permissions
-  const filterItemsByAccess = (items: any[]) => {
+  const filterItemsByAccess = (items: MenuItem[]) => {
     return items.filter(item => {
       if (item.requireAdmin && !hasAdminAccess) return false;
       if (item.requireCODEMA && !hasCODEMAAccess) return false;
@@ -117,33 +136,66 @@ export function AppSidebar() {
     });
   };
 
+  // Get human-readable role name
+  const getRoleDisplayName = (role: string | null) => {
+    switch (role) {
+      case 'admin':
+        return 'Administrador';
+      case 'secretario':
+        return 'Secretário';
+      case 'presidente':
+        return 'Presidente';
+      case 'conselheiro_titular':
+        return 'Conselheiro Titular';
+      case 'conselheiro_suplente':
+        return 'Conselheiro Suplente';
+      case 'moderator':
+        return 'Moderador';
+      case 'citizen':
+        return 'Cidadão';
+      default:
+        return 'Cidadão';
+    }
+  };
+
   // Determine which items to show based on user status and role
   const getNavigationItems = () => {
     if (!profile) {
-      return { public: publicItems };
+      return { 
+        public: publicItems,
+        main: [],
+        codema: [],
+        general: [],
+        admin: [],
+        profile: []
+      };
     }
 
-    const items = {
+    return {
+      public: [],
       main: mainItems,
       codema: filterItemsByAccess(codemaItems),
       general: generalItems,
       admin: filterItemsByAccess(adminItems),
       profile: profileItems
     };
-
-    return items;
   };
 
   const navigationGroups = getNavigationItems();
 
-  const renderMenuItems = (items: any[]) => (
+  // Função corrigida para renderizar itens do menu
+  const renderMenuItems = (items: MenuItem[]) => (
     <SidebarMenu>
       {items.map((item) => (
         <SidebarMenuItem key={item.title}>
           <SidebarMenuButton asChild>
-            <NavLink to={item.url} end className={getNavCls}>
+            <NavLink 
+              to={item.url} 
+              end 
+              className={getNavLinkClass}
+            >
               <item.icon className="mr-2 h-4 w-4" />
-              {!collapsed && <span>{item.title}</span>}
+              <span>{item.title}</span>
             </NavLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -162,7 +214,7 @@ export function AppSidebar() {
         {/* Public Items (when not logged in) */}
         {!profile && navigationGroups.public && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/80 font-semibold">Portal Municipal</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Portal Municipal</SidebarGroupLabel>
             <SidebarGroupContent>
               {renderMenuItems(navigationGroups.public)}
             </SidebarGroupContent>
@@ -172,7 +224,7 @@ export function AppSidebar() {
         {/* Main Dashboard (when logged in) */}
         {profile && navigationGroups.main && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/80 font-semibold">Principal</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Principal</SidebarGroupLabel>
             <SidebarGroupContent>
               {renderMenuItems(navigationGroups.main)}
             </SidebarGroupContent>
@@ -182,7 +234,7 @@ export function AppSidebar() {
         {/* CODEMA Core Functions */}
         {profile && navigationGroups.codema && navigationGroups.codema.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/80 font-semibold">CODEMA</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">CODEMA</SidebarGroupLabel>
             <SidebarGroupContent>
               {renderMenuItems(navigationGroups.codema)}
             </SidebarGroupContent>
@@ -192,7 +244,7 @@ export function AppSidebar() {
         {/* General Functions */}
         {profile && navigationGroups.general && navigationGroups.general.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/80 font-semibold">Serviços</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Serviços</SidebarGroupLabel>
             <SidebarGroupContent>
               {renderMenuItems(navigationGroups.general)}
             </SidebarGroupContent>
@@ -202,7 +254,7 @@ export function AppSidebar() {
         {/* Administrative Functions */}
         {profile && navigationGroups.admin && navigationGroups.admin.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/80 font-semibold">Administração</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Administração</SidebarGroupLabel>
             <SidebarGroupContent>
               {renderMenuItems(navigationGroups.admin)}
             </SidebarGroupContent>
@@ -212,7 +264,7 @@ export function AppSidebar() {
         {/* User Profile */}
         {profile && navigationGroups.profile && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/80 font-semibold">Conta</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Conta</SidebarGroupLabel>
             <SidebarGroupContent>
               {renderMenuItems(navigationGroups.profile)}
             </SidebarGroupContent>
@@ -221,14 +273,14 @@ export function AppSidebar() {
 
         {/* User Info and Logout at Bottom */}
         {profile && (
-          <SidebarGroup className="mt-auto border-t border-sidebar-border pt-2">
+          <SidebarGroup className="mt-auto border-t border-sidebar-border pt-2" data-tour="profile">
             <SidebarGroupContent>
               {!collapsed ? (
                 <div className="space-y-3">
                   {/* User Info */}
-                  <div className="px-3 py-3 text-sm bg-sidebar-accent/30 rounded-lg mx-2">
+                  <div className="px-3 py-3 text-sm bg-sidebar-accent/50 rounded-lg mx-2">
                     <div className="flex items-center space-x-3 mb-2">
-                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
+                      <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center text-sidebar-primary-foreground text-sm font-medium">
                         {(profile.full_name || profile.email || "U")[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -240,13 +292,8 @@ export function AppSidebar() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-xs text-sidebar-foreground/70 capitalize px-2 py-1 bg-primary/10 rounded-md text-center">
-                      {profile.role === 'admin' ? 'Administrador' : 
-                       profile.role === 'secretario' ? 'Secretário' :
-                       profile.role === 'presidente' ? 'Presidente' :
-                       profile.role === 'conselheiro_titular' ? 'Conselheiro Titular' :
-                       profile.role === 'conselheiro_suplente' ? 'Conselheiro Suplente' :
-                       profile.role === 'moderator' ? 'Moderador' : 'Cidadão'}
+                    <div className="text-xs text-sidebar-foreground/80 capitalize px-2 py-1 bg-sidebar-primary/10 rounded-md text-center">
+                      {getRoleDisplayName(profile.role)}
                     </div>
                   </div>
                   
@@ -267,7 +314,7 @@ export function AppSidebar() {
                 <div className="space-y-2">
                   {/* User Avatar */}
                   <div className="px-2 py-2 flex justify-center">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
+                    <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center text-sidebar-primary-foreground text-sm font-medium">
                       {(profile.full_name || profile.email || "U")[0].toUpperCase()}
                     </div>
                   </div>

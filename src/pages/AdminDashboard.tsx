@@ -66,17 +66,6 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is admin/moderator
-  if (profile && !['admin', 'moderator'].includes(profile.role)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  useEffect(() => {
-    if (user && profile && ['admin', 'moderator'].includes(profile.role)) {
-      fetchAdminData();
-    }
-  }, [user, profile]);
-
   const fetchAdminData = async () => {
     try {
       // Fetch all reports with user and category data
@@ -140,7 +129,7 @@ const AdminDashboard = () => {
 
   const updateReportStatus = async (reportId: string, newStatus: string) => {
     try {
-      const updateData: any = { status: newStatus };
+      const updateData: { status: string; resolved_at?: string } = { status: newStatus };
       if (newStatus === 'resolved') {
         updateData.resolved_at = new Date().toISOString();
       }

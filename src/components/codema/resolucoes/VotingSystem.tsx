@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { logAction } from "@/utils/auditLogger";
+import { logAction } from "@/utils/monitoring";
 
 interface VotingSystemProps {
   resolucaoId: string;
