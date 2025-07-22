@@ -6,7 +6,7 @@ import App from './App.tsx'
 // Expor funções utilitárias globalmente para debug via console
 import { updateUserToAdmin, checkUser, listAllAdmins } from './utils/user'
 import { forceUserRefresh, checkUserDataConsistency, quickUserStatus } from './utils/auth'
-import { debugMagicLink, checkSupabaseAuthConfig, testPasswordReset, checkSMTPConfiguration } from './utils/auth'
+import { checkSupabaseAuthConfig, testPasswordReset, checkSMTPConfiguration } from './utils/auth'
 import { showRateLimitStatus, clearEmailAttempts, canSendEmail } from './utils/email'
 
 // Adicionar ao window para uso no console
@@ -18,7 +18,6 @@ declare global {
     forceUserRefresh: typeof forceUserRefresh;
     checkUserDataConsistency: typeof checkUserDataConsistency;
     quickUserStatus: typeof quickUserStatus;
-    debugMagicLink: typeof debugMagicLink;
     checkSupabaseAuthConfig: typeof checkSupabaseAuthConfig;
     testPasswordReset: typeof testPasswordReset;
     checkSMTPConfiguration: typeof checkSMTPConfiguration;
@@ -35,7 +34,6 @@ window.listAllAdmins = listAllAdmins;
 window.forceUserRefresh = forceUserRefresh;
 window.checkUserDataConsistency = checkUserDataConsistency;
 window.quickUserStatus = quickUserStatus;
-window.debugMagicLink = debugMagicLink;
 window.checkSupabaseAuthConfig = checkSupabaseAuthConfig;
 window.testPasswordReset = testPasswordReset;
 window.checkSMTPConfiguration = checkSMTPConfiguration;
@@ -53,9 +51,8 @@ console.log('  - quickUserStatus() - Status rápido do usuário atual');
 console.log('  - checkUserDataConsistency() - Verifica consistência dos dados');
 console.log('  - forceUserRefresh() - Força refresh da sessão');
 console.log('');
-console.log('📧 DEBUG DE EMAIL/MAGIC LINK:');
+console.log('📧 DEBUG DE EMAIL:');
 console.log('  - checkSMTPConfiguration() - 📧 Verifica se SMTP customizado está configurado');
-console.log('  - debugMagicLink(email) - 🔗 Testa magic link com diferentes configs');
 console.log('  - checkSupabaseAuthConfig() - ⚙️ Verifica configurações do Supabase');
 console.log('  - testPasswordReset(email) - 🔑 Testa password reset para comparação');
 console.log('');

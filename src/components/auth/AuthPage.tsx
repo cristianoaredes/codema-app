@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { createPersistentSession } from "@/utils/auth";
 import { useNavigate } from "react-router-dom";
-import { Loader2, ShieldCheck, BarChart3, Zap, Mail } from "lucide-react";
+import { Loader2, ShieldCheck, BarChart3, Zap } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import GoogleIcon from "@/components/icons/GoogleIcon";
 
@@ -27,7 +27,6 @@ export function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [rememberMeChecked, setRememberMeChecked] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [isMagicLinkLoading, setIsMagicLinkLoading] = useState(false);
   
   const { toast } = useToast();
   const { setRememberMe } = useAuth();
@@ -79,26 +78,6 @@ export function AuthPage() {
       setIsLoginView(true);
     }
     setIsLoading(false);
-  };
-
-  const handleMagicLink = async () => {
-    if (!email) {
-      toast({ title: 'Email necessário', description: 'Por favor, insira seu email para receber o link de acesso.', variant: 'destructive' });
-      return;
-    }
-    setIsMagicLinkLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) {
-      toast({ title: 'Erro ao enviar link', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Link de acesso enviado!', description: 'Verifique sua caixa de entrada.' });
-    }
-    setIsMagicLinkLoading(false);
   };
 
   const handlePasswordReset = async () => {
@@ -159,10 +138,6 @@ export function AuthPage() {
                     </div>
                     <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : 'Entrar com Senha'}</Button>
                   </form>
-                  <Separator>OU</Separator>
-                  <Button variant="outline" className="w-full" onClick={handleMagicLink} disabled={isMagicLinkLoading}>
-                    {isMagicLinkLoading ? <Loader2 className="animate-spin" /> : <><Mail className="mr-2 h-4 w-4" /> Enviar link de acesso por email</>}
-                  </Button>
                 </div>
               ) : (
                 <form onSubmit={handleSignup} className="space-y-4">
