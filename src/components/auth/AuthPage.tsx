@@ -136,7 +136,7 @@ const AuthPage = () => {
           title: "Login realizado com sucesso!",
           description: rememberMeChecked 
             ? "Bem-vindo! Você será lembrado neste dispositivo."
-            : "Bem-vindo ao Sistema Municipal de Itanhomi"
+            : "Bem-vindo à plataforma MuniConnect"
         });
         navigate("/");
       }
@@ -271,10 +271,10 @@ const AuthPage = () => {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <img src={logo} alt="CODEMA Logo" className="h-10 w-auto" />
+              <img src={logo} alt="MuniConnect Logo" className="h-10 w-auto" />
               <div className="border-l border-gray-200 pl-4">
-                <h1 className="text-xl font-semibold text-gray-900">CODEMA</h1>
-                <p className="text-sm text-gray-600">Itanhomi - MG</p>
+                <h1 className="text-xl font-semibold text-gray-900">MuniConnect</h1>
+                <p className="text-sm text-gray-600">Gestão de Conselhos Municipais</p>
               </div>
             </div>
             <Button 
@@ -295,9 +295,9 @@ const AuthPage = () => {
           {/* Card Principal */}
           <Card className="shadow-2xl border-0 backdrop-blur-sm bg-white/95">
             <CardHeader className="text-center pb-6">
-              <CardTitle className="text-3xl font-bold text-gray-900">Acesse sua conta</CardTitle>
+              <CardTitle className="text-3xl font-bold text-gray-900">Acesse sua Plataforma</CardTitle>
               <CardDescription className="text-lg text-gray-600">
-                Entre ou cadastre-se para acessar o sistema municipal
+                Entre com suas credenciais para gerenciar seus conselhos.
               </CardDescription>
             </CardHeader>
             
@@ -548,7 +548,7 @@ const AuthPage = () => {
           {/* Footer */}
           <div className="text-center mt-8">
             <p className="text-sm text-gray-600">
-              © 2024 CODEMA Itanhomi - Sistema Municipal
+              © 2024 MuniConnect - Gestão Inteligente para Municípios
             </p>
           </div>
         </div>

@@ -1,13 +1,13 @@
 {
-  "name": "CODEMA Itanhomi - Portal Municipal",
-  "short_name": "CODEMA Itanhomi",
-  "description": "Portal Municipal de Itanhomi-MG. Sistema integrado do Conselho de Defesa do Meio Ambiente",
+  "name": "MuniConnect - Gestão de Conselhos Municipais",
+  "short_name": "MuniConnect",
+  "description": "Plataforma SaaS para gestão de Conselhos Municipais. Aumente a transparência, eficiência e receita.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1a5634",
   "orientation": "portrait-primary",
-  "categories": ["government", "environment", "productivity"],
+  "categories": ["government", "business", "productivity"],
   "lang": "pt-BR",
   "scope": "/",
   "icons": [

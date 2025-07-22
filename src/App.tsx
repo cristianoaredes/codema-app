@@ -63,23 +63,18 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           {/* Enhanced Header with Search */}
           <header className="h-16 flex items-center border-b bg-card px-4 sm:px-6 sticky top-0 z-20">
             <SidebarTrigger className="mr-4" />
-            <div className="flex-1 flex items-center justify-between">
-              <div className="flex-1">
-                <Header />
-              </div>
-              <div className="flex items-center gap-4">
-                {/* Global Search */}
-                <GlobalSearch 
-                  variant="inline" 
-                  placeholder="Pesquisar relatórios, atas, reuniões..."
-                  className="w-80 hidden md:block"
-                />
-                {/* Search trigger for mobile */}
-                <SearchTrigger 
-                  onClick={commandPalette.toggle}
-                  className="md:hidden"
-                />
-              </div>
+            <div className="flex-1 flex items-center">
+              {/* Global Search */}
+              <GlobalSearch 
+                variant="inline" 
+                placeholder="Pesquisar relatórios, atas, reuniões..."
+                className="w-96"
+              />
+              {/* Search trigger for mobile */}
+              <SearchTrigger 
+                onClick={commandPalette.toggle}
+                className="md:hidden ml-auto"
+              />
             </div>
           </header>
 

@@ -2,26 +2,27 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
-import logo from "@/assets/logo.png";
+import { Link, useNavigate } from "react-router-dom";
+import logo from "@/assets/logo_with_text.png";
 
-const Header = () => {
+export function Header() {
   const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
     try {
       await signOut();
       toast({
-        title: "Desconectado com sucesso",
-        description: "Você foi desconectado da sua conta.",
+        title: "Logout realizado",
+        description: "Você foi desconectado com segurança.",
       });
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
+      navigate('/auth');
+    } catch (error: any) {
       toast({
-        title: "Erro",
-        description: "Não foi possível desconectar. Tente novamente.",
-        variant: "destructive"
+        title: "Erro no logout",
+        description: error.message || "Não foi possível fazer o logout.",
+        variant: "destructive",
       });
     }
   };
@@ -68,10 +69,10 @@ const Header = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-200">
-              <img src={logo} alt="CODEMA Logo" className="w-7 h-7 object-contain" />
+              <img src={logo} alt="MuniConnect Logo" className="w-7 h-7 object-contain" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">CODEMA</h1>
+              <h1 className="text-xl font-bold text-foreground">MuniConnect</h1>
               <p className="text-xs text-muted-foreground">Itanhomi - MG</p>
             </div>
           </div>
