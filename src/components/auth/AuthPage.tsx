@@ -268,7 +268,7 @@ export function AuthPage() {
     <div className="min-h-screen w-full bg-gradient-to-br from-green-50 via-emerald-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-            <img src={logo} alt="MuniConnect Logo" className="h-24 w-auto mx-auto" />
+            <img src={logo} alt="MuniConnect Logo" className="h-32 w-auto mx-auto" />
         </div>
 
         <Card className="shadow-2xl border-0 backdrop-blur-sm bg-white/95">
