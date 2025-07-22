@@ -1,0 +1,35 @@
+{
+  "name": "CODEMA Itanhomi - Portal Municipal",
+  "short_name": "CODEMA Itanhomi",
+  "description": "Portal Municipal de Itanhomi-MG. Sistema integrado do Conselho de Defesa do Meio Ambiente",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a5634",
+  "orientation": "portrait-primary",
+  "categories": ["government", "environment", "productivity"],
+  "lang": "pt-BR",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-48x48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    }
+  ]
+} 
