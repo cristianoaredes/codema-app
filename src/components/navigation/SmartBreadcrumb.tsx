@@ -44,30 +44,42 @@ const routeLabels: Record<string, string> = {
 };
 
 function generateBreadcrumbs(pathname: string): BreadcrumbItemConfig[] {
-  // Don't show breadcrumbs on home page
+  const breadcrumbs: BreadcrumbItemConfig[] = [];
+  
+  // Start with the root breadcrumb
+  breadcrumbs.push({ 
+    label: routeLabels['/'] || 'Início', 
+    href: '/', 
+  });
+  
+  // Don't show more breadcrumbs on home page
   if (pathname === '/') {
-    return [];
+    // Return only home if it's the current page
+    return [{ ...breadcrumbs[0], href: undefined, icon: <Home className="h-4 w-4" /> }];
   }
 
-  const paths = pathname.split('/').filter(Boolean);
-  const breadcrumbs: BreadcrumbItemConfig[] = [
-    { 
-      label: 'Início', 
-      href: '/', 
-      icon: <Home className="h-4 w-4" /> 
-    }
-  ];
-
+  const pathSegments = pathname.split('/').filter(Boolean);
   let currentPath = '';
-  for (const path of paths) {
-    currentPath += `/${path}`;
+
+  pathSegments.forEach(segment => {
+    currentPath += `/${segment}`;
     const label = routeLabels[currentPath] || 
-      path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
+                  segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
     
+    // Avoid duplicating the "Início" label if the logic somehow generates it again
+    if (currentPath === '/' && breadcrumbs.length > 0) return;
+
     breadcrumbs.push({
       label,
       href: currentPath
     });
+  });
+
+  // Add home icon to the first element and mark last element
+  if (breadcrumbs.length > 0) {
+    breadcrumbs[0].icon = <Home className="h-4 w-4" />;
+    // The last item should not have a link
+    breadcrumbs[breadcrumbs.length - 1].href = undefined;
   }
 
   return breadcrumbs;
