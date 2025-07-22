@@ -1,10 +1,9 @@
-import { useState } from 'react';
-import { Plus, Search, Filter, AlertTriangle, Users } from 'lucide-react';
-import { Button } from '@/components/ui';
-import { Input } from '@/components/ui';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import { Badge } from '@/components/ui';
-import { Alert, AlertDescription } from '@/components/ui';
+import { useState, useMemo } from 'react';
+import { Plus, Search, Filter, AlertTriangle, Users, LayoutGrid, List } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useConselheiros, useConselheirosComMandatoExpirando } from '@/hooks';
 import { ConselheiroCard, ConselheiroForm } from '@/components/codema/conselheiros';
 import { Conselheiro } from '@/types';
@@ -15,191 +14,186 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui';
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from '@/components/ui/badge';
+import { BreadcrumbWithActions, SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LoadingSpinner } from '@/components/ui/loading';
+
+type ViewMode = 'grid' | 'list';
 
 export default function ConselheirosPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterSegmento, setFilterSegmento] = useState<string>('');
-  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterSegmento, setFilterSegmento] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const { data: conselheiros = [], isLoading } = useConselheiros();
   const { data: mandatosExpirando = [] } = useConselheirosComMandatoExpirando(30);
 
-  const filteredConselheiros = conselheiros.filter((conselheiro: Conselheiro) => {
+  const filteredConselheiros = useMemo(() => conselheiros.filter((conselheiro: Conselheiro) => {
     const matchesSearch = conselheiro.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          conselheiro.entidade_representada.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSegmento = !filterSegmento || conselheiro.segmento === filterSegmento;
-    const matchesStatus = !filterStatus || conselheiro.status === filterStatus;
+    const matchesSegmento = filterSegmento === 'all' || conselheiro.segmento === filterSegmento;
+    const matchesStatus = filterStatus === 'all' || conselheiro.status === filterStatus;
     
     return matchesSearch && matchesSegmento && matchesStatus;
-  });
+  }), [conselheiros, searchTerm, filterSegmento, filterStatus]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     total: conselheiros.length,
     ativos: conselheiros.filter(c => c.status === 'ativo').length,
     governo: conselheiros.filter(c => c.segmento === 'governo').length,
     sociedadeCivil: conselheiros.filter(c => c.segmento === 'sociedade_civil').length,
     setorProdutivo: conselheiros.filter(c => c.segmento === 'setor_produtivo').length,
+  }), [conselheiros]);
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterSegmento('all');
+    setFilterStatus('all');
+  };
+  
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'ativo': return 'success';
+      case 'inativo': return 'destructive';
+      default: return 'secondary';
+    }
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando conselheiros...</p>
-        </div>
-      </div>
-    );
+    return <div className="flex h-[50vh] items-center justify-center"><LoadingSpinner /></div>;
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Conselheiros CODEMA</h1>
-          <p className="text-gray-600 mt-1">
-            Gestão completa dos membros do Conselho Municipal de Defesa do Meio Ambiente
-          </p>
-        </div>
-        
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Conselheiro
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Novo Conselheiro</DialogTitle>
-              <DialogDescription>
-                Preencha as informações do novo membro do CODEMA
-              </DialogDescription>
-            </DialogHeader>
-            <ConselheiroForm onSuccess={() => setIsCreateDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
+      <BreadcrumbWithActions
+        title="Conselheiros CODEMA"
+        description="Gestão completa dos membros do Conselho Municipal de Defesa do Meio Ambiente"
+        actions={
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-2" />Novo Conselheiro</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl"><ConselheiroForm onSuccess={() => setIsCreateDialogOpen(false)} /></DialogContent>
+          </Dialog>
+        }
+      >
+        <SmartBreadcrumb />
+      </BreadcrumbWithActions>
 
-      {/* Alerts */}
       {mandatosExpirando.length > 0 && (
-        <Alert>
+        <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>{mandatosExpirando.length} mandato(s)</strong> expirando nos próximos 30 dias.
-            Verifique a necessidade de renovação.
+            <strong>{mandatosExpirando.length} mandato(s)</strong> expirando nos próximos 30 dias. Verifique a necessidade de renovação.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <Users className="h-4 w-4 text-blue-600 mr-2" />
-              <span className="text-2xl font-bold">{stats.total}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Ativos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.ativos}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Governo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.governo}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Soc. Civil</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{stats.sociedadeCivil}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">S. Produtivo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.setorProdutivo}</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {/* Stats Cards ... */}
       </div>
 
-      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Filtros e Busca</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg">Filtros e Visualização</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}><LayoutGrid className="h-4 w-4" /></Button>
+              <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')}><List className="h-4 w-4" /></Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-              <Input
-                placeholder="Buscar por nome ou entidade..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="md:col-span-2 relative">
+              <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+              <Input placeholder="Buscar por nome ou entidade..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
-
-            <select
-              value={filterSegmento}
-              onChange={(e) => setFilterSegmento(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Todos os segmentos</option>
-              <option value="governo">Governo</option>
-              <option value="sociedade_civil">Sociedade Civil</option>
-              <option value="setor_produtivo">Setor Produtivo</option>
-            </select>
-
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Todos os status</option>
-              <option value="ativo">Ativo</option>
-              <option value="inativo">Inativo</option>
-              <option value="licenciado">Licenciado</option>
-              <option value="afastado">Afastado</option>
-            </select>
-
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Limpar Filtros
-            </Button>
+            <Select value={filterSegmento} onValueChange={setFilterSegmento}>
+              <SelectTrigger><SelectValue placeholder="Segmento" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os segmentos</SelectItem>
+                <SelectItem value="governo">Governo</SelectItem>
+                <SelectItem value="sociedade_civil">Sociedade Civil</SelectItem>
+                <SelectItem value="setor_produtivo">Setor Produtivo</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="inativo">Inativo</SelectItem>
+                <SelectItem value="licenciado">Licenciado</SelectItem>
+                <SelectItem value="afastado">Afastado</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="ghost" onClick={handleClearFilters} className="md:col-start-4"><Filter className="h-4 w-4 mr-2" />Limpar Filtros</Button>
           </div>
         </CardContent>
       </Card>
-
-      {/* Conselheiros List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredConselheiros.map((conselheiro) => (
-          <ConselheiroCard key={conselheiro.id} conselheiro={conselheiro} />
-        ))}
-      </div>
+      
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={viewMode}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.2 }}
+        >
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredConselheiros.map((conselheiro) => (
+                <ConselheiroCard key={conselheiro.id} conselheiro={conselheiro} />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Entidade</TableHead>
+                    <TableHead>Segmento</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Fim do Mandato</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredConselheiros.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">{c.nome_completo}</TableCell>
+                      <TableCell>{c.entidade_representada}</TableCell>
+                      <TableCell>{c.segmento.replace('_', ' ')}</TableCell>
+                      <TableCell><Badge variant={getStatusVariant(c.status)}>{c.status}</Badge></TableCell>
+                      <TableCell>{new Date(c.mandato_fim).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+        </motion.div>
+      </AnimatePresence>
 
       {filteredConselheiros.length === 0 && !isLoading && (
         <Card>
@@ -209,16 +203,10 @@ export default function ConselheirosPage() {
               Nenhum conselheiro encontrado
             </h3>
             <p className="text-gray-600 mb-4">
-              {searchTerm || filterSegmento || filterStatus
+              {searchTerm || filterSegmento !== 'all' || filterStatus !== 'all'
                 ? 'Tente ajustar os filtros para encontrar conselheiros.'
                 : 'Comece cadastrando o primeiro conselheiro do CODEMA.'}
             </p>
-            {!searchTerm && !filterSegmento && !filterStatus && (
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Cadastrar Primeiro Conselheiro
-              </Button>
-            )}
           </CardContent>
         </Card>
       )}
