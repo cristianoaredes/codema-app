@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { logAction } from "@/utils/auditLogger";
+import { logAction } from "@/utils/monitoring";
 
 interface AtaReviewSystemProps {
   ataId: string;

@@ -4,10 +4,10 @@ export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type Status = 'open' | 'in_progress' | 'resolved' | 'closed';
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
-  message?: string;
+  metadata?: Record<string, unknown>;
   success: boolean;
 }
 
@@ -51,7 +51,7 @@ export interface FormErrors {
   [key: string]: string | string[] | undefined;
 }
 
-export interface FormState<T = any> {
+export interface FormState<T = Record<string, unknown>> {
   data: T;
   errors: FormErrors;
   isLoading: boolean;

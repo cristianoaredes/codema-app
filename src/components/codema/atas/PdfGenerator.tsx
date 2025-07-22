@@ -13,10 +13,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { logAction } from "@/utils/auditLogger";
+import { logAction } from "@/utils/monitoring";
 
 interface PdfGeneratorProps {
-  ata: any;
+  ata: {
+    id?: string;
+    numero?: string;
+    data_reuniao?: string;
+    conteudo?: string;
+    status?: string;
+    [key: string]: unknown;
+  };
   onPdfGenerated?: (pdfUrl: string) => void;
 }
 
@@ -245,7 +252,7 @@ export function PdfGenerator({ ata, onPdfGenerated }: PdfGeneratorProps) {
 }
 
 // Função para gerar conteúdo do PDF (simulado)
-function generatePdfContent(ata: any) {
+function generatePdfContent(ata: { numero?: string; data_reuniao?: string; conteudo?: string; [key: string]: unknown }) {
   const content = `
 %PDF-1.4
 1 0 obj

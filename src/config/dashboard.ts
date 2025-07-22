@@ -16,16 +16,31 @@ import {
   Search,
   Shield
 } from "lucide-react";
+import React from 'react';
+import { LucideIcon } from 'lucide-react';
+import { UserRole } from '../types/auth';
+
+// Interface para estatísticas do dashboard
+export interface DashboardStats {
+  totalConselheiros: number;
+  totalReunioes: number;
+  totalResolucoes: number;
+  totalProtocolos: number;
+  protocolosPendentes: number;
+  reunioesProximas: number;
+  resolucoesPendentes: number;
+  [key: string]: number | undefined;
+}
 
 export interface DashboardCardConfig {
   id: string;
   title: string;
   description?: string;
-  icon: any;
-  getValue: (stats: any) => string | number;
-  change?: (stats: any) => number;
-  trend?: (stats: any) => 'up' | 'down' | 'stable';
-  priority?: 'high' | 'medium' | 'low';
+  icon: React.ComponentType<{ className?: string }>;
+  getValue: (stats: DashboardStats) => string | number;
+  change?: (stats: DashboardStats) => number;
+  trend?: (stats: DashboardStats) => 'up' | 'down' | 'stable';
+  priority?: 'high' | 'medium' | 'low' | ((stats: DashboardStats) => 'high' | 'medium' | 'low');
   action?: {
     label: string;
     path: string;
@@ -33,7 +48,7 @@ export interface DashboardCardConfig {
   quickActions?: Array<{
     label: string;
     path: string;
-    icon?: any;
+    icon?: React.ComponentType<{ className?: string }>;
   }>;
   requireRole?: string[];
 }
@@ -42,7 +57,7 @@ export interface QuickActionConfig {
   id: string;
   title: string;
   description: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   path: string;
   requireRole?: string[];
 }

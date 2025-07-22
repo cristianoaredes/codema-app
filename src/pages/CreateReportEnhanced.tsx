@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,11 +69,7 @@ const CreateReportEnhanced = () => {
     priority: "medium"
   };
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("service_categories")
@@ -92,7 +88,11 @@ const CreateReportEnhanced = () => {
     } finally {
       setLoadingCategories(false);
     }
-  };
+    }, [toast]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const handleSubmit = async (data: ReportFormData) => {
     if (!user) {
@@ -123,7 +123,7 @@ const CreateReportEnhanced = () => {
     navigate("/dashboard");
   };
 
-  const handleAutoSave = async (data: any) => {
+  const handleAutoSave = async (data: unknown) => {
     console.log("Auto-saving report data:", data);
     // Could save to a drafts table in the future
   };

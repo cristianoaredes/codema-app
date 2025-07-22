@@ -22,7 +22,7 @@ export interface Resolucao {
 export interface ResolucaoTemplate {
   id: string;
   nome: string;
-  estrutura: Record<string, any>;
+  estrutura: Record<string, unknown>;
   categoria: string;
   is_default: boolean;
   created_at: string;

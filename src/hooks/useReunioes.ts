@@ -9,9 +9,10 @@ import {
   ConvocacaoTemplate,
   ConvocacaoCreateInput,
   ConfirmacaoPresencaInput
-} from '@/types/reuniao';
-import { logAction } from '@/utils/auditLogger';
+} from '@/types';
+import { logAction } from '@/utils';
 import { toast } from 'sonner';
+import { ProtocoloGenerator } from '@/utils';
 
 export function useReunioes() {
   return useQuery({
@@ -50,10 +51,14 @@ export function useCreateReuniao() {
   
   return useMutation({
     mutationFn: async (reuniao: ReuniaoCreateInput): Promise<Reuniao> => {
+      // Gerar protocolo para a reunião
+      const protocoloReuniao = await ProtocoloGenerator.gerarProtocolo('REU');
+      
       const { data, error } = await supabase
         .from('reunioes')
         .insert({
           ...reuniao,
+          protocolo: protocoloReuniao,
           status: 'agendada'
         })
         .select()
@@ -64,8 +69,11 @@ export function useCreateReuniao() {
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['reunioes'] });
-      await logAction('CREATE', 'reuniao', data.id, { titulo: data.titulo });
-      toast.success('Reunião criada com sucesso!');
+      await logAction('CREATE', 'reuniao', data.id, { 
+        titulo: data.titulo, 
+        protocolo: data.protocolo 
+      });
+      toast.success(`Reunião criada com sucesso! Protocolo: ${data.protocolo}`);
     },
     onError: (error) => {
       console.error('Erro ao criar reunião:', error);
@@ -278,6 +286,62 @@ export function useMarcarPresenca() {
     onError: (error) => {
       console.error('Erro ao registrar presença:', error);
       toast.error('Erro ao registrar presença');
+    }
+  });
+}
+
+export function useGerarProtocoloAta() {
+  return useMutation({
+    mutationFn: async (reuniao_id: string): Promise<string> => {
+      // Gerar protocolo para a ata
+      const protocoloAta = await ProtocoloGenerator.gerarProtocolo('ATA');
+      
+      // Atualizar a reunião com o protocolo da ata
+      const { error } = await supabase
+        .from('reunioes')
+        .update({ protocolo_ata: protocoloAta })
+        .eq('id', reuniao_id);
+      
+      if (error) throw error;
+      return protocoloAta;
+    },
+    onSuccess: async (protocoloAta, reuniao_id) => {
+      await logAction('CREATE', 'protocolo_ata', reuniao_id, { 
+        protocolo: protocoloAta 
+      });
+      toast.success(`Protocolo da ata gerado: ${protocoloAta}`);
+    },
+    onError: (error) => {
+      console.error('Erro ao gerar protocolo da ata:', error);
+      toast.error('Erro ao gerar protocolo da ata');
+    }
+  });
+}
+
+export function useGerarProtocoloConvocacao() {
+  return useMutation({
+    mutationFn: async (reuniao_id: string): Promise<string> => {
+      // Gerar protocolo para a convocação
+      const protocoloConvocacao = await ProtocoloGenerator.gerarProtocolo('CONV');
+      
+      // Atualizar a reunião com o protocolo da convocação
+      const { error } = await supabase
+        .from('reunioes')
+        .update({ protocolo_convocacao: protocoloConvocacao })
+        .eq('id', reuniao_id);
+      
+      if (error) throw error;
+      return protocoloConvocacao;
+    },
+    onSuccess: async (protocoloConvocacao, reuniao_id) => {
+      await logAction('CREATE', 'protocolo_convocacao', reuniao_id, { 
+        protocolo: protocoloConvocacao 
+      });
+      toast.success(`Protocolo da convocação gerado: ${protocoloConvocacao}`);
+    },
+    onError: (error) => {
+      console.error('Erro ao gerar protocolo da convocação:', error);
+      toast.error('Erro ao gerar protocolo da convocação');
     }
   });
 }

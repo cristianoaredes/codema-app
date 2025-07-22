@@ -141,7 +141,7 @@ const ReportForm = () => {
             <CardHeader className="text-center pb-8">
               <CardTitle className="text-2xl font-bold text-foreground">Reportar Problema Municipal</CardTitle>
               <CardDescription className="text-base text-muted-foreground">
-                Ajude-nos a melhorar os serviços municipais de Itanhemi reportando problemas em sua região
+                Ajude-nos a melhorar os serviços municipais de Itanhomi reportando problemas em sua região
               </CardDescription>
             </CardHeader>
             
@@ -202,7 +202,7 @@ const ReportForm = () => {
                   <div className="relative">
                     <Input
                       id="location"
-                      placeholder="Endereço ou ponto de referência em Itanhemi"
+                      placeholder="Endereço ou ponto de referência em Itanhomi"
                       value={formData.location}
                       onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                       className="pr-10"

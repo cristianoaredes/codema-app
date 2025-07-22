@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ImpedimentoConselheiro, ImpedimentoCreateInput } from '@/types/conselheiro';
-import { logAction } from '@/utils/auditLogger';
+import { ImpedimentoConselheiro, ImpedimentoCreateInput } from '@/types';
+import { logAction } from '@/utils';
 import { toast } from 'sonner';
 
 export function useImpedimentos(filtros?: {

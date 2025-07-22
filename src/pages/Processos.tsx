@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +48,7 @@ const Processos = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [showNewProcesso, setShowNewProcesso] = useState(false);
-  const [conselheiros, setConselheiros] = useState<any[]>([]);
+  const [conselheiros, setConselheiros] = useState<{ id: string; full_name: string; role: string }[]>([]);
 
   const [newProcesso, setNewProcesso] = useState({
     tipo_processo: "",
@@ -62,12 +62,7 @@ const Processos = () => {
 
   const isSecretary = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
 
-  useEffect(() => {
-    fetchProcessos();
-    fetchConselheiros();
-  }, []);
-
-  const fetchProcessos = async () => {
+  const fetchProcessos = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("processos")
@@ -89,7 +84,7 @@ const Processos = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   const fetchConselheiros = async () => {
     try {
@@ -105,6 +100,11 @@ const Processos = () => {
       console.error("Erro ao carregar conselheiros:", error);
     }
   };
+
+  useEffect(() => {
+    fetchProcessos();
+    fetchConselheiros();
+  }, [fetchProcessos]);
 
   const createProcesso = async () => {
     try {

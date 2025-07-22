@@ -86,7 +86,7 @@ export interface SmartTableFilter {
 
 export interface SmartTableProps<T> {
   data: T[];
-  columns: ColumnDef<T, any>[];
+  columns: ColumnDef<T, unknown>[];
   loading?: boolean;
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -143,8 +143,8 @@ export function SmartTable<T>({
   const [internalGlobalFilter, setInternalGlobalFilter] = React.useState(globalFilter);
 
   // Enhanced columns with selection and actions
-  const enhancedColumns = React.useMemo<ColumnDef<T, any>[]>(() => {
-    const cols: ColumnDef<T, any>[] = [];
+  const enhancedColumns = React.useMemo<ColumnDef<T, unknown>[]>(() => {
+    const cols: ColumnDef<T, unknown>[] = [];
 
     // Selection column
     if (selectable) {

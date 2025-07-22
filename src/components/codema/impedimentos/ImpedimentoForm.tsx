@@ -1,8 +1,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui';
+import { Textarea } from '@/components/ui';
 import {
   Form,
   FormControl,
@@ -11,16 +11,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from '@/components/ui';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useCreateImpedimento } from '@/hooks/useImpedimentos';
-import { ImpedimentoCreateInput } from '@/types/conselheiro';
+} from '@/components/ui';
+import { useCreateImpedimento } from '@/hooks';
+import { ImpedimentoCreateInput } from '@/types';
 
 const impedimentoSchema = z.object({
   conselheiro_id: z.string().min(1, 'Conselheiro é obrigatório'),

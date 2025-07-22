@@ -1,4 +1,4 @@
--- Migração corrigida para CODEMA-Itanhemi: estrutura de reuniões e documentos
+-- Migração corrigida para CODEMA-Itanhomi: estrutura de reuniões e documentos
 
 -- Criar tabela de reuniões do CODEMA
 CREATE TABLE public.reunioes (

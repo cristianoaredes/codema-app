@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui';
+import { Checkbox } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import {
   Form,
   FormControl,
@@ -13,16 +13,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from '@/components/ui';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useConselheiros } from '@/hooks/useConselheiros';
-import { useConvocacaoTemplates, useEnviarConvocacoes } from '@/hooks/useReunioes';
+} from '@/components/ui';
+import { useConselheiros } from '@/hooks';
+import { useConvocacaoTemplates, useEnviarConvocacoes } from '@/hooks';
 import { Mail, MessageSquare, Users, Send } from 'lucide-react';
 
 const convocacaoSchema = z.object({

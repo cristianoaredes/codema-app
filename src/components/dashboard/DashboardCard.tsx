@@ -194,14 +194,15 @@ export function QuickActionCard({
   description,
   icon,
   onClick,
-  className
+  className,
+  ...props
 }: {
   title: string;
   description?: string;
   icon: React.ReactNode;
   onClick: () => void;
   className?: string;
-}) {
+} & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <Card 
       className={cn(
@@ -209,6 +210,7 @@ export function QuickActionCard({
         className
       )}
       onClick={onClick}
+      {...props}
     >
       <CardContent className="p-6">
         <div className="flex items-center space-x-4">

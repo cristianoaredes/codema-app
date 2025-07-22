@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { Badge } from '@/components/ui';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -23,9 +23,9 @@ import {
   Settings,
   Clock
 } from 'lucide-react';
-import { useReuniao, useConvocacoes } from '@/hooks/useReunioes';
+import { useReuniao, useConvocacoes } from '@/hooks';
 import { ConvocacaoForm, PresencasManager } from '@/components/codema/reunioes';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 

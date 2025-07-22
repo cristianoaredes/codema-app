@@ -20,11 +20,13 @@ import {
   FileText,
   Gavel,
   Shield,
-  Eye
+  Eye,
+  Database
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { getRoleConfig, getCardsForRole, getQuickActionsForRole } from "@/config/dashboard";
+import { WelcomeGuide, useWelcomeGuide } from "@/components/dashboard/WelcomeGuide";
 
 interface DashboardStats {
   totalReports: number;
@@ -36,6 +38,16 @@ interface DashboardStats {
   reportGrowth: number;
   fmaBalance: number;
   auditAlerts: number;
+  // Propriedades adicionais para compatibilidade
+  totalConselheiros: number;
+  totalReunioes: number;
+  totalResolucoes: number;
+  totalProtocolos: number;
+  totalAtas: number;
+  totalImpedimentos: number;
+  protocolosPendentes: number;
+  reunioesProximas: number;
+  [key: string]: number; // Index signature para compatibilidade
 }
 
 interface Report {
@@ -55,6 +67,7 @@ const Dashboard = () => {
   const { user, profile, hasAdminAccess, hasCODEMAAccess } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const welcomeGuide = useWelcomeGuide();
   const [stats, setStats] = useState<DashboardStats>({
     totalReports: 0,
     reunioesAgendadas: 0,
@@ -64,7 +77,16 @@ const Dashboard = () => {
     myReports: 0,
     reportGrowth: 0,
     fmaBalance: 0,
-    auditAlerts: 0
+    auditAlerts: 0,
+    // Propriedades adicionais para compatibilidade
+    totalConselheiros: 0,
+    totalReunioes: 0,
+    totalResolucoes: 0,
+    totalProtocolos: 0,
+    totalAtas: 0,
+    totalImpedimentos: 0,
+    protocolosPendentes: 0,
+    reunioesProximas: 0
   });
   const [recentReports, setRecentReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,13 +108,13 @@ const Dashboard = () => {
       const queries = [
         supabase.from("reports").select(`*, service_categories(name, icon)`).order("created_at", { ascending: false }),
         supabase.from("reunioes").select("*").order("created_at", { ascending: false }),
-        supabase.from("atas").select("*").order("created_at", { ascending: false }),
-        supabase.from("resolucoes").select("*").order("created_at", { ascending: false })
+        (supabase as any).from("atas").select("*").order("created_at", { ascending: false }),
+        (supabase as any).from("resolucoes").select("*").order("created_at", { ascending: false })
       ];
 
       // Add admin-only queries
       if (hasAdminAccess) {
-        queries.push(supabase.from("conselheiros").select("*"));
+        queries.push((supabase as any).from("conselheiros").select("*"));
       }
 
       const results = await Promise.all(queries);
@@ -105,10 +127,10 @@ const Dashboard = () => {
 
       // Calculate CODEMA statistics
       const totalReports = reports.length;
-      const reunioesAgendadas = reunioes.filter(r => r.status === 'agendada').length;
-      const atasPendentes = atas.filter(a => a.status === 'rascunho').length;
-      const resolucoesPendentes = resolucoes.filter(r => r.status === 'em_votacao').length;
-      const myReports = reports.filter(r => r.user_id === user?.id).length;
+      const reunioesAgendadas = reunioes.filter((r: any) => r.status === 'agendada').length;
+      const atasPendentes = atas.filter((a: any) => a.status === 'rascunho').length;
+      const resolucoesPendentes = resolucoes.filter((r: any) => r.status === 'em_votacao').length;
+      const myReports = reports.filter((r: any) => r.user_id === user?.id).length;
 
       // Calculate growth (mockup - in real app, compare with previous period)
       const reportGrowth = Math.floor(Math.random() * 20) - 10; // -10 to +10%
@@ -126,11 +148,20 @@ const Dashboard = () => {
         myReports,
         reportGrowth,
         fmaBalance,
-        auditAlerts
+        auditAlerts,
+        // Propriedades adicionais para compatibilidade
+        totalConselheiros: conselheiros.length,
+        totalReunioes: reunioes.length,
+        totalResolucoes: resolucoes.length,
+        totalProtocolos: 0, // Mock value
+        totalAtas: atas.length,
+        totalImpedimentos: 0, // Mock value
+        protocolosPendentes: 0, // Mock value
+        reunioesProximas: reunioes.filter((r: any) => r.status === 'agendada').length
       });
 
       // Set recent reports
-      setRecentReports(reports.slice(0, 5));
+      setRecentReports(reports.slice(0, 5) as Report[]);
 
     } catch (error) {
       console.error("Erro ao carregar dados do dashboard:", error);
@@ -231,6 +262,11 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto px-6 py-8">
+      {/* Welcome Guide */}
+      {welcomeGuide.isVisible && (
+        <WelcomeGuide onDismiss={welcomeGuide.dismiss} />
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -271,7 +307,7 @@ const Dashboard = () => {
             </>
           )}
           <Link to="/criar-relatorio">
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2" data-tour="new-report-btn">
               <Plus className="w-4 h-4" />
               Novo Relatório
             </Button>
@@ -280,7 +316,7 @@ const Dashboard = () => {
       </div>
 
       {/* Role-specific Dashboard Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8" data-tour="dashboard-cards">
         {dashboardCards.map((cardConfig) => {
           const IconComponent = cardConfig.icon;
           const value = cardConfig.getValue(stats);
@@ -323,7 +359,7 @@ const Dashboard = () => {
               Acesse rapidamente as funções mais utilizadas
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8" data-tour="quick-actions">
             {quickActionsList.map((action) => {
               const IconComponent = action.icon;
               return (
@@ -333,6 +369,7 @@ const Dashboard = () => {
                   description={action.description}
                   icon={<IconComponent className="h-5 w-5" />}
                   onClick={() => navigate(action.path)}
+                  data-tour={action.id === 'ombudsman' ? 'ombudsman' : undefined}
                 />
               );
             })}
@@ -383,9 +420,33 @@ const Dashboard = () => {
                 </div>
               ))
             ) : (
-              <p className="text-muted-foreground text-center py-8">
-                Nenhum relatório encontrado.
-              </p>
+              <div className="text-center py-12">
+                <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
+                  <FileText className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Nenhum relatório encontrado
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Seja o primeiro a reportar um problema ou sugestão para sua comunidade
+                </p>
+                <div className="space-y-2">
+                  <Link to="/criar-relatorio">
+                    <Button className="mr-2">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Criar Primeiro Relatório
+                    </Button>
+                  </Link>
+                  {hasAdminAccess && (
+                    <Link to="/admin/data-seeder">
+                      <Button variant="outline">
+                        <Database className="mr-2 h-4 w-4" />
+                        Popular Dados de Exemplo
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </div>
             )}
           </div>
           

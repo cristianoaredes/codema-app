@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,7 +61,7 @@ const Ouvidoria = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [showNewDenuncia, setShowNewDenuncia] = useState(false);
-  const [fiscais, setFiscais] = useState<any[]>([]);
+  const [fiscais, setFiscais] = useState<{ id: string; nome: string; email: string }[]>([]);
 
   const [newDenuncia, setNewDenuncia] = useState({
     tipo_denuncia: "",
@@ -80,12 +80,7 @@ const Ouvidoria = () => {
 
   const isFiscal = profile?.role && ['admin', 'secretario', 'presidente', 'fiscal'].includes(profile.role);
 
-  useEffect(() => {
-    fetchDenuncias();
-    fetchFiscais();
-  }, []);
-
-  const fetchDenuncias = async () => {
+  const fetchDenuncias = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("ouvidoria_denuncias")
@@ -107,22 +102,35 @@ const Ouvidoria = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const fetchFiscais = async () => {
+  const fetchFiscais = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, role")
+        .select("id, full_name, role, email")
         .in("role", ["admin", "fiscal"])
         .order("full_name");
 
       if (error) throw error;
-      setFiscais(data || []);
+      
+      // Map the data to match the expected state shape
+      const mappedFiscais = (data || []).map(item => ({
+        id: item.id,
+        nome: item.full_name,
+        email: item.email || ''
+      }));
+      
+      setFiscais(mappedFiscais);
     } catch (error) {
       console.error("Erro ao carregar fiscais:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDenuncias();
+    fetchFiscais();
+  }, [fetchDenuncias, fetchFiscais]);
 
   const createDenuncia = async () => {
     try {

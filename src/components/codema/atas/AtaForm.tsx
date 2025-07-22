@@ -25,7 +25,7 @@ import { VersionControl } from "./VersionControl";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { logAction } from "@/utils/auditLogger";
+import { logAction } from "@/utils/monitoring";
 import { cn } from "@/lib/utils";
 
 const ataSchema = z.object({
@@ -44,7 +44,14 @@ const ataSchema = z.object({
 type AtaFormData = z.infer<typeof ataSchema>;
 
 interface AtaFormProps {
-  ata?: any;
+  ata?: {
+    id?: string;
+    numero?: string;
+    data_reuniao?: string;
+    conteudo?: string;
+    status?: string;
+    [key: string]: unknown;
+  };
   onClose: () => void;
 }
 
@@ -109,7 +116,7 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
   const { data: templates = [] } = useQuery({
     queryKey: ['atas-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('atas_templates')
         .select('*')
         .eq('ativo', true)
@@ -124,7 +131,7 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
   const { data: conselheiros = [] } = useQuery({
     queryKey: ['conselheiros-ativos'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('conselheiros')
         .select('id, nome, cargo, tipo, ativo')
         .eq('ativo', true)
@@ -139,20 +146,20 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
   useEffect(() => {
     if (ata) {
       form.reset({
-        reuniao_id: ata.reuniao_id,
-        template_id: ata.template_id,
-        data_reuniao: new Date(ata.data_reuniao),
-        hora_inicio: ata.hora_inicio,
-        hora_fim: ata.hora_fim,
-        local_reuniao: ata.local_reuniao,
-        tipo_reuniao: ata.tipo_reuniao,
-        observacoes: ata.observacoes,
+        reuniao_id: ata.reuniao_id as string,
+        template_id: ata.template_id as string,
+        data_reuniao: new Date(ata.data_reuniao as string),
+        hora_inicio: ata.hora_inicio as string,
+        hora_fim: ata.hora_fim as string,
+        local_reuniao: ata.local_reuniao as string,
+        tipo_reuniao: ata.tipo_reuniao as "ordinaria" | "extraordinaria" | "publica",
+        observacoes: ata.observacoes as string,
       });
 
-      setItensPauta(ata.pauta || []);
-      setPresentes(ata.presentes || []);
-      setAusentes(ata.ausentes || []);
-      setDeliberacoes(ata.deliberacoes || []);
+      setItensPauta((ata.pauta as ItemPauta[]) || []);
+      setPresentes((ata.presentes as Presente[]) || []);
+      setAusentes((ata.ausentes as string[]) || []);
+      setDeliberacoes((ata.deliberacoes as Deliberacao[]) || []);
     }
   }, [ata, form]);
 
@@ -169,11 +176,11 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
 
       if (ata) {
         // Incrementar versão ao atualizar
-        const { data: updatedAta, error } = await supabase
+        const { data: updatedAta, error } = await (supabase as any)
           .from('atas')
           .update({
             ...ataData,
-            versao: ata.versao + 1,
+            versao: (ata.versao as number) + 1,
             updated_by: profile?.id,
           })
           .eq('id', ata.id)
@@ -186,15 +193,15 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
           'update_ata',
           'atas',
           ata.id,
-          { numero: ata.numero, versao: ata.versao + 1 }
+          { numero: ata.numero as string, versao: (ata.versao as number) + 1 }
         );
 
         return updatedAta;
       } else {
         // Gerar número da ata
-        const { data: numero } = await supabase.rpc('gerar_proximo_numero_ata');
+        const { data: numero } = await supabase.rpc('generate_document_number', { doc_type: 'ata' });
 
-        const { data: newAta, error } = await supabase
+        const { data: newAta, error } = await (supabase as any)
           .from('atas')
           .insert({
             ...ataData,
@@ -253,13 +260,13 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
     ));
   };
 
-  const marcarPresenca = (conselheiro: any, presente: boolean) => {
+  const marcarPresenca = (conselheiro: { id: string; nome: string; cargo: string; tipo: string }, presente: boolean) => {
     if (presente) {
       const novoPresente: Presente = {
         id: conselheiro.id,
         nome: conselheiro.nome,
         cargo: conselheiro.cargo,
-        tipo: conselheiro.tipo,
+        tipo: conselheiro.tipo as "titular" | "suplente" | "convidado",
       };
       setPresentes([...presentes.filter(p => p.id !== conselheiro.id), novoPresente]);
       setAusentes(ausentes.filter(id => id !== conselheiro.id));
@@ -751,7 +758,7 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
           {/* Versões Tab */}
           {ata && (
             <TabsContent value="versoes">
-              <VersionControl ataId={ata.id} currentVersion={ata.versao} />
+              <VersionControl ataId={ata.id as string} currentVersion={ata.versao as number} />
             </TabsContent>
           )}
         </Tabs>

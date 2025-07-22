@@ -18,11 +18,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { logAction } from "@/utils/auditLogger";
+import { logAction } from "@/utils/monitoring";
 
 interface RevocationSystemProps {
   resolucaoId: string;
-  resolucao: any;
+  resolucao: {
+    id: string;
+    numero: string;
+    titulo: string;
+    conteudo: unknown;
+    status: string;
+  };
 }
 
 interface Revogacao {
@@ -30,7 +36,7 @@ interface Revogacao {
   resolucao_original_id: string;
   resolucao_revogadora_id: string;
   tipo_revogacao: string;
-  artigos_revogados: any;
+  artigos_revogados: string[];
   motivo: string;
   data_revogacao: string;
   created_at: string;

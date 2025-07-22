@@ -1,11 +1,13 @@
 import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider, AuthPage, ProtectedRoute, PublicRoute } from "@/components/auth";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/components/auth";
+
 import { useAuth } from "@/hooks/useAuth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { DemoModeProvider } from "@/components/demo/DemoModeProvider";
 import { AppSidebar } from "@/components/common/Navigation/AppSidebar";
 import { Header } from "@/components/common";
 import { SmartBreadcrumb, BreadcrumbContainer } from "@/components/navigation/SmartBreadcrumb";
@@ -26,30 +28,17 @@ import ConselheirosPage from "./pages/codema/conselheiros";
 import AtasPage from "./pages/codema/atas";
 import ResolucoesPage from "./pages/codema/resolucoes";
 import AuditoriaPage from "./pages/codema/auditoria";
+import GestaoProtocolos from "./pages/codema/protocolos/GestaoProtocolos";
 import UserManagement from "./pages/admin/UserManagement";
-import { AuthPage, ProtectedRoute } from "@/components/auth";
+import DataSeeder from "./pages/admin/DataSeeder";
+import Documentation from "./pages/admin/Documentation";
+import AuthCallback from "./pages/AuthCallback";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-  
-  // If user is logged in and tries to access auth page, redirect to dashboard
-  if (user && window.location.pathname === "/auth") {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
-  return <>{children}</>;
-};
+
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -69,7 +58,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
+        <AppSidebar data-tour="sidebar" />
         <main className="flex-1 overflow-x-hidden">
           {/* Enhanced Header with Search */}
           <header className="h-16 flex items-center border-b bg-card px-4 sm:px-6 sticky top-0 z-20">
@@ -118,11 +107,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppLayout>
+      <DemoModeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppLayout>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/relatorios" element={<Reports />} />
@@ -131,6 +121,8 @@ const App = () => (
                   <AuthPage />
                 </PublicRoute>
               } />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
               
               {/* Protected Routes */}
               <Route path="/dashboard" element={
@@ -148,6 +140,16 @@ const App = () => (
               <Route path="/admin/users" element={
                 <ProtectedRoute requireAdminAccess>
                   <UserManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/data-seeder" element={
+                <ProtectedRoute requireAdminAccess>
+                  <DataSeeder />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/documentation" element={
+                <ProtectedRoute requireAdminAccess>
+                  <Documentation />
                 </ProtectedRoute>
               } />
               
@@ -211,13 +213,19 @@ const App = () => (
                   <AuditoriaPage />
                 </ProtectedRoute>
               } />
+              <Route path="/codema/protocolos" element={
+                <ProtectedRoute requireCODEMAAccess>
+                  <GestaoProtocolos />
+                </ProtectedRoute>
+              } />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </AppLayout>
-        </BrowserRouter>
-      </TooltipProvider>
+            </AppLayout>
+          </BrowserRouter>
+        </TooltipProvider>
+      </DemoModeProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

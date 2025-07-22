@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Plus, Search, Filter, AlertTriangle, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useConselheiros, useConselheirosComMandatoExpirando } from '@/hooks/useConselheiros';
+import { Button } from '@/components/ui';
+import { Input } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { Badge } from '@/components/ui';
+import { Alert, AlertDescription } from '@/components/ui';
+import { useConselheiros, useConselheirosComMandatoExpirando } from '@/hooks';
 import { ConselheiroCard, ConselheiroForm } from '@/components/codema/conselheiros';
-import { Conselheiro } from '@/types/conselheiro';
+import { Conselheiro } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui';
 
 export default function ConselheirosPage() {
   const [searchTerm, setSearchTerm] = useState('');

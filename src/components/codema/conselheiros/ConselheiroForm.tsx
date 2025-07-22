@@ -1,11 +1,11 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui';
+import { Input } from '@/components/ui';
+import { Textarea } from '@/components/ui';
+import { Label } from '@/components/ui';
+import { Checkbox } from '@/components/ui';
 import {
   Form,
   FormControl,
@@ -14,16 +14,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from '@/components/ui';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useCreateConselheiro, useUpdateConselheiro } from '@/hooks/useConselheiros';
-import { Conselheiro } from '@/types/conselheiro';
+} from '@/components/ui';
+import { useCreateConselheiro, useUpdateConselheiro } from '@/hooks';
+import { Conselheiro } from '@/types';
 
 const conselheiroSchema = z.object({
   nome_completo: z.string().min(1, 'Nome completo é obrigatório'),

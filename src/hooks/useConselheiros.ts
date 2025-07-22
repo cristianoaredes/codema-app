@@ -1,20 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Conselheiro, ConselheiroCreateInput, ConselheiroUpdateInput } from '@/types/conselheiro';
-import { logAction } from '@/utils/auditLogger';
+import { Conselheiro, ConselheiroCreateInput, ConselheiroUpdateInput } from '@/types';
+import { logAction } from '@/utils';
 import { toast } from 'sonner';
 
 export function useConselheiros() {
   return useQuery({
     queryKey: ['conselheiros'],
     queryFn: async (): Promise<Conselheiro[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('conselheiros')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      // Garantir tipagem correta
+      return (data || []) as Conselheiro[];
     }
   });
 }
@@ -23,14 +24,14 @@ export function useConselheiro(id: string) {
   return useQuery({
     queryKey: ['conselheiro', id],
     queryFn: async (): Promise<Conselheiro> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('conselheiros')
         .select('*')
         .eq('id', id)
         .single();
       
       if (error) throw error;
-      return data;
+      return data as Conselheiro;
     },
     enabled: !!id
   });
@@ -41,14 +42,14 @@ export function useCreateConselheiro() {
   
   return useMutation({
     mutationFn: async (conselheiro: ConselheiroCreateInput): Promise<Conselheiro> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('conselheiros')
         .insert(conselheiro)
         .select()
         .single();
       
       if (error) throw error;
-      return data;
+      return data as Conselheiro;
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['conselheiros'] });
@@ -67,7 +68,7 @@ export function useUpdateConselheiro() {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: ConselheiroUpdateInput }): Promise<Conselheiro> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('conselheiros')
         .update(updates)
         .eq('id', id)
@@ -75,7 +76,7 @@ export function useUpdateConselheiro() {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as Conselheiro;
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['conselheiros'] });
@@ -95,7 +96,7 @@ export function useDeleteConselheiro() {
   
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('conselheiros')
         .delete()
         .eq('id', id);
@@ -116,20 +117,20 @@ export function useDeleteConselheiro() {
 
 export function useConselheirosComMandatoExpirando(diasAntecedencia = 30) {
   return useQuery({
-    queryKey: ['conselheiros-mandato-expirando', diasAntecedencia],
+    queryKey: ['conselheiros-expirando', diasAntecedencia],
     queryFn: async (): Promise<Conselheiro[]> => {
       const dataLimite = new Date();
       dataLimite.setDate(dataLimite.getDate() + diasAntecedencia);
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('conselheiros')
         .select('*')
-        .lte('mandato_fim', dataLimite.toISOString().split('T')[0])
-        .eq('status', 'ativo')
-        .order('mandato_fim', { ascending: true });
+        .lte('data_fim_mandato', dataLimite.toISOString())
+        .gte('data_fim_mandato', new Date().toISOString())
+        .order('data_fim_mandato', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as Conselheiro[];
     }
   });
 }
