@@ -27,6 +27,7 @@ import {
 import { useLocation, NavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo_municonnect.png";
 
 interface MenuItem {
   title: string;
@@ -114,7 +115,6 @@ export function AppSidebar() {
 
   // Administrative functions - requires admin access
   const adminItems = [
-    { title: "Painel Admin", url: "/admin", icon: Shield, requireAdmin: true },
     { title: "Conselheiros", url: "/codema/conselheiros", icon: Users, requireAdmin: true },
     { title: "Auditoria", url: "/codema/auditoria", icon: Eye, requireAdmin: true },
     { title: "Usuários", url: "/admin/users", icon: UserCog, requireAdmin: true },
@@ -205,10 +205,33 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={collapsed ? "w-14" : "w-60"}
+      className={cn("transition-all duration-300", collapsed ? "w-14" : "w-64")}
       collapsible="icon"
     >
-      <SidebarTrigger className="m-2 self-end" />
+      <div className={cn(
+        "flex items-center justify-between p-4 border-b border-sidebar-border",
+        collapsed && "justify-center"
+      )}>
+        {!collapsed && (
+          <div className="flex items-center justify-center">
+            <img 
+              src={logo} 
+              alt="MuniConnect Logo" 
+              className="h-12 w-auto"
+            />
+          </div>
+        )}
+        {collapsed && (
+          <div className="flex items-center justify-center">
+            <img 
+              src={logo} 
+              alt="MuniConnect Logo" 
+              className="h-12 w-auto"
+            />
+          </div>
+        )}
+        <SidebarTrigger className="shrink-0" />
+      </div>
 
       <SidebarContent>
         {/* Public Items (when not logged in) */}

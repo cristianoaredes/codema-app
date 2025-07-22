@@ -12,7 +12,7 @@ interface PublicRouteProps {
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
-  requiredRoles?: Array<'citizen' | 'admin' | 'moderator' | 'conselheiro_titular' | 'conselheiro_suplente' | 'secretario' | 'presidente'>;
+  requiredRoles?: Array<'citizen' | 'admin' | 'moderator' | 'conselheiro_titular' | 'conselheiro_suplente' | 'secretario' | 'vice_presidente' | 'presidente'>;
   requireCODEMAAccess?: boolean;
   requireAdminAccess?: boolean;
 }

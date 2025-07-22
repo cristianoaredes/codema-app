@@ -7,6 +7,7 @@ export type UserRole =
   | 'conselheiro_titular' 
   | 'conselheiro_suplente' 
   | 'secretario' 
+  | 'vice_presidente'
   | 'presidente';
 
 // Tipos para Remember Me
@@ -45,6 +46,11 @@ export interface Profile {
   deactivation_reason?: string | null;
   deactivated_at?: string | null;
   deactivated_by?: string | null;
+  // Campos de delegação de presidência
+  is_acting_president?: boolean;
+  delegation_granted_by?: string | null;
+  delegation_granted_at?: string | null;
+  delegation_expires_at?: string | null;
 }
 
 export interface AuthContextType {
@@ -60,6 +66,8 @@ export interface AuthContextType {
   isAdmin: boolean;
   isConselheiro: boolean;
   isSecretario: boolean;
+  isVicePresidente: boolean;
+  isActingPresident: boolean;
   isPresidente: boolean;
   isModerator: boolean;
   isCitizen: boolean;

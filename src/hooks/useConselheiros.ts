@@ -125,8 +125,7 @@ export function useConselheirosComMandatoExpirando(diasAntecedencia = 30) {
       const { data, error } = await (supabase as any)
         .from('conselheiros')
         .select('*')
-        .lte('data_fim_mandato', dataLimite.toISOString())
-        .gte('data_fim_mandato', new Date().toISOString())
+        .and(`data_fim_mandato.lte.${dataLimite.toISOString()},data_fim_mandato.gte.${new Date().toISOString()}`)
         .order('data_fim_mandato', { ascending: true });
       
       if (error) throw error;

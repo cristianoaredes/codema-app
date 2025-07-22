@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { motion } from "framer-motion";
 
 interface DashboardCardProps {
   title: string;
@@ -80,14 +81,21 @@ export function DashboardCard({
   }
 
   return (
-    <Card 
-      className={cn(
-        "relative overflow-hidden hover-lift hover-glow animate-fade-in",
-        action && "cursor-pointer",
-        className
-      )}
-      onClick={action?.onClick}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={action ? { scale: 0.98 } : {}}
     >
+      <Card 
+        className={cn(
+          "relative overflow-hidden",
+          action && "cursor-pointer",
+          className
+        )}
+        onClick={action?.onClick}
+      >
       {/* Background gradient for priority */}
       {priority && (
         <div className={cn(
@@ -185,6 +193,7 @@ export function DashboardCard({
         </div>
       </CardContent>
     </Card>
+    </motion.div>
   );
 }
 
@@ -204,14 +213,21 @@ export function QuickActionCard({
   className?: string;
 } & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <Card 
-      className={cn(
-        "cursor-pointer hover-lift hover-glow animate-fade-in group",
-        className
-      )}
-      onClick={onClick}
-      {...props}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      whileHover={{ scale: 1.05, y: -5 }}
+      whileTap={{ scale: 0.95 }}
     >
+      <Card 
+        className={cn(
+          "cursor-pointer group",
+          className
+        )}
+        onClick={onClick}
+        {...props}
+      >
       <CardContent className="p-6">
         <div className="flex items-center space-x-4">
           <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-smooth">
@@ -225,9 +241,16 @@ export function QuickActionCard({
               </p>
             )}
           </div>
-          <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-smooth" />
+          <motion.div
+            initial={{ x: 0 }}
+            whileHover={{ x: 5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+          </motion.div>
         </div>
       </CardContent>
     </Card>
+    </motion.div>
   );
 }

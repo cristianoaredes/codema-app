@@ -1,24 +1,14 @@
 import { useState } from 'react';
 import { Search, Filter, Download, Eye } from 'lucide-react';
-import { Button } from '@/components/ui';
-import { Input } from '@/components/ui';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import { Badge } from '@/components/ui';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { BreadcrumbWithActions, SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
+import { LoadingSpinner } from '@/components/ui/loading';
 import { useAuditLogs } from '@/hooks';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -27,10 +17,7 @@ export default function AuditoriaPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAction, setFilterAction] = useState<string>('');
   const [filterEntity, setFilterEntity] = useState<string>('');
-  const [dateRange, setDateRange] = useState({
-    start: '',
-    end: ''
-  });
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
   const { data: logs = [], isLoading } = useAuditLogs({
     search: searchTerm,
@@ -41,8 +28,36 @@ export default function AuditoriaPage() {
   });
 
   const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log('Exportar logs para TCE-MG');
+    if (logs.length === 0) return;
+    
+    const csvHeaders = ['Data/Hora', 'Usuário', 'Email', 'Ação', 'Entidade', 'ID Entidade', 'IP', 'Detalhes'];
+    const csvRows = logs.map(log => [
+      format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR }),
+      log.profiles?.full_name || 'Sistema',
+      log.profiles?.email || '',
+      getActionLabel(log.action),
+      getEntityLabel(log.entity),
+      log.entity_id || '',
+      log.ip_address || '',
+      log.details ? JSON.stringify(log.details) : ''
+    ]);
+    
+    const csvContent = [csvHeaders, ...csvRows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `auditoria_codema_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
+    link.click();
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterAction('');
+    setFilterEntity('');
+    setDateRange({ start: '', end: '' });
   };
 
   const getActionColor = (action: string) => {
@@ -58,221 +73,134 @@ export default function AuditoriaPage() {
 
   const getActionLabel = (action: string) => {
     const labels: Record<string, string> = {
-      'CREATE': 'Criação',
-      'UPDATE': 'Atualização',
-      'DELETE': 'Exclusão',
-      'LOGIN': 'Login',
-      'LOGOUT': 'Logout',
-      'VIEW': 'Visualização',
-      'EXPORT': 'Exportação'
+      'CREATE': 'Criação', 'UPDATE': 'Atualização', 'DELETE': 'Exclusão',
+      'LOGIN': 'Login', 'LOGOUT': 'Logout', 'VIEW': 'Visualização', 'EXPORT': 'Exportação'
     };
     return labels[action.toUpperCase()] || action;
   };
 
   const getEntityLabel = (entity: string) => {
     const labels: Record<string, string> = {
-      'conselheiro': 'Conselheiro',
-      'reuniao': 'Reunião',
-      'processo': 'Processo',
-      'documento': 'Documento',
-      'resolucao': 'Resolução',
-      'impedimento': 'Impedimento',
-      'user': 'Usuário'
+      'conselheiro': 'Conselheiro', 'reuniao': 'Reunião', 'processo': 'Processo',
+      'documento': 'Documento', 'resolucao': 'Resolução', 'impedimento': 'Impedimento', 'user': 'Usuário'
     };
     return labels[entity] || entity;
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando logs de auditoria...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="flex h-[50vh] items-center justify-center"><LoadingSpinner /></div>;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Logs de Auditoria</h1>
-          <p className="text-gray-600 mt-1">
-            Registro completo de todas as ações no sistema para conformidade com TCE-MG
-          </p>
-        </div>
-        
-        <Button onClick={handleExport}>
-          <Download className="h-4 w-4 mr-2" />
-          Exportar TCE-MG
-        </Button>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <BreadcrumbWithActions
+          title="Logs de Auditoria"
+          description="Registro completo de todas as ações no sistema para conformidade com TCE-MG"
+          actions={
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={handleExport} disabled={logs.length === 0}>
+                  <Download className="h-4 w-4 mr-2" />Exportar TCE-MG
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Exportar logs em formato CSV para TCE-MG</p></TooltipContent>
+            </Tooltip>
+          }
+        >
+          <SmartBreadcrumb />
+        </BreadcrumbWithActions>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filtros e Busca</CardTitle>
-          <CardDescription>
-            Filtre os logs por período, ação ou entidade para análise específica
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="relative">
-              <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-              <Input
-                placeholder="Buscar usuário ou detalhes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            <Select value={filterAction} onValueChange={setFilterAction}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar por ação" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Todas as ações</SelectItem>
-                <SelectItem value="CREATE">Criação</SelectItem>
-                <SelectItem value="UPDATE">Atualização</SelectItem>
-                <SelectItem value="DELETE">Exclusão</SelectItem>
-                <SelectItem value="LOGIN">Login</SelectItem>
-                <SelectItem value="LOGOUT">Logout</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={filterEntity} onValueChange={setFilterEntity}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar por entidade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Todas as entidades</SelectItem>
-                <SelectItem value="conselheiro">Conselheiro</SelectItem>
-                <SelectItem value="reuniao">Reunião</SelectItem>
-                <SelectItem value="processo">Processo</SelectItem>
-                <SelectItem value="documento">Documento</SelectItem>
-                <SelectItem value="resolucao">Resolução</SelectItem>
-                <SelectItem value="impedimento">Impedimento</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              placeholder="Data início"
-            />
-
-            <Input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              placeholder="Data fim"
-            />
-          </div>
-
-          <div className="flex justify-end mt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchTerm('');
-                setFilterAction('');
-                setFilterEntity('');
-                setDateRange({ start: '', end: '' });
-              }}
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Limpar Filtros
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Logs Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Registros de Auditoria</CardTitle>
-          <CardDescription>
-            {logs.length} registro(s) encontrado(s)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Ação</TableHead>
-                <TableHead>Entidade</TableHead>
-                <TableHead>ID</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>Detalhes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {logs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell className="font-mono text-sm">
-                    {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm">
-                        {log.profiles?.full_name || 'Sistema'}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {log.profiles?.email}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getActionColor(log.action)}>
-                      {getActionLabel(log.action)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="capitalize">
-                      {getEntityLabel(log.entity)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {log.entity_id?.slice(0, 8)}...
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-600">
-                    {log.ip_address}
-                  </TableCell>
-                  <TableCell>
-                    {log.details && (
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {logs.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 mb-2">
-                <Eye className="h-12 w-12 mx-auto" />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Filtros e Busca</CardTitle>
+            <CardDescription>Filtre os logs por período, ação ou entidade para análise específica</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="relative">
+                <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                <Input placeholder="Buscar usuário ou detalhes..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhum log encontrado
-              </h3>
-              <p className="text-gray-600">
-                {searchTerm || filterAction || filterEntity
-                  ? 'Tente ajustar os filtros para encontrar registros.'
-                  : 'Ainda não há registros de auditoria.'}
-              </p>
+              <Select value={filterAction} onValueChange={setFilterAction}>
+                <SelectTrigger><SelectValue placeholder="Filtrar por ação" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as ações</SelectItem>
+                  <SelectItem value="CREATE">Criação</SelectItem>
+                  <SelectItem value="UPDATE">Atualização</SelectItem>
+                  <SelectItem value="DELETE">Exclusão</SelectItem>
+                  <SelectItem value="LOGIN">Login</SelectItem>
+                  <SelectItem value="LOGOUT">Logout</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterEntity} onValueChange={setFilterEntity}>
+                <SelectTrigger><SelectValue placeholder="Filtrar por entidade" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as entidades</SelectItem>
+                  <SelectItem value="conselheiro">Conselheiro</SelectItem>
+                  <SelectItem value="reuniao">Reunião</SelectItem>
+                  <SelectItem value="processo">Processo</SelectItem>
+                  <SelectItem value="documento">Documento</SelectItem>
+                  <SelectItem value="resolucao">Resolução</SelectItem>
+                  <SelectItem value="impedimento">Impedimento</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input type="date" value={dateRange.start} onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} placeholder="Data início" />
+              <Input type="date" value={dateRange.end} onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} placeholder="Data fim" />
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={handleClearFilters}><Filter className="h-4 w-4 mr-2" />Limpar Filtros</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Registros de Auditoria</CardTitle>
+            <CardDescription>{logs.length} registro(s) encontrado(s)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow><TableHead>Data/Hora</TableHead><TableHead>Usuário</TableHead><TableHead>Ação</TableHead><TableHead>Entidade</TableHead><TableHead>ID</TableHead><TableHead>IP</TableHead><TableHead>Detalhes</TableHead></TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="font-mono text-sm">{format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">{log.profiles?.full_name || 'Sistema'}</span>
+                        <span className="text-xs text-muted-foreground">{log.profiles?.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell><Badge className={getActionColor(log.action)}>{getActionLabel(log.action)}</Badge></TableCell>
+                    <TableCell><span className="capitalize">{getEntityLabel(log.entity)}</span></TableCell>
+                    <TableCell className="font-mono text-xs">{log.entity_id?.slice(0, 8)}...</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{log.ip_address}</TableCell>
+                    <TableCell>
+                      {log.details && (
+                        <Tooltip>
+                          <TooltipTrigger asChild><Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button></TooltipTrigger>
+                          <TooltipContent><p>Ver detalhes da ação</p></TooltipContent>
+                        </Tooltip>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {logs.length === 0 && (
+              <div className="text-center py-12">
+                <Eye className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhum log encontrado</h3>
+                <p className="text-muted-foreground">
+                  {searchTerm || filterAction || filterEntity ? 'Tente ajustar os filtros para encontrar registros.' : 'Ainda não há registros de auditoria.'}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </TooltipProvider>
   );
 }

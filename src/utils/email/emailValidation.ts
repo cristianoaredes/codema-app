@@ -1,73 +1,50 @@
 import { UserRole } from '@/types';
 
-export const EMAIL_VALIDATION_PATTERNS = {
-  GENERAL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  GOV_BR: /^[^\s@]+@[^\s@]*\.gov\.br$/,
-  INSTITUTIONAL: /^[^\s@]+@(itanhomi\.sp\.gov\.br|codema\.itanhomi\.sp\.gov\.br)$/
-};
+// Regex para validação de formato de email genérico
+const GENERIC_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export const ROLES_REQUIRING_GOV_EMAIL: UserRole[] = [
-  // Temporarily disabled - accept all domains
-];
-
-export const ROLES_REQUIRING_INSTITUTIONAL_EMAIL: UserRole[] = [
-  // Temporarily disabled - accept all domains
-];
-
-export interface EmailValidationResult {
-  isValid: boolean;
-  error?: string;
-  suggestions?: string[];
-}
-
-export function validateEmailForRole(email: string, role: UserRole): EmailValidationResult {
-  // Basic email format validation
-  if (!EMAIL_VALIDATION_PATTERNS.GENERAL.test(email)) {
-    return {
-      isValid: false,
-      error: 'Formato de email inválido'
-    };
+/**
+ * Valida um email com base no formato e, opcionalmente, em regras de domínio por perfil.
+ * 
+ * @param email - O email a ser validado.
+ * @param role - O perfil do usuário, para aplicar regras específicas (opcional).
+ * @returns Um objeto com { isValid: boolean, error?: string, suggestions?: string[] }
+ */
+export const validateEmailForRole = (email: string, role?: UserRole): { 
+  isValid: boolean; 
+  error?: string; 
+  suggestions?: string[]; 
+} => {
+  if (!email) {
+    return { isValid: false, error: 'Email é obrigatório' };
   }
 
-  // Domain-specific validation temporarily disabled
-  // All roles can use any valid email domain
+  // 1. Validação de formato básico
+  if (!GENERIC_EMAIL_REGEX.test(email)) {
+    return { isValid: false, error: 'Formato de email inválido' };
+  }
+
+  // 2. Regras específicas por perfil (exemplo futuro)
+  // Aqui poderiam entrar lógicas como:
+  // - Verificar se o domínio do email corresponde a um domínio institucional esperado para admins.
+  // - Bloquear domínios de email temporários.
   
-  // Check institutional email requirement (disabled)
-  // if (ROLES_REQUIRING_INSTITUTIONAL_EMAIL.includes(role)) {
-  //   if (!EMAIL_VALIDATION_PATTERNS.INSTITUTIONAL.test(email)) {
-  //     return {
-  //       isValid: false,
-  //       error: 'Administradores devem usar email institucional (@itanhomi.sp.gov.br)',
-//       suggestions: ['exemplo@itanhomi.sp.gov.br', 'exemplo@codema.itanhomi.sp.gov.br']
-  //     };
-  //   }
-  // }
+  if (role === 'admin' || role === 'presidente' || role === 'secretario') {
+    // Exemplo: poderia exigir um domínio @gov.br, mas por enquanto vamos manter genérico.
+    // if (!email.endsWith('.gov.br')) {
+    //   return { isValid: false, error: 'Perfis de gestão devem usar um email institucional.' };
+    // }
+  }
 
-  // Check government email requirement (disabled)
-  // if (ROLES_REQUIRING_GOV_EMAIL.includes(role)) {
-  //   if (!EMAIL_VALIDATION_PATTERNS.GOV_BR.test(email)) {
-  //     return {
-  //       isValid: false,
-  //       error: 'Este perfil requer email governamental (.gov.br)',
-  //       suggestions: ['exemplo@itanhomi.sp.gov.br', 'exemplo@prefeitura.sp.gov.br']
-  //     };
-  //   }
-  // }
-
+  // Se todas as validações passaram
   return { isValid: true };
-}
+};
 
-export function getEmailDomainSuggestions(role: UserRole): string[] {
-  // Domain-specific suggestions temporarily disabled
-  // All roles get generic email domain suggestions
-  
-  // if (ROLES_REQUIRING_INSTITUTIONAL_EMAIL.includes(role)) {
-  //   return ['@itanhomi.sp.gov.br', '@codema.itanhomi.sp.gov.br'];
-  // }
-  
-  // if (ROLES_REQUIRING_GOV_EMAIL.includes(role)) {
-  //   return ['@itanhomi.sp.gov.br', '@prefeitura.sp.gov.br', '@gov.br'];
-  // }
-  
-  return ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@uol.com.br'];
-}
+/**
+ * Sugere domínios de email com base no perfil (exemplo futuro).
+ */
+export const getSuggestedDomainsForRole = (role: UserRole): string[] => {
+  // Lógica de sugestão pode ser implementada aqui.
+  // Por enquanto, retorna um array vazio.
+  return [];
+};

@@ -1,0 +1,35 @@
+{
+  "name": "MuniConnect - Gestão de Conselhos Municipais",
+  "short_name": "MuniConnect",
+  "description": "Plataforma SaaS para gestão de Conselhos Municipais. Aumente a transparência, eficiência e receita.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a5634",
+  "orientation": "portrait-primary",
+  "categories": ["government", "business", "productivity"],
+  "lang": "pt-BR",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-48x48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    }
+  ]
+} 

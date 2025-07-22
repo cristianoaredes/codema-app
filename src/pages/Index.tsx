@@ -1,452 +1,265 @@
-import { useAuth } from "@/hooks/useAuth";
-import { Navigate, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Shield, Users, FileText, MapPin, Phone, Mail, ArrowRight, CheckCircle, TreePine, Star, Award, Clock } from "lucide-react";
-import logo from "@/assets/logo_with_text.png";
+import { Card } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { 
+  ShieldCheck, 
+  BarChart3, 
+  Users, 
+  FileText, 
+  MessageSquare, 
+  Zap,
+  Mail,
+  MapPin,
+  Phone,
+  Quote
+} from "lucide-react";
+import logo from "@/assets/logo_municonnect.png";
 
-const Index = () => {
-  const { user, loading } = useAuth();
+// --- Framer Motion Variants ---
+
+const containerVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+    },
+  },
+};
+
+// --- Seções como Componentes ---
+
+const HeroSection = () => {
   const navigate = useNavigate();
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-b from-green-50 to-emerald-100 py-32 md:py-40 text-center">
+      {/* Abstract background shapes */}
+      <div className="absolute top-0 left-0 w-64 h-64 bg-green-200 rounded-full opacity-30 blur-3xl animate-blob"></div>
+      <div className="absolute bottom-0 right-0 w-64 h-64 bg-emerald-200 rounded-full opacity-30 blur-3xl animate-blob animation-delay-4000"></div>
+      
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="container relative"
+      >
+        <motion.h1 variants={itemVariants} className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
+          Modernize a Gestão de Conselhos do seu Município
+        </motion.h1>
+        <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed">
+          MuniConnect é a solução completa que organiza, digitaliza e dá transparência aos conselhos municipais, destravando eficiência e novas receitas.
+        </motion.p>
+        <motion.div variants={itemVariants} className="flex justify-center gap-4">
+          <Button size="lg" onClick={() => navigate('/auth')} className="bg-green-600 hover:bg-green-700 text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
+            Solicitar Demonstração
+          </Button>
+          <Button size="lg" variant="outline" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="bg-white/50 backdrop-blur-sm border-gray-300 hover:bg-white/80 transition-all duration-300">
+            Conhecer Funcionalidades
+          </Button>
+        </motion.div>
+      </motion.div>
+    </section>
+  );
+};
 
-  // Detectar tokens de magic link na URL e redirecionar para callback
-  useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    if (hashParams.get('access_token') || urlParams.get('token_hash')) {
-      navigate('/auth/callback' + window.location.search + window.location.hash);
-      return;
-    }
-  }, [navigate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700"></div>
-      </div>
-    );
-  }
-
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
+const FeaturesSection = () => {
+  const features = [
+    { icon: <Users />, title: "Gestão de Membros", description: "Controle mandatos, atas de posse e informações de todos os conselheiros em um só lugar." },
+    { icon: <FileText />, title: "Atas e Reuniões Digitais", description: "Agende reuniões, crie pautas, registre presenças e gere atas automaticamente." },
+    { icon: <ShieldCheck />, title: "Portal da Transparência", description: "Publique resoluções, atas e documentos de forma automática, cumprindo a legislação." },
+    { icon: <BarChart3 />, title: "Relatórios e Dashboards", description: "Acompanhe a frequência dos membros, o status das resoluções e o desempenho do conselho." },
+    { icon: <MessageSquare />, title: "Comunicação Centralizada", description: "Envie convocações e notificações para todos os membros com apenas um clique." },
+    { icon: <Zap />, title: "Destrave Receitas (ICMS Ecológico)", description: "Organize seu conselho e aumente a pontuação do seu município para acessar novas fontes de receita." },
+  ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <img src={logo} alt="CODEMA Logo" className="h-10 w-auto" />
-              <div className="border-l border-gray-200 pl-4">
-                <h1 className="text-xl font-semibold text-gray-900">CODEMA</h1>
-                <p className="text-sm text-gray-600">Itanhomi - MG</p>
-              </div>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/auth')}
-              className="border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 transition-all duration-300"
-            >
-              Acessar Sistema
-            </Button>
-          </div>
+    <section id="features" className="py-24 bg-white">
+      <div className="container">
+        <div className="text-center mb-16">
+          <motion.h2 variants={itemVariants} className="text-3xl md:text-4xl font-bold text-gray-900">Tudo o que seu Conselho precisa</motion.h2>
+          <motion.p variants={itemVariants} className="text-lg text-gray-600 mt-4 max-w-2xl mx-auto">Uma plataforma robusta para transformar a gestão e a transparência.</motion.p>
         </div>
-      </header>
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
+          {features.map((feature, index) => (
+            <motion.div key={index} variants={itemVariants}>
+              <Card className="text-center p-8 border-0 shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
+                <div className="mb-4 inline-block p-4 bg-gradient-to-br from-green-100 to-emerald-100 text-green-600 rounded-full">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
-      {/* Hero Section */}
-      <section className="relative py-32 px-6 overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-green-50 rounded-full blur-3xl opacity-60"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
+const TestimonialsSection = () => {
+  const testimonials = [
+    { name: "Carlos Mendes", role: "Secretário de Planejamento", city: "Nova Esperança", text: "Com o MuniConnect, o processo de aprovação de resoluções, que levava semanas, agora é concluído em dias. A organização das atas e documentos nos deu uma base sólida para o ICMS Ecológico.", avatar: "CM" },
+    { name: "Ana Paula Ferreira", role: "Prefeita", city: "Serra Verde", text: "Nosso município é pequeno, mas conseguimos uma solução tecnológica de ponta. O retorno em transparência e na imagem da gestão perante a comunidade e o Ministério Público foi imenso.", avatar: "AF" },
+  ];
+  return (
+    <section className="py-24 bg-gray-50">
+      <div className="container">
+        <div className="text-center mb-16">
+          <motion.h2 variants={itemVariants} className="text-3xl md:text-4xl font-bold text-gray-900">O que dizem os gestores públicos</motion.h2>
+          <motion.p variants={itemVariants} className="text-lg text-gray-600 mt-4 max-w-2xl mx-auto">Resultados reais em municípios que já transformaram seus conselhos.</motion.p>
         </div>
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          className="grid md:grid-cols-2 gap-8"
+        >
+          {testimonials.map((testimonial, index) => (
+            <motion.div key={index} variants={itemVariants}>
+              <Card className="p-8 border-0 shadow-lg h-full relative">
+                <Quote className="absolute top-6 left-6 w-12 h-12 text-gray-100" />
+                <p className="text-gray-700 italic mb-6 relative z-10">"{testimonial.text}"</p>
+                <div className="flex items-center relative z-10">
+                  <Avatar>
+                    <AvatarFallback>{testimonial.avatar}</AvatarFallback>
+                  </Avatar>
+                  <div className="ml-4">
+                    <h4 className="font-bold">{testimonial.name}</h4>
+                    <p className="text-sm text-gray-600">{testimonial.role}, {testimonial.city}</p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center px-4 py-2 bg-green-50 rounded-full text-green-700 text-sm font-medium mb-8">
-            <Award className="w-4 h-4 mr-2" />
-            Governo Municipal de Itanhomi - MG
-          </div>
-          
-          <h1 className="text-6xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight">
-            Conselho de Defesa do
-            <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent block">
-              Meio Ambiente
-            </span>
-          </h1>
-          
-          <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Sistema integrado para gestão municipal, relatórios ambientais e participação cidadã. 
-            Construindo um futuro sustentável para Itanhomi através da tecnologia e transparência.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button 
-              size="lg" 
-              onClick={() => navigate('/auth')}
-              className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 text-white px-10 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
-            >
-              <Shield className="w-5 h-5 mr-2" />
-              Acessar Sistema
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 px-10 py-4 text-lg font-semibold transition-all duration-300"
-              onClick={() => document.getElementById('sobre')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              Saiba Mais
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-green-600" />
-              <span>Sistema Seguro</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-green-600" />
-              <span>Transparente</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-green-600" />
-              <span>24/7 Disponível</span>
-            </div>
-          </div>
+const FaqSection = () => {
+  const faqs = [
+    { q: "Qual o tempo de implementação?", a: "O tempo médio de implementação é de 1 a 2 semanas. Nossa equipe cuida de toda a importação de dados e configuração inicial." },
+    { q: "O sistema atende a legislação para transparência?", a: "Sim, o MuniConnect foi desenvolvido seguindo as principais diretrizes de transparência pública, gerando um portal de fácil acesso para os cidadãos." },
+    { q: "É necessário treinamento para a equipe?", a: "Sim, oferecemos um treinamento completo para todos os usuários, do presidente do conselho aos membros, e disponibilizamos suporte técnico contínuo." },
+    { q: "O sistema se integra com outros portais da prefeitura?", a: "Sim, podemos integrar o portal de transparência do conselho ao site principal da prefeitura para garantir uma experiência unificada." },
+  ];
+  return (
+    <section className="py-24 bg-white">
+      <div className="container max-w-3xl mx-auto">
+        <div className="text-center mb-16">
+          <motion.h2 variants={itemVariants} className="text-3xl md:text-4xl font-bold text-gray-900">Perguntas Frequentes</motion.h2>
+          <motion.p variants={itemVariants} className="text-lg text-gray-600 mt-4">Respostas para as dúvidas mais comuns.</motion.p>
         </div>
-      </section>
+        <Accordion type="single" collapsible className="w-full">
+          {faqs.map((faq, index) => (
+            <motion.div key={index} variants={itemVariants}>
+              <AccordionItem value={`item-${index}`} className="border-b">
+                <AccordionTrigger className="font-bold text-lg hover:no-underline text-left">{faq.q}</AccordionTrigger>
+                <AccordionContent className="text-gray-700 text-base pt-2">{faq.a}</AccordionContent>
+              </AccordionItem>
+            </motion.div>
+          ))}
+        </Accordion>
+      </div>
+    </section>
+  );
+};
 
-      {/* Stats Section */}
-      <section className="py-24 bg-gradient-to-r from-gray-50 to-green-50/30">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center group">
-              <div className="text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform duration-300">
-                15+
-              </div>
-              <p className="text-gray-600 font-medium">Conselheiros Ativos</p>
-            </div>
-            <div className="text-center group">
-              <div className="text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform duration-300">
-                120+
-              </div>
-              <p className="text-gray-600 font-medium">Relatórios Processados</p>
-            </div>
-            <div className="text-center group">
-              <div className="text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform duration-300">
-                24
-              </div>
-              <p className="text-gray-600 font-medium">Reuniões Realizadas</p>
-            </div>
-          </div>
+const CtaSection = () => {
+  const navigate = useNavigate();
+  return (
+    <section className="py-24 bg-green-700 text-white">
+      <div className="container text-center">
+        <motion.h2 variants={itemVariants} className="text-3xl md:text-4xl font-bold mb-4">Pronto para transformar a gestão do seu conselho?</motion.h2>
+        <motion.p variants={itemVariants} className="text-lg text-green-100 mb-8 max-w-2xl mx-auto">Agende uma demonstração gratuita e veja como nossa plataforma pode aumentar sua receita, otimizar processos e fortalecer sua gestão.</motion.p>
+        <motion.div variants={itemVariants}>
+          <Button size="lg" variant="secondary" onClick={() => navigate('/auth')} className="transform hover:scale-105 transition-transform duration-300">
+            Solicitar Demonstração Gratuita
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+const Footer = () => (
+  <footer className="bg-gray-900 text-white pt-20 pb-10">
+    <div className="container">
+      <div className="grid md:grid-cols-4 gap-8 mb-12">
+        <div>
+          <img src={logo} alt="MuniConnect Logo" className="h-10 mb-4" />
+          <p className="text-gray-400">Digitalizando e conectando a gestão pública municipal.</p>
         </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-32 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center px-4 py-2 bg-green-50 rounded-full text-green-700 text-sm font-medium mb-6">
-              Funcionalidades Principais
-            </div>
-            <h2 className="text-5xl font-bold text-gray-900 mb-6">
-              Sistema <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Completo</span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Todas as ferramentas necessárias para uma gestão ambiental eficiente, transparente e moderna.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-500 group overflow-hidden">
-              <CardContent className="p-8 text-center relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative z-10">
-                  <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <FileText className="w-10 h-10 text-green-700" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Relatórios Inteligentes</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    Crie, acompanhe e gerencie relatórios de problemas ambientais com ferramentas avançadas e interface intuitiva.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-500 group overflow-hidden">
-              <CardContent className="p-8 text-center relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative z-10">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <Users className="w-10 h-10 text-blue-700" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Gestão Integrada</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    Gerencie conselheiros, reuniões, atas e resoluções de forma organizada e colaborativa.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-500 group overflow-hidden">
-              <CardContent className="p-8 text-center relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative z-10">
-                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <Shield className="w-10 h-10 text-emerald-700" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Máxima Segurança</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    Sistema seguro com controle de acesso avançado, auditoria completa e proteção de dados.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <div>
+          <h4 className="font-bold mb-4">Soluções</h4>
+          <ul className="space-y-2 text-gray-400">
+            <li><a href="#features" className="hover:text-green-400 transition-colors">Gestão de Conselhos</a></li>
+            <li><a href="#features" className="hover:text-green-400 transition-colors">Portal da Transparência</a></li>
+            <li><a href="#features" className="hover:text-green-400 transition-colors">ICMS Ecológico</a></li>
+          </ul>
         </div>
-      </section>
-
-      {/* About Section */}
-      <section id="sobre" className="py-32 bg-gradient-to-br from-green-50 via-emerald-50/30 to-blue-50/30">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Content */}
-            <div>
-              <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full text-green-700 text-sm font-medium mb-6">
-                <TreePine className="w-4 h-4 mr-2" />
-                Nossa Missão
-              </div>
-              
-              <h2 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                Preservando o Futuro do
-                <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent block">
-                  Meio Ambiente
-                </span>
-              </h2>
-              
-              <p className="text-xl text-gray-600 mb-10 leading-relaxed">
-                O CODEMA de Itanhomi trabalha incansavelmente para promover a proteção e preservação do meio ambiente, 
-                garantindo o desenvolvimento sustentável e a qualidade de vida da população.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-6 h-6 text-green-700" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Licenciamento Ambiental</h3>
-                    <p className="text-gray-600 text-sm">Análise e aprovação responsável de projetos.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-6 h-6 text-blue-700" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Fiscalização Ativa</h3>
-                    <p className="text-gray-600 text-sm">Monitoramento contínuo e controle eficiente.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-6 h-6 text-emerald-700" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Educação Ambiental</h3>
-                    <p className="text-gray-600 text-sm">Programas de conscientização comunitária.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-6 h-6 text-teal-700" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Políticas Sustentáveis</h3>
-                    <p className="text-gray-600 text-sm">Diretrizes para desenvolvimento responsável.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Visual Element */}
-            <div className="relative">
-              <div className="bg-gradient-to-br from-white to-green-50 rounded-3xl p-8 shadow-2xl">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <TreePine className="w-12 h-12 text-green-700" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Compromisso com o Futuro</h3>
-                  <p className="text-gray-600 leading-relaxed mb-6">
-                    Desde nossa criação, trabalhamos para preservar os recursos naturais de Itanhomi 
-                    e promover práticas sustentáveis em nossa comunidade.
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="bg-white rounded-xl p-4">
-                      <div className="text-2xl font-bold text-green-700">100%</div>
-                      <div className="text-sm text-gray-600">Transparência</div>
-                    </div>
-                    <div className="bg-white rounded-xl p-4">
-                      <div className="text-2xl font-bold text-blue-700">24/7</div>
-                      <div className="text-sm text-gray-600">Monitoramento</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div>
+          <h4 className="font-bold mb-4">Empresa</h4>
+          <ul className="space-y-2 text-gray-400">
+            <li><a href="#" className="hover:text-green-400 transition-colors">Sobre Nós</a></li>
+            <li><a href="#" className="hover:text-green-400 transition-colors">Contato</a></li>
+            <li><a href="#" className="hover:text-green-400 transition-colors">Política de Privacidade</a></li>
+          </ul>
         </div>
-      </section>
-
-      {/* Contact Section */}
-      <section className="py-32 px-6">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center px-4 py-2 bg-green-50 rounded-full text-green-700 text-sm font-medium mb-6">
-            Entre em Contato
-          </div>
-          
-          <h2 className="text-5xl font-bold text-gray-900 mb-6">
-            Estamos Aqui para <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Ajudar</span>
-          </h2>
-          
-          <p className="text-xl text-gray-600 mb-16 max-w-3xl mx-auto">
-            Nossa equipe está sempre disponível para esclarecer dúvidas e auxiliar em questões ambientais.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <MapPin className="w-8 h-8 text-green-700" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Localização</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Rua Principal, 123<br />
-                  Centro - Itanhomi/MG<br />
-                  CEP: 35120-000
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Phone className="w-8 h-8 text-blue-700" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Telefones</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  (33) 3361-1234<br />
-                  (33) 99999-9999<br />
-                  Seg. a Sex., 8h às 17h
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Mail className="w-8 h-8 text-emerald-700" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Email</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  codema@itanhomi.mg.gov.br<br />
-                  meioambiente@itanhomi.mg.gov.br<br />
-                  Resposta em até 24h
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-3xl p-12">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">
-              Pronto para Começar?
-            </h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-              Acesse nosso sistema e faça parte da transformação ambiental de Itanhomi.
-            </p>
-            <Button 
-              size="lg" 
-              onClick={() => navigate('/auth')}
-              className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 text-white px-12 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
-            >
-              <Shield className="w-6 h-6 mr-3" />
-              Acessar Sistema CODEMA
-            </Button>
-          </div>
+        <div>
+          <h4 className="font-bold mb-4">Contato</h4>
+          <ul className="space-y-3 text-gray-400">
+            <li className="flex items-center gap-2"><Mail size={16} /> contato@municonnect.com.br</li>
+            <li className="flex items-center gap-2"><Phone size={16} /> (31) 99999-9999</li>
+            <li className="flex items-center gap-2"><MapPin size={16} /> Belo Horizonte, MG</li>
+          </ul>
         </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Brand */}
-            <div className="md:col-span-2">
-              <div className="flex items-center space-x-4 mb-6">
-                <img src={logo} alt="CODEMA Logo" className="h-10 w-auto" />
-                <div>
-                  <h3 className="text-xl font-bold">CODEMA Itanhomi</h3>
-                  <p className="text-gray-400">Conselho de Defesa do Meio Ambiente</p>
-                </div>
-              </div>
-              <p className="text-gray-400 leading-relaxed max-w-md mb-6">
-                Trabalhando por um futuro sustentável e preservação ambiental em Itanhomi. 
-                Transparência, eficiência e compromisso com as futuras gerações.
-              </p>
-            </div>
-
-            {/* Links */}
-            <div>
-              <h4 className="font-semibold text-lg mb-4">Links Rápidos</h4>
-              <ul className="space-y-3 text-gray-400">
-                <li><a href="#" className="hover:text-green-400 transition-colors">Sobre o CODEMA</a></li>
-                <li><a href="#" className="hover:text-green-400 transition-colors">Legislação</a></li>
-                <li><a href="#" className="hover:text-green-400 transition-colors">Resoluções</a></li>
-                <li><a href="#" className="hover:text-green-400 transition-colors">Transparência</a></li>
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-semibold text-lg mb-4">Contato</h4>
-              <ul className="space-y-3 text-gray-400">
-                <li className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  <span>(33) 3361-1234</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  <span>codema@itanhomi.mg.gov.br</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>Centro, Itanhomi - MG</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 mb-4 md:mb-0">
-              © 2024 CODEMA Itanhomi. Todos os direitos reservados.
-            </p>
-            <div className="flex space-x-6">
-              <span className="text-gray-400 hover:text-green-400 cursor-pointer transition-colors">Política de Privacidade</span>
-              <span className="text-gray-400 hover:text-green-400 cursor-pointer transition-colors">Termos de Uso</span>
-              <span className="text-gray-400 hover:text-green-400 cursor-pointer transition-colors">Acessibilidade</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      </div>
+      <div className="border-t border-gray-800 pt-8 text-center text-gray-500">
+        <p>&copy; 2024 MuniConnect. Todos os direitos reservados.</p>
+      </div>
     </div>
+  </footer>
+);
+
+const Index = () => {
+  return (
+    <motion.div 
+      initial="hidden" 
+      animate="visible" 
+      variants={containerVariants} 
+      className="bg-white"
+    >
+      <HeroSection />
+      <FeaturesSection />
+      <TestimonialsSection />
+      <FaqSection />
+      <CtaSection />
+      <Footer />
+    </motion.div>
   );
 };
 

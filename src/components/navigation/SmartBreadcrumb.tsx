@@ -3,6 +3,7 @@ import { Home, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { cn } from "@/lib/utils";
+import { useBreadcrumbs, BreadcrumbItem } from "@/hooks/useBreadcrumbs";
 
 export interface BreadcrumbItemConfig {
   label: string;
@@ -11,7 +12,7 @@ export interface BreadcrumbItemConfig {
 }
 
 export interface SmartBreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
-  items?: BreadcrumbItemConfig[];
+  // A propriedade items pode ser removida se sempre usarmos a geração automática
 }
 
 // Auto-generate breadcrumbs from route with proper labels
@@ -44,59 +45,61 @@ const routeLabels: Record<string, string> = {
 };
 
 function generateBreadcrumbs(pathname: string): BreadcrumbItemConfig[] {
-  // Don't show breadcrumbs on home page
+  const breadcrumbs: BreadcrumbItemConfig[] = [];
+  
+  // Start with the root breadcrumb
+  breadcrumbs.push({ 
+    label: routeLabels['/'] || 'Início', 
+    href: '/', 
+  });
+  
+  // Don't show more breadcrumbs on home page
   if (pathname === '/') {
-    return [];
+    // Return only home if it's the current page
+    return [{ ...breadcrumbs[0], href: undefined, icon: <Home className="h-4 w-4" /> }];
   }
 
-  const paths = pathname.split('/').filter(Boolean);
-  const breadcrumbs: BreadcrumbItemConfig[] = [
-    { 
-      label: 'Início', 
-      href: '/', 
-      icon: <Home className="h-4 w-4" /> 
-    }
-  ];
-
+  const pathSegments = pathname.split('/').filter(Boolean);
   let currentPath = '';
-  for (const path of paths) {
-    currentPath += `/${path}`;
+
+  pathSegments.forEach(segment => {
+    currentPath += `/${segment}`;
     const label = routeLabels[currentPath] || 
-      path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
+                  segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
     
+    // Avoid duplicating the "Início" label if the logic somehow generates it again
+    if (currentPath === '/' && breadcrumbs.length > 0) return;
+
     breadcrumbs.push({
       label,
       href: currentPath
     });
+  });
+
+  // Add home icon to the first element and mark last element
+  if (breadcrumbs.length > 0) {
+    breadcrumbs[0].icon = <Home className="h-4 w-4" />;
+    // The last item should not have a link
+    breadcrumbs[breadcrumbs.length - 1].href = undefined;
   }
 
   return breadcrumbs;
 }
 
 export function SmartBreadcrumb({
-  items,
   className,
   ...props
 }: SmartBreadcrumbProps) {
-  const location = useLocation();
-  const breadcrumbItems = items || generateBreadcrumbs(location.pathname);
+  const breadcrumbItems = useBreadcrumbs();
 
-  // Don't render if there's only one item or no items
-  if (breadcrumbItems.length <= 1) {
+  // Se não houver breadcrumbs (ex: na página inicial), não renderiza nada
+  if (breadcrumbItems.length === 0) {
     return null;
   }
 
-  // Convert to the format expected by Breadcrumbs component
-  const breadcrumbData = breadcrumbItems.map((item, index) => ({
-    label: item.label,
-    href: item.href,
-    icon: item.icon,
-    current: index === breadcrumbItems.length - 1
-  }));
-
   return (
     <Breadcrumbs 
-      items={breadcrumbData} 
+      items={breadcrumbItems} 
       className={cn("", className)} 
       {...props}
     />

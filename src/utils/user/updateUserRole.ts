@@ -1,8 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
+import { UserRole } from "@/types/auth";
 
-interface UserRoleUpdate {
+interface UpdateUserRoleRequest {
+  userId: string;
+  newRole: UserRole;
+}
+
+interface UpdateUserByEmailRequest {
   email: string;
-  newRole: 'citizen' | 'conselheiro_titular' | 'conselheiro_suplente' | 'secretario' | 'presidente' | 'admin';
+  newRole: UserRole;
   fullName?: string;
 }
 
@@ -47,14 +53,14 @@ export class UserRoleManager {
 
     } catch (error: unknown) {
       console.error('💥 Erro inesperado:', error);
-      return { error: error.message };
+      return { error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }
   }
 
   /**
-   * Atualiza o role de um usuário
+   * Atualiza o role de um usuário usando email
    */
-  static async updateUserRole(updates: UserRoleUpdate) {
+  static async updateUserRole(updates: UpdateUserByEmailRequest) {
     try {
       console.log(`🔄 Atualizando role do usuário: ${updates.email} para ${updates.newRole}`);
       
@@ -65,7 +71,7 @@ export class UserRoleManager {
       }
 
       // Atualizar role na tabela profiles
-      const updateData: unknown = {
+      const updateData: any = {
         role: updates.newRole,
         updated_at: new Date().toISOString()
       };
@@ -118,7 +124,51 @@ export class UserRoleManager {
 
     } catch (error: unknown) {
       console.error('💥 Erro inesperado:', error);
-      return { error: error.message };
+      return { error: error instanceof Error ? error.message : 'Erro desconhecido' };
+    }
+  }
+
+  /**
+   * Atualiza o role de um usuário usando userId
+   */
+  static async updateUserRoleById(updates: UpdateUserRoleRequest) {
+    try {
+      console.log(`🔄 Atualizando role do usuário ID: ${updates.userId} para ${updates.newRole}`);
+      
+      // Atualizar role na tabela profiles
+      const updateData: any = {
+        role: updates.newRole,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', updates.userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Erro ao atualizar usuário:', error);
+        return { error: error.message };
+      }
+
+      console.log('✅ Usuário atualizado com sucesso:', {
+        id: data.id,
+        email: data.email,
+        fullName: data.full_name,
+        role: data.role,
+        updatedAt: data.updated_at
+      });
+
+      return { 
+        profile: data,
+        error: null 
+      };
+
+    } catch (error: unknown) {
+      console.error('💥 Erro inesperado:', error);
+      return { error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }
   }
 
@@ -165,7 +215,7 @@ export class UserRoleManager {
 
     } catch (error: unknown) {
       console.error('💥 Erro inesperado:', error);
-      return { error: error.message };
+      return { error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }
   }
 }
@@ -173,6 +223,10 @@ export class UserRoleManager {
 // Função de conveniência para usar no console
 export const updateUserToAdmin = async (email: string, fullName?: string) => {
   return await UserRoleManager.makeUserAdmin(email, fullName);
+};
+
+export const updateUserRoleById = async (userId: string, newRole: UserRole) => {
+  return await UserRoleManager.updateUserRoleById({ userId, newRole });
 };
 
 export const checkUser = async (email: string) => {

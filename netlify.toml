@@ -1,0 +1,21 @@
+# Configurações de Build
+[build]
+  # Comando para construir o site
+  command = "npm run build"
+  
+  # Diretório que será publicado
+  publish = "dist"
+
+# Configurações de Ambiente
+[build.environment]
+  # Versão do Node.js para garantir a compatibilidade
+  NODE_VERSION = "20"
+
+# Redirecionamentos para Single-Page Application (SPA)
+[[redirects]]
+  # Redireciona todas as requisições que não encontram um arquivo correspondente
+  from = "/*"
+  # Para o arquivo principal da aplicação
+  to = "/index.html"
+  # Com o status 200 (OK), para que o React Router possa assumir o controle
+  status = 200 

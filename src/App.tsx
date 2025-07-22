@@ -3,7 +3,7 @@ import { AuthProvider, AuthPage, ProtectedRoute, PublicRoute } from "@/component
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -15,9 +15,8 @@ import { GlobalSearch, SearchTrigger } from "@/components/navigation/GlobalSearc
 import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import Reports from "./pages/Reports";
 import CreateReport from "./pages/CreateReport";
+import Reports from "./pages/Reports";
 import Reunioes from "./pages/Reunioes";
 import Documentos from "./pages/Documentos";
 import Processos from "./pages/Processos";
@@ -38,67 +37,42 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Layout para páginas públicas (sem sidebar)
+const PublicLayout = () => (
+  <div className="min-h-screen bg-background">
+    <Header />
+    <Outlet />
+  </div>
+);
 
-
-const AppLayout = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+// Layout para páginas autenticadas (com sidebar)
+const AuthenticatedLayout = () => {
   const commandPalette = useCommandPalette();
   
-  if (!user) {
-    // Public layout without sidebar
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        {children}
-      </div>
-    );
-  }
-  
-  // Authenticated layout with sidebar, breadcrumbs, and search
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar data-tour="sidebar" />
         <main className="flex-1 overflow-x-hidden">
-          {/* Enhanced Header with Search */}
           <header className="h-16 flex items-center border-b bg-card px-4 sm:px-6 sticky top-0 z-20">
-            <SidebarTrigger className="mr-4" />
-            <div className="flex-1 flex items-center justify-between">
-              <div className="flex-1">
-                <Header />
-              </div>
-              <div className="flex items-center gap-4">
-                {/* Global Search */}
-                <GlobalSearch 
-                  variant="inline" 
-                  placeholder="Pesquisar relatórios, atas, reuniões..."
-                  className="w-80 hidden md:block"
-                />
-                {/* Search trigger for mobile */}
-                <SearchTrigger 
-                  onClick={commandPalette.toggle}
-                  className="md:hidden"
-                />
-              </div>
+            <div className="flex items-center gap-4">
+              <SidebarTrigger />
+              <SearchTrigger onClick={commandPalette.toggle} className="md:hidden" />
+            </div>
+            <div className="hidden md:flex items-center flex-1 ml-4">
+              <SmartBreadcrumb />
+            </div>
+            <div className="flex items-center gap-4">
+              <SearchTrigger onClick={commandPalette.toggle} />
+              <Header /> {/* User profile button */}
             </div>
           </header>
 
-          {/* Breadcrumb Navigation */}
-          <BreadcrumbContainer>
-            <SmartBreadcrumb />
-          </BreadcrumbContainer>
-
-          {/* Main Content */}
-          <div className="flex-1 overflow-y-auto">
-            {children}
+          <div className="flex-1 overflow-y-auto p-6">
+            <Outlet />
           </div>
         </main>
-
-        {/* Command Palette */}
-        <CommandPalette 
-          open={commandPalette.open} 
-          onOpenChange={commandPalette.setOpen}
-        />
+        <CommandPalette open={commandPalette.open} onOpenChange={commandPalette.setOpen} />
       </div>
     </SidebarProvider>
   );
@@ -112,10 +86,14 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <AppLayout>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/relatorios" element={<Reports />} />
+              {/* Rotas Públicas */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/relatorios" element={<Reports />} />
+              </Route>
+
+              {/* Rota de Autenticação (sem layout principal) */}
               <Route path="/auth" element={
                 <PublicRoute>
                   <AuthPage />
@@ -124,105 +102,33 @@ const App = () => (
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
               
-              {/* Protected Routes */}
-              <Route path="/dashboard" element={
+              {/* Rotas Protegidas com Layout Autenticado */}
+              <Route element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <AuthenticatedLayout />
                 </ProtectedRoute>
-              } />
+              }>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/admin/users" element={<UserManagement />} />
+                <Route path="/admin/data-seeder" element={<DataSeeder />} />
+                <Route path="/admin/documentation" element={<Documentation />} />
+                <Route path="/criar-relatorio" element={<CreateReport />} />
+                <Route path="/perfil" element={<Profile />} />
+                <Route path="/reunioes" element={<Reunioes />} />
+                <Route path="/documentos" element={<Documentos />} />
+                <Route path="/processos" element={<Processos />} />
+                <Route path="/fma" element={<FMA />} />
+                <Route path="/ouvidoria" element={<Ouvidoria />} />
+                <Route path="/codema/conselheiros" element={<ConselheirosPage />} />
+                <Route path="/codema/atas" element={<AtasPage />} />
+                <Route path="/codema/resolucoes" element={<ResolucoesPage />} />
+                <Route path="/codema/auditoria" element={<AuditoriaPage />} />
+                <Route path="/codema/protocolos" element={<GestaoProtocolos />} />
+              </Route>
               
-              {/* Admin Routes */}
-              <Route path="/admin" element={
-                <ProtectedRoute requireAdminAccess>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/users" element={
-                <ProtectedRoute requireAdminAccess>
-                  <UserManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/data-seeder" element={
-                <ProtectedRoute requireAdminAccess>
-                  <DataSeeder />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/documentation" element={
-                <ProtectedRoute requireAdminAccess>
-                  <Documentation />
-                </ProtectedRoute>
-              } />
-              
-              {/* General Routes */}
-              <Route path="/criar-relatorio" element={
-                <ProtectedRoute>
-                  <CreateReport />
-                </ProtectedRoute>
-              } />
-              <Route path="/perfil" element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } />
-              
-              {/* Municipal Services */}
-              <Route path="/reunioes" element={
-                <ProtectedRoute requireCODEMAAccess>
-                  <Reunioes />
-                </ProtectedRoute>
-              } />
-              <Route path="/documentos" element={
-                <ProtectedRoute requireCODEMAAccess>
-                  <Documentos />
-                </ProtectedRoute>
-              } />
-              <Route path="/processos" element={
-                <ProtectedRoute requireCODEMAAccess>
-                  <Processos />
-                </ProtectedRoute>
-              } />
-              <Route path="/fma" element={
-                <ProtectedRoute requireCODEMAAccess>
-                  <FMA />
-                </ProtectedRoute>
-              } />
-              <Route path="/ouvidoria" element={
-                <ProtectedRoute>
-                  <Ouvidoria />
-                </ProtectedRoute>
-              } />
-              
-              {/* CODEMA Specific Modules */}
-              <Route path="/codema/conselheiros" element={
-                <ProtectedRoute requireAdminAccess>
-                  <ConselheirosPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/codema/atas" element={
-                <ProtectedRoute requireCODEMAAccess>
-                  <AtasPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/codema/resolucoes" element={
-                <ProtectedRoute requireCODEMAAccess>
-                  <ResolucoesPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/codema/auditoria" element={
-                <ProtectedRoute requireAdminAccess>
-                  <AuditoriaPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/codema/protocolos" element={
-                <ProtectedRoute requireCODEMAAccess>
-                  <GestaoProtocolos />
-                </ProtectedRoute>
-              } />
-              
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              {/* Rota de Not Found */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            </AppLayout>
           </BrowserRouter>
         </TooltipProvider>
       </DemoModeProvider>

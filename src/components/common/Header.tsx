@@ -1,90 +1,109 @@
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuGroup,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
-import logo from "@/assets/logo.png";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
-const Header = () => {
-  const { user, profile, signOut } = useAuth();
+export function Header() {
+  const {
+    user,
+    profile,
+    signOut
+  } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
     try {
       await signOut();
       toast({
-        title: "Desconectado com sucesso",
-        description: "Você foi desconectado da sua conta.",
+        title: "Logout realizado",
+        description: "Você foi desconectado com segurança.",
       });
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
+      navigate('/auth');
+    } catch (error: any) {
       toast({
-        title: "Erro",
-        description: "Não foi possível desconectar. Tente novamente.",
-        variant: "destructive"
+        title: "Erro no logout",
+        description: error.message || "Não foi possível fazer o logout.",
+        variant: "destructive",
       });
     }
   };
 
-  // Only show header content when sidebar is not present (public pages)
-  if (user) {
-    return (
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <FileText className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="font-bold text-xl text-foreground">
-            Portal Municipal - Itanhomi
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <div className="hidden md:flex flex-col text-right">
-            <span className="text-sm font-medium text-foreground">
-              {profile?.full_name || user.email}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {(() => {
-                if (profile?.role === 'admin') return 'Administrador';
-                if (profile?.role === 'secretario') return 'Secretário';
-                if (profile?.role === 'presidente') return 'Presidente';
-                if (profile?.role === 'conselheiro_titular') return 'Conselheiro Titular';
-                if (profile?.role === 'conselheiro_suplente') return 'Conselheiro Suplente';
-                if (profile?.role === 'moderator') return 'Moderador';
-                return 'Cidadão';
-              })()}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Public header - simplified for landing page
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b border-border/50">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-200">
-              <img src={logo} alt="CODEMA Logo" className="w-7 h-7 object-contain" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">CODEMA</h1>
-              <p className="text-xs text-muted-foreground">Itanhomi - MG</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <Button asChild>
-              <Link to="/auth">Acessar Sistema</Link>
-            </Button>
-          </div>
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
+        <div className="flex flex-1 items-center justify-end space-x-4">
+          <nav className="flex items-center space-x-1">
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage
+                        src={`https://avatar.vercel.sh/${user.email}.png`}
+                        alt={profile?.full_name || user.email || ""}
+                      />
+                      <AvatarFallback>
+                        {profile?.full_name
+                          ? profile.full_name.charAt(0).toUpperCase()
+                          : user.email?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {profile?.full_name}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={() => navigate('/perfil')}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Perfil</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/documentacao')}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span>Documentação</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sair</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={() => navigate('/auth')}>
+                Acessar Plataforma
+              </Button>
+            )}
+          </nav>
         </div>
       </div>
     </header>
   );
-};
+}
 
 export default Header;
