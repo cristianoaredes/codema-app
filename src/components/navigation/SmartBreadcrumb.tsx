@@ -3,6 +3,7 @@ import { Home, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { cn } from "@/lib/utils";
+import { useBreadcrumbs, BreadcrumbItem } from "@/hooks/useBreadcrumbs";
 
 export interface BreadcrumbItemConfig {
   label: string;
@@ -11,7 +12,7 @@ export interface BreadcrumbItemConfig {
 }
 
 export interface SmartBreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
-  items?: BreadcrumbItemConfig[];
+  // A propriedade items pode ser removida se sempre usarmos a geração automática
 }
 
 // Auto-generate breadcrumbs from route with proper labels
@@ -86,29 +87,19 @@ function generateBreadcrumbs(pathname: string): BreadcrumbItemConfig[] {
 }
 
 export function SmartBreadcrumb({
-  items,
   className,
   ...props
 }: SmartBreadcrumbProps) {
-  const location = useLocation();
-  const breadcrumbItems = items || generateBreadcrumbs(location.pathname);
+  const breadcrumbItems = useBreadcrumbs();
 
-  // Don't render if there's only one item or no items
-  if (breadcrumbItems.length <= 1) {
+  // Se não houver breadcrumbs (ex: na página inicial), não renderiza nada
+  if (breadcrumbItems.length === 0) {
     return null;
   }
 
-  // Convert to the format expected by Breadcrumbs component
-  const breadcrumbData = breadcrumbItems.map((item, index) => ({
-    label: item.label,
-    href: item.href,
-    icon: item.icon,
-    current: index === breadcrumbItems.length - 1
-  }));
-
   return (
     <Breadcrumbs 
-      items={breadcrumbData} 
+      items={breadcrumbItems} 
       className={cn("", className)} 
       {...props}
     />
