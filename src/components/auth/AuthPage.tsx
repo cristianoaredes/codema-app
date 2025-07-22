@@ -18,6 +18,7 @@ import { createPersistentSession } from "@/utils/auth";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ShieldCheck, BarChart3, Zap, Mail } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import GoogleIcon from "@/components/icons/GoogleIcon";
 
 export function AuthPage() {
   const [isLoginView, setIsLoginView] = useState(true);
@@ -31,6 +32,18 @@ export function AuthPage() {
   const { toast } = useToast();
   const { setRememberMe } = useAuth();
   const navigate = useNavigate();
+
+  const handleOAuthLogin = async (provider: 'google') => {
+    setIsLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) {
+      toast({ title: 'Erro no Login com Google', description: error.message, variant: 'destructive' });
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +146,10 @@ export function AuthPage() {
             <CardContent>
               {isLoginView ? (
                 <div className="space-y-4">
+                  <Button variant="outline" className="w-full" onClick={() => handleOAuthLogin('google')} disabled={isLoading}>
+                    <GoogleIcon className="mr-2 h-5 w-5" /> Continuar com Google
+                  </Button>
+                  <Separator>OU</Separator>
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
                     <div><Label htmlFor="password">Senha</Label><Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
