@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Filter, Eye, Edit2, FileText, Download, Clock, CheckCircle, XCircle, MessageSquare } from "lucide-react";
+import { Plus, Eye, Edit2, FileText, Download, Clock, CheckCircle, XCircle, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -43,6 +43,7 @@ interface Ata {
   profiles?: {
     full_name: string;
   };
+  [key: string]: any;
 }
 
 export default function AtasPage() {
@@ -55,13 +56,16 @@ export default function AtasPage() {
   const [showReviewSystem, setShowReviewSystem] = useState(false);
   const [reviewAtaId, setReviewAtaId] = useState<string | null>(null);
 
-  const canEdit = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
-  const canReview = profile?.role && ['conselheiro_titular', 'conselheiro_suplente', 'presidente'].includes(profile.role);
+  const canEdit = profile?.role && (
+    ['admin', 'secretario', 'presidente'].includes(profile.role) ||
+    (profile.role === 'vice_presidente' && profile.is_acting_president === true)
+  );
+  const canReview = profile?.role && ['conselheiro_titular', 'conselheiro_suplente', 'vice_presidente', 'presidente'].includes(profile.role);
 
   const { data: atas = [], isLoading } = useQuery({
     queryKey: ['atas', searchTerm, statusFilter, tipoFilter],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('atas')
         .select(`
           *,
@@ -91,17 +95,17 @@ export default function AtasPage() {
   const { data: stats } = useQuery({
     queryKey: ['atas-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('atas')
         .select('status, rascunho, pdf_gerado');
 
       if (error) throw error;
 
       const total = data.length;
-      const rascunhos = data.filter(a => a.rascunho).length;
-      const aprovadas = data.filter(a => a.status === 'aprovada').length;
-      const assinadas = data.filter(a => a.status === 'assinada').length;
-      const comPdf = data.filter(a => a.pdf_gerado).length;
+      const rascunhos = data.filter((a: any) => a.rascunho).length;
+      const aprovadas = data.filter((a: any) => a.status === 'aprovada').length;
+      const assinadas = data.filter((a: any) => a.status === 'assinada').length;
+      const comPdf = data.filter((a: any) => a.pdf_gerado).length;
 
       return { total, rascunhos, aprovadas, assinadas, comPdf };
     },
@@ -193,6 +197,7 @@ export default function AtasPage() {
                 <div className="text-2xl font-bold">{stats.total}</div>
               </CardContent>
             </Card>
+            
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Rascunhos</CardTitle>
@@ -202,6 +207,7 @@ export default function AtasPage() {
                 <div className="text-2xl font-bold">{stats.rascunhos}</div>
               </CardContent>
             </Card>
+            
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Aprovadas</CardTitle>
@@ -211,6 +217,7 @@ export default function AtasPage() {
                 <div className="text-2xl font-bold">{stats.aprovadas}</div>
               </CardContent>
             </Card>
+            
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Assinadas</CardTitle>
@@ -220,6 +227,7 @@ export default function AtasPage() {
                 <div className="text-2xl font-bold">{stats.assinadas}</div>
               </CardContent>
             </Card>
+            
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Com PDF</CardTitle>

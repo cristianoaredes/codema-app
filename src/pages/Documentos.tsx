@@ -157,7 +157,7 @@ const Documentos = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const canManageDocumentos = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
+  const canManageDocumentos = profile?.role && ['admin', 'secretario', 'vice_presidente', 'presidente'].includes(profile.role);
 
   if (loading) {
     return (

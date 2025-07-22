@@ -60,7 +60,7 @@ const Processos = () => {
     relator_id: ""
   });
 
-  const isSecretary = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
+  const isSecretary = profile?.role && ['admin', 'secretario', 'vice_presidente', 'presidente'].includes(profile.role);
 
   const fetchProcessos = useCallback(async () => {
     try {

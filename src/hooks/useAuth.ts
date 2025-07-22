@@ -44,13 +44,15 @@ export const useAuthState = () => {
   const isAdmin = profile?.role === 'admin';
   const isConselheiro = profile?.role === 'conselheiro_titular' || profile?.role === 'conselheiro_suplente';
   const isSecretario = profile?.role === 'secretario';
+  const isVicePresidente = profile?.role === 'vice_presidente';
+  const isActingPresident = profile?.role === 'vice_presidente' && profile?.is_acting_president === true;
   const isPresidente = profile?.role === 'presidente';
   const isModerator = profile?.role === 'moderator';
   const isCitizen = profile?.role === 'citizen';
   
   // Combined permissions
-  const hasAdminAccess = isAdmin || isSecretario || isPresidente;
-  const hasCODEMAAccess = hasAdminAccess || isConselheiro || isModerator;
+  const hasAdminAccess = isAdmin || isSecretario || isActingPresident || isPresidente;
+  const hasCODEMAAccess = hasAdminAccess || isConselheiro || isVicePresidente || isModerator;
   const isActive = profile?.is_active ?? true;
 
   /**
@@ -143,6 +145,7 @@ export const useAuthState = () => {
       admin: ['*'], // Todas as permissões
       presidente: ['codema.*', 'reunioes.*', 'atas.*', 'resolucoes.*', 'conselheiros.*'],
       secretario: ['codema.*', 'reunioes.*', 'atas.*', 'resolucoes.*', 'conselheiros.*'],
+      vice_presidente: ['codema.*', 'reunioes.*', 'atas.*', 'resolucoes.*', 'conselheiros.*'],
       conselheiro_titular: ['codema.read', 'reunioes.read', 'atas.read', 'resolucoes.read'],
       conselheiro_suplente: ['codema.read', 'reunioes.read', 'atas.read', 'resolucoes.read'],
       moderator: ['reports.*', 'users.read'],
@@ -384,6 +387,8 @@ export const useAuthState = () => {
     isAdmin,
     isConselheiro,
     isSecretario,
+    isVicePresidente,
+    isActingPresident,
     isPresidente,
     isModerator,
     isCitizen,

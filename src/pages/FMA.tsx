@@ -73,7 +73,7 @@ const FMA = () => {
     prazo_execucao: ""
   });
 
-  const isSecretary = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
+  const isSecretary = profile?.role && ['admin', 'secretario', 'vice_presidente', 'presidente'].includes(profile.role);
 
   const fetchFMAData = useCallback(async () => {
     try {

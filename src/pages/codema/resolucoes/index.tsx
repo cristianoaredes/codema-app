@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Filter, Eye, Edit2, FileText, Download, Clock, CheckCircle, XCircle, Gavel, Vote, Users, Calendar } from "lucide-react";
+import { Plus, Search, Eye, Edit2, FileText, Download, Clock, CheckCircle, XCircle, Gavel, Vote, Users } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -24,6 +24,7 @@ interface Resolucao {
   numero: string;
   titulo: string;
   ementa: string;
+  conteudo: string;
   tipo: string;
   status: string;
   data_discussao: string;
@@ -41,6 +42,7 @@ interface Resolucao {
   profiles?: {
     full_name: string;
   };
+  [key: string]: any;
 }
 
 export default function ResolucoesPage() {
@@ -53,13 +55,16 @@ export default function ResolucoesPage() {
   const [showVotingSystem, setShowVotingSystem] = useState(false);
   const [votingResolucaoId, setVotingResolucaoId] = useState<string | null>(null);
 
-  const canEdit = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
-  const canVote = profile?.role && ['conselheiro_titular', 'conselheiro_suplente', 'presidente'].includes(profile.role);
+  const canEdit = profile?.role && (
+    ['admin', 'secretario', 'presidente'].includes(profile.role) ||
+    (profile.role === 'vice_presidente' && profile.is_acting_president === true)
+  );
+  const canVote = profile?.role && ['conselheiro_titular', 'conselheiro_suplente', 'vice_presidente', 'presidente'].includes(profile.role);
 
   const { data: resolucoes = [], isLoading } = useQuery({
     queryKey: ['resolucoes', searchTerm, statusFilter, tipoFilter],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('resolucoes')
         .select(`
           *,
@@ -88,22 +93,22 @@ export default function ResolucoesPage() {
   const { data: stats } = useQuery({
     queryKey: ['resolucoes-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('resolucoes')
         .select('status, tipo, resultado_votacao');
 
       if (error) throw error;
 
       const total = data.length;
-      const minutas = data.filter(r => r.status === 'minuta').length;
-      const emVotacao = data.filter(r => r.status === 'em_votacao').length;
-      const aprovadas = data.filter(r => r.status === 'aprovada').length;
-      const publicadas = data.filter(r => r.status === 'publicada').length;
-      const rejeitadas = data.filter(r => r.status === 'rejeitada').length;
+      const minutas = data.filter((r: any) => r.status === 'minuta').length;
+      const emVotacao = data.filter((r: any) => r.status === 'em_votacao').length;
+      const aprovadas = data.filter((r: any) => r.status === 'aprovada').length;
+      const publicadas = data.filter((r: any) => r.status === 'publicada').length;
+      const rejeitadas = data.filter((r: any) => r.status === 'rejeitada').length;
 
-      const normativas = data.filter(r => r.tipo === 'normativa').length;
-      const deliberativas = data.filter(r => r.tipo === 'deliberativa').length;
-      const administrativas = data.filter(r => r.tipo === 'administrativa').length;
+      const normativas = data.filter((r: any) => r.tipo === 'normativa').length;
+      const deliberativas = data.filter((r: any) => r.tipo === 'deliberativa').length;
+      const administrativas = data.filter((r: any) => r.tipo === 'administrativa').length;
 
       return { 
         total, minutas, emVotacao, aprovadas, publicadas, rejeitadas,
@@ -206,12 +211,60 @@ export default function ResolucoesPage() {
             
             <TabsContent value="status" className="space-y-4">
               <div className="grid gap-4 md:grid-cols-6">
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total</CardTitle><Gavel className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{stats.total}</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Minutas</CardTitle><Edit2 className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{stats.minutas}</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Em Votação</CardTitle><Vote className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{stats.emVotacao}</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Aprovadas</CardTitle><CheckCircle className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{stats.aprovadas}</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Publicadas</CardTitle><FileText className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{stats.publicadas}</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Rejeitadas</CardTitle><XCircle className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{stats.rejeitadas}</div></CardContent></Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total</CardTitle>
+                    <Gavel className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.total}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Minutas</CardTitle>
+                    <Edit2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.minutas}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Em Votação</CardTitle>
+                    <Vote className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.emVotacao}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Aprovadas</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.aprovadas}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Publicadas</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.publicadas}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Rejeitadas</CardTitle>
+                    <XCircle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.rejeitadas}</div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 
@@ -228,12 +281,45 @@ export default function ResolucoesPage() {
 
         {/* Filters */}
         <Card>
-          <CardHeader><CardTitle>Filtros</CardTitle><CardDescription>Pesquise e filtre as resoluções por diferentes critérios</CardDescription></CardHeader>
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+            <CardDescription>Pesquise e filtre as resoluções por diferentes critérios</CardDescription>
+          </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1"><Input placeholder="Buscar por número, título ou ementa..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full" /></div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os status</SelectItem><SelectItem value="minuta">Minuta</SelectItem><SelectItem value="em_votacao">Em Votação</SelectItem><SelectItem value="aprovada">Aprovada</SelectItem><SelectItem value="rejeitada">Rejeitada</SelectItem><SelectItem value="publicada">Publicada</SelectItem><SelectItem value="revogada">Revogada</SelectItem></SelectContent></Select>
-              <Select value={tipoFilter} onValueChange={setTipoFilter}><SelectTrigger className="w-[180px]"><SelectValue placeholder="Tipo" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os tipos</SelectItem><SelectItem value="normativa">Normativa</SelectItem><SelectItem value="deliberativa">Deliberativa</SelectItem><SelectItem value="administrativa">Administrativa</SelectItem></SelectContent></Select>
+              <div className="flex-1">
+                <Input 
+                  placeholder="Buscar por número, título ou ementa..." 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                  className="w-full" 
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="minuta">Minuta</SelectItem>
+                  <SelectItem value="em_votacao">Em Votação</SelectItem>
+                  <SelectItem value="aprovada">Aprovada</SelectItem>
+                  <SelectItem value="rejeitada">Rejeitada</SelectItem>
+                  <SelectItem value="publicada">Publicada</SelectItem>
+                  <SelectItem value="revogada">Revogada</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={tipoFilter} onValueChange={setTipoFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  <SelectItem value="normativa">Normativa</SelectItem>
+                  <SelectItem value="deliberativa">Deliberativa</SelectItem>
+                  <SelectItem value="administrativa">Administrativa</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>

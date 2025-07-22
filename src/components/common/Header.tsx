@@ -13,7 +13,6 @@ import { LogOut, User, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import logo from "@/assets/logo_municonnect.png";
 
 export function Header() {
   const {
@@ -44,9 +43,6 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
-        <Link to="/" className="flex items-center space-x-2">
-          <img src={logo} alt="MuniConnect Logo" className="h-10 w-auto" />
-        </Link>
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
             {user ? (

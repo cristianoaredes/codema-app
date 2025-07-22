@@ -4,7 +4,7 @@ interface TestAccount {
   email: string;
   password: string;
   full_name: string;
-  role: 'citizen' | 'conselheiro_titular' | 'conselheiro_suplente' | 'secretario' | 'presidente' | 'admin';
+  role: 'citizen' | 'conselheiro_titular' | 'conselheiro_suplente' | 'secretario' | 'vice_presidente' | 'presidente' | 'admin';
   description: string;
 }
 

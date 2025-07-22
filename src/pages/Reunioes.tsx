@@ -16,11 +16,14 @@ import { Reuniao } from "@/types";
 const ReuniaoCard = ({ reuniao }: { reuniao: Reuniao }) => {
   const navigate = useNavigate();
   
-  const getStatusVariant = (status: string) => ({
-    agendada: 'default',
-    realizada: 'success',
-    cancelada: 'destructive',
-  }[status] || 'secondary');
+  const getStatusVariant = (status: string): "default" | "success" | "destructive" | "secondary" => {
+    const statusMap: Record<string, "default" | "success" | "destructive"> = {
+      agendada: 'default',
+      realizada: 'success',
+      cancelada: 'destructive',
+    };
+    return statusMap[status] || 'secondary';
+  };
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-300">
@@ -65,10 +68,12 @@ const ReunioesPage = () => {
     try {
       const { data, error } = await supabase
         .from("reunioes")
-        .select("*")
-        .order("data_hora", { ascending: false });
+        .select("*, data_reuniao") // Explicitly select the column
+        .order("data_reuniao", { ascending: false });
       if (error) throw error;
-      setReunioes(data || []);
+      
+      const mappedData = data?.map(r => ({ ...r, data_hora: r.data_reuniao }));
+      setReunioes(mappedData || []);
     } catch (error: any) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } finally {
@@ -86,7 +91,10 @@ const ReunioesPage = () => {
     }, { proximas: [], passadas: [], canceladas: [] });
   }, [reunioes]);
 
-  const canManageReunioes = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
+  const canManageReunioes = profile?.role && (
+    ['admin', 'secretario', 'presidente'].includes(profile.role) ||
+    (profile.role === 'vice_presidente' && profile.is_acting_president === true)
+  );
   
   const renderReunioesList = (list: Reuniao[], emptyMessage: string) => {
     if (loading) {

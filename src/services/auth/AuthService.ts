@@ -123,13 +123,13 @@ export class AuthService {
     data?: Record<string, string | number | boolean | null>
   ): Promise<void> {
     try {
-      await supabase.from('audit_logs').insert({
-        usuario_id: userId || null,
-        acao: action,
-        tabela: 'auth',
-        registro_id: userId || 'system',
-        dados_novos: data,
-        timestamp: new Date().toISOString(),
+      await (supabase as any).from('audit_logs').insert({
+        user_id: userId || null,
+        action: action,
+        entity: 'auth',
+        entity_id: userId || 'system',
+        details: data,
+        created_at: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Erro ao registrar evento de auditoria:', error);
@@ -711,6 +711,7 @@ export class AuthService {
         conselheiro_suplente: ['view_codema_content', 'participate_meetings'],
         conselheiro_titular: ['view_codema_content', 'participate_meetings', 'vote'],
         secretario: ['view_codema_content', 'participate_meetings', 'vote', 'manage_processes', 'manage_fma'],
+        vice_presidente: ['view_codema_content', 'participate_meetings', 'vote'],
         presidente: ['view_codema_content', 'participate_meetings', 'vote', 'manage_processes', 'manage_fma', 'manage_users'],
         admin: ['*'], // Todas as permissões
       };

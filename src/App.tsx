@@ -15,9 +15,8 @@ import { GlobalSearch, SearchTrigger } from "@/components/navigation/GlobalSearc
 import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import Reports from "./pages/Reports";
 import CreateReport from "./pages/CreateReport";
+import Reports from "./pages/Reports";
 import Reunioes from "./pages/Reunioes";
 import Documentos from "./pages/Documentos";
 import Processos from "./pages/Processos";
@@ -60,9 +59,9 @@ const AuthenticatedLayout = () => {
               <SidebarTrigger />
               <SearchTrigger onClick={commandPalette.toggle} className="md:hidden" />
             </div>
-            <BreadcrumbContainer className="hidden md:flex flex-1 justify-center">
+            <div className="hidden md:flex items-center flex-1 ml-4">
               <SmartBreadcrumb />
-            </BreadcrumbContainer>
+            </div>
             <div className="flex items-center gap-4">
               <SearchTrigger onClick={commandPalette.toggle} />
               <Header /> {/* User profile button */}
@@ -110,7 +109,6 @@ const App = () => (
                 </ProtectedRoute>
               }>
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/users" element={<UserManagement />} />
                 <Route path="/admin/data-seeder" element={<DataSeeder />} />
                 <Route path="/admin/documentation" element={<Documentation />} />

@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.tsx'
 
 // Expor funções utilitárias globalmente para debug via console
-import { updateUserToAdmin, checkUser, listAllAdmins } from './utils/user'
+import { updateUserToAdmin, checkUser, listAllAdmins } from './utils/user/updateUserRole'
 import { forceUserRefresh, checkUserDataConsistency, quickUserStatus } from './utils/auth'
 import { checkSupabaseAuthConfig, testPasswordReset, checkSMTPConfiguration } from './utils/auth'
 import { showRateLimitStatus, clearEmailAttempts, canSendEmail } from './utils/email'
