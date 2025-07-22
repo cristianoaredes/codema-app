@@ -29,6 +29,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { UserRole } from "@/types/auth";
 
 interface DashboardStats {
   totalReports: number;
@@ -66,6 +68,8 @@ interface Report {
 
 const Dashboard = () => {
   const { user, profile, hasAdminAccess, hasCODEMAAccess } = useAuth();
+  // Estado para simulação de perfil
+  const [simulatedRole, setSimulatedRole] = useState<UserRole | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const welcomeGuide = useWelcomeGuide();
@@ -91,9 +95,13 @@ const Dashboard = () => {
   const [recentReports, setRecentReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const roleConfig = getRoleConfig(profile?.role || 'citizen');
-  const dashboardCards = getCardsForRole(profile?.role || 'citizen');
-  const quickActionsList = getQuickActionsForRole(profile?.role || 'citizen');
+  // O perfil a ser usado é o simulado, ou o real se não houver simulação
+  const currentProfileRole = simulatedRole || profile?.role || 'citizen';
+
+  // Get role-specific configuration based on the current (real or simulated) role
+  const roleConfig = getRoleConfig(currentProfileRole);
+  const dashboardCards = getCardsForRole(currentProfileRole);
+  const quickActionsList = getQuickActionsForRole(currentProfileRole);
 
   useEffect(() => {
     if (user) {
@@ -219,6 +227,41 @@ const Dashboard = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
+      {/* Role Simulator - Development Only */}
+      {process.env.NODE_ENV === 'development' && (
+        <Card className="mb-6 bg-yellow-50 border-yellow-200">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              Simulador de Perfil (Apenas Desenvolvimento)
+            </CardTitle>
+            <CardDescription>
+              Selecione um perfil para visualizar o dashboard como se fosse aquele usuário.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-xs">
+              <Select 
+                value={simulatedRole || profile?.role || 'citizen'} 
+                onValueChange={(value) => setSimulatedRole(value as UserRole)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um perfil" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="presidente">Presidente</SelectItem>
+                  <SelectItem value="secretario">Secretário</SelectItem>
+                  <SelectItem value="conselheiro_titular">Conselheiro Titular</SelectItem>
+                  <SelectItem value="conselheiro_suplente">Conselheiro Suplente</SelectItem>
+                  <SelectItem value="citizen">Cidadão</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {welcomeGuide.isVisible && <WelcomeGuide onDismiss={welcomeGuide.dismiss} />}
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">

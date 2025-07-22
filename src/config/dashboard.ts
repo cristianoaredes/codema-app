@@ -366,16 +366,12 @@ export function getRoleConfig(role: string) {
 
 export function getCardsForRole(role: string) {
   const config = getRoleConfig(role);
-  return dashboardCards.filter(card => 
-    config.cards.includes(card.id) && 
-    (!card.requireRole || card.requireRole.includes(role) || card.requireRole.includes('codema'))
-  );
+  // A fonte da verdade agora é apenas a lista de IDs no roleConfigurations.
+  return dashboardCards.filter(card => config.cards.includes(card.id));
 }
 
 export function getQuickActionsForRole(role: string) {
   const config = getRoleConfig(role);
-  return quickActions.filter(action => 
-    config.quickActions.includes(action.id) && 
-    (!action.requireRole || action.requireRole.includes(role))
-  );
+  // A fonte da verdade agora é apenas a lista de IDs no roleConfigurations.
+  return quickActions.filter(action => config.quickActions.includes(action.id));
 }
