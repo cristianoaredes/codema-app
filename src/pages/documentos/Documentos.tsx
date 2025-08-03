@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription as _CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -36,17 +36,7 @@ const Documentos = () => {
   const [tipoFilter, setTipoFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  useEffect(() => {
-    if (user) {
-      fetchDocumentos();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    filterDocumentos();
-  }, [documentos, searchTerm, tipoFilter, statusFilter]);
-
-  const fetchDocumentos = async () => {
+  const fetchDocumentos = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("documentos")
@@ -68,7 +58,17 @@ const Documentos = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchDocumentos();
+    }
+  }, [user, fetchDocumentos]);
+
+  useEffect(() => {
+    filterDocumentos();
+  }, [documentos, searchTerm, tipoFilter, statusFilter]);
 
   const filterDocumentos = () => {
     let filtered = documentos;

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 export default function AuthCallback() {
-  const [searchParams] = useSearchParams();
+  const [_searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -36,7 +36,7 @@ export default function AuthCallback() {
           console.log('🔐 Token de RECOVERY detectado - redirecionando para reset de senha...');
           
           // Processar tokens de recovery
-          const { data: authData, error: authError } = await supabase.auth.setSession({
+          const { data: _authData, error: authError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken || ''
           });

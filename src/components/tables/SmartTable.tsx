@@ -10,23 +10,23 @@ import {
   type SortingState,
   type ColumnFiltersState,
   type VisibilityState,
-  type Row
+  type Row as _Row
 } from "@tanstack/react-table";
 import { 
   Search,
-  Filter,
+  Filter as _Filter,
   Download,
   MoreHorizontal,
   ChevronDown,
   ChevronUp,
-  Eye,
+  Eye as _Eye,
   EyeOff,
   RefreshCw,
   Plus,
-  Trash2,
-  Edit,
+  Trash2 as _Trash2,
+  Edit as _Edit,
   CheckSquare,
-  Square
+  Square as _Square
 } from "lucide-react";
 
 import {
@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Badge as _Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,

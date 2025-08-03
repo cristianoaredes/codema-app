@@ -63,7 +63,9 @@ export const getDeviceInfo = () => {
 export const saveRememberMeSettings = (settings: RememberMeSettings): void => {
   try {
     localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify(settings));
-    console.log('✅ Remember Me settings saved:', settings);
+    if (import.meta.env.DEV) {
+      console.log('✅ Remember Me settings saved:', settings);
+    }
   } catch (error) {
     console.error('❌ Error saving Remember Me settings:', error);
   }
@@ -81,7 +83,9 @@ export const loadRememberMeSettings = (): RememberMeSettings | null => {
     
     // Verificar se não expirou
     if (new Date(settings.expiresAt) < new Date()) {
-      console.log('⏰ Remember Me settings expired, removing...');
+      if (import.meta.env.DEV) {
+        console.log('⏰ Remember Me settings expired, removing...');
+      }
       clearRememberMeSettings();
       return null;
     }
@@ -99,7 +103,9 @@ export const loadRememberMeSettings = (): RememberMeSettings | null => {
 export const clearRememberMeSettings = (): void => {
   try {
     localStorage.removeItem(REMEMBER_ME_KEY);
-    console.log('🧹 Remember Me settings cleared');
+    if (import.meta.env.DEV) {
+      console.log('🧹 Remember Me settings cleared');
+    }
   } catch (error) {
     console.error('❌ Error clearing Remember Me settings:', error);
   }
@@ -150,7 +156,9 @@ export const createPersistentSession = async (
     
     saveRememberMeSettings(settings);
     
-    console.log('✅ Persistent session created successfully');
+    if (import.meta.env.DEV) {
+      console.log('✅ Persistent session created successfully');
+    }
     return { error: null };
     
   } catch (error) {
@@ -186,7 +194,9 @@ export const checkPersistentSession = async (): Promise<{
       .single();
     
     if (error || !data) {
-      console.log('🔍 No persistent session found in database');
+      if (import.meta.env.DEV) {
+        console.log('🔍 No persistent session found in database');
+      }
       clearRememberMeSettings();
       return { isValid: false };
     }
@@ -195,7 +205,9 @@ export const checkPersistentSession = async (): Promise<{
     
     // Verificar se não expirou
     if (new Date(sessionData.expires_at) < new Date()) {
-      console.log('⏰ Persistent session expired');
+      if (import.meta.env.DEV) {
+        console.log('⏰ Persistent session expired');
+      }
       await revokePersistentSession(settings.deviceId);
       return { isValid: false };
     }
@@ -299,7 +311,9 @@ export const revokePersistentSession = async (deviceId: string): Promise<{
       clearRememberMeSettings();
     }
     
-    console.log('✅ Persistent session revoked:', deviceId);
+    if (import.meta.env.DEV) {
+      console.log('✅ Persistent session revoked:', deviceId);
+    }
     return { error: null };
     
   } catch (error) {
@@ -328,7 +342,9 @@ export const revokeAllPersistentSessions = async (userId: string): Promise<{
     // Limpar configurações locais
     clearRememberMeSettings();
     
-    console.log('✅ All persistent sessions revoked for user:', userId);
+    if (import.meta.env.DEV) {
+      console.log('✅ All persistent sessions revoked for user:', userId);
+    }
     return { error: null };
     
   } catch (error) {
@@ -349,7 +365,7 @@ export const cleanupExpiredSessions = async (): Promise<void> => {
     
     if (error) {
       console.error('❌ Error cleaning up expired sessions:', error);
-    } else {
+    } else if (import.meta.env.DEV) {
       console.log('✅ Expired sessions cleaned up');
     }
   } catch (error) {

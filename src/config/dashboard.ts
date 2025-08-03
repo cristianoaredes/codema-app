@@ -17,8 +17,8 @@ import {
   Shield
 } from "lucide-react";
 import React from 'react';
-import { LucideIcon } from 'lucide-react';
-import { UserRole } from '../types/auth';
+import type { LucideIcon as _LucideIcon } from 'lucide-react';
+import type { UserRole as _UserRole } from '../types/auth';
 
 // Interface para estatísticas do dashboard
 export interface DashboardStats {

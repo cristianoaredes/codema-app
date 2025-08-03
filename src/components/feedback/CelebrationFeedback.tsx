@@ -3,11 +3,11 @@ import {
   CheckCircle, 
   Star, 
   Trophy, 
-  Zap, 
+  Zap as _Zap, 
   Target,
   Award,
-  PartyPopper,
-  Sparkles
+  PartyPopper as _PartyPopper,
+  Sparkles as _Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

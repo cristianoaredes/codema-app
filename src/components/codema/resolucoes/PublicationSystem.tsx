@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { FileText, Globe, Calendar, Upload, Download, CheckCircle, AlertCircle, Eye } from "lucide-react";
+import { Globe, Calendar, Upload, CheckCircle, AlertCircle, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -153,7 +151,7 @@ export function PublicationSystem({ resolucaoId, resolucao }: PublicationSystemP
     },
   });
 
-  const getVeiculoLabel = (veiculo: string) => {
+  const _getVeiculoLabel = (veiculo: string) => {
     const veiculos: Record<string, string> = {
       portal_oficial: 'Portal Oficial',
       diario_oficial: 'Diário Oficial',

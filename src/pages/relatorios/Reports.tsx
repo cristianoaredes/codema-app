@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth, useToast } from "@/hooks";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
+import { Card, CardContent, CardDescription as _CardDescription, CardHeader, CardTitle, Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { 
   MapPin, 
   Calendar,
@@ -39,7 +39,7 @@ interface ServiceCategory {
 }
 
 const Reports = () => {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { toast } = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);

@@ -38,7 +38,7 @@ export default function DataSeeder() {
         description: "O sistema agora contém dados de exemplo para teste.",
         variant: "default"
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Erro ao Popular Dados",
         description: "Ocorreu um erro ao inserir os dados de exemplo.",
@@ -58,7 +58,7 @@ export default function DataSeeder() {
         description: "Todos os dados de exemplo foram removidos do sistema.",
         variant: "default"
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Erro ao Limpar Dados",
         description: "Ocorreu um erro ao remover os dados de exemplo.",
@@ -78,7 +78,7 @@ export default function DataSeeder() {
         description: "Contas de teste para diferentes roles foram criadas com sucesso.",
         variant: "default"
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Erro ao Criar Contas",
         description: "Ocorreu um erro ao criar as contas de teste.",

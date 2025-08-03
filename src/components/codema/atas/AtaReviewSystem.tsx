@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MessageSquare, Send, Check, X, Clock, User, AlertCircle } from "lucide-react";
+import { Clock, MessageSquare, Send, Check, X, User } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -189,9 +188,9 @@ export function AtaReviewSystem({ ataId, canReview }: AtaReviewSystemProps) {
     }
   };
 
-  const getSecaoLabel = (secao: string) => {
-    const secaoObj = SECOES.find(s => s.value === secao);
-    return secaoObj?.label || secao;
+  const getSecaoLabel = (_secao: string) => {
+    const secaoObj = SECOES.find(s => s.value === _secao);
+    return secaoObj?.label || _secao;
   };
 
   const canRespond = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
@@ -426,7 +425,7 @@ interface ReviewResponseProps {
   isLoading: boolean;
 }
 
-function ReviewResponse({ reviewId, onSubmit, isLoading }: ReviewResponseProps) {
+function ReviewResponse({ reviewId: _reviewId, onSubmit, isLoading }: ReviewResponseProps) {
   const [resposta, setResposta] = useState('');
   const [status, setStatus] = useState<'aceita' | 'rejeitada'>('aceita');
 

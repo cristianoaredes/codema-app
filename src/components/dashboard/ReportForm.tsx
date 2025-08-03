@@ -30,7 +30,7 @@ const ReportForm = () => {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user, profile } = useAuth();
+  const { user, profile: _profile } = useAuth();
 
   useEffect(() => {
     const fetchCategories = async () => {

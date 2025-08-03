@@ -4,14 +4,14 @@ import { Button } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { Checkbox } from '@/components/ui';
 import { Textarea } from '@/components/ui';
-import { Input } from '@/components/ui';
+import { Input as _Input } from '@/components/ui';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger as _DialogTrigger,
 } from '@/components/ui';
 import { QuorumIndicator } from '@/components/codema/conselheiros';
 import { useConselheiros } from '@/hooks';

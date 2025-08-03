@@ -74,7 +74,7 @@ const CreateReport = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
+      const { data: _data, error } = await supabase
         .from("reports")
         .insert([
           {

@@ -238,7 +238,7 @@ export function GuidedTour({
 }
 
 // Hook for managing guided tour state
-export function useGuidedTour(steps: TourStep[]) {
+export function useGuidedTour(_steps: TourStep[]) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [currentStep, setCurrentStep] = React.useState(0);
 

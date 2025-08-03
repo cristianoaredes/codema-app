@@ -7,18 +7,18 @@ import {
   ThumbsDown, 
   Send, 
   X,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  User,
-  Mail,
-  Phone
+  AlertCircle as _AlertCircle,
+  CheckCircle as _CheckCircle,
+  Clock as _Clock,
+  User as _User,
+  Mail as _Mail,
+  Phone as _Phone
 } from "lucide-react"
 import { Button } from "./button"
 import { Input } from "./input"
 import { Textarea } from "./textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./card"
-import { Badge } from "./badge"
+import { Badge as _Badge } from "./badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select"
 import { Label } from "./label"
 import { RadioGroup, RadioGroupItem } from "./radio-group"

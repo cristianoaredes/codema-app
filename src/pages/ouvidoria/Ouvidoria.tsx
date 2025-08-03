@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
@@ -54,14 +53,14 @@ interface Denuncia {
 }
 
 const Ouvidoria = () => {
-  const { user, profile } = useAuth();
+  const { user: _user, profile } = useAuth();
   const { toast } = useToast();
   const [denuncias, setDenuncias] = useState<Denuncia[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [showNewDenuncia, setShowNewDenuncia] = useState(false);
-  const [fiscais, setFiscais] = useState<{ id: string; nome: string; email: string }[]>([]);
+  const [_fiscais, setFiscais] = useState<{ id: string; nome: string; email: string }[]>([]);
 
   const [newDenuncia, setNewDenuncia] = useState({
     tipo_denuncia: "",
@@ -86,7 +85,7 @@ const Ouvidoria = () => {
         .from("ouvidoria_denuncias")
         .select(`
           *,
-          fiscal_responsavel:profiles!fiscal_responsavel_id(full_name)
+          fiscal_responsavel:profiles!ouvidoria_denuncias_fiscal_responsavel_id_fkey(full_name)
         `)
         .order("created_at", { ascending: false });
 

@@ -17,7 +17,7 @@ export function useImpedimentos(filtros?: {
         .from('impedimentos_conselheiros')
         .select(`
           *,
-          conselheiros(nome_completo),
+          profiles!impedimentos_conselheiros_conselheiro_id_fkey(nome_completo),
           reunioes(titulo),
           processos(titulo)
         `)
@@ -52,7 +52,7 @@ export function useImpedimento(id: string) {
         .from('impedimentos_conselheiros')
         .select(`
           *,
-          conselheiros(nome_completo),
+          profiles!impedimentos_conselheiros_conselheiro_id_fkey(nome_completo),
           reunioes(titulo),
           processos(titulo)
         `)

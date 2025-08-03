@@ -1,10 +1,10 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { SmartForm, SmartInput, SmartTextarea, AutoSaveConfig } from '@/components/forms/SmartForm';
 import { Button } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Textarea } from '@/components/ui';
-import { Label } from '@/components/ui';
 import { Checkbox } from '@/components/ui';
 import {
   Form,
@@ -39,13 +39,22 @@ const conselheiroSchema = z.object({
   endereco: z.string().optional(),
   mandato_inicio: z.string().min(1, 'Data de início do mandato é obrigatória'),
   mandato_fim: z.string().min(1, 'Data de fim do mandato é obrigatória'),
-  mandato_numero: z.number().optional(),
+  mandato_numero: z.number().min(0).optional(),
   entidade_representada: z.string().min(1, 'Entidade representada é obrigatória'),
   segmento: z.enum(['governo', 'sociedade_civil', 'setor_produtivo']),
   titular: z.boolean().default(true),
   status: z.enum(['ativo', 'inativo', 'licenciado', 'afastado']).optional(),
   observacoes: z.string().optional(),
   profile_id: z.string().optional(), // Vincular com usuário
+}).refine((data) => {
+  // Se não está vinculando usuário existente, email é obrigatório
+  if (!data.profile_id && !data.email) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Email é obrigatório quando não está vinculando a usuário existente",
+  path: ["email"]
 });
 
 type ConselheiroFormData = z.infer<typeof conselheiroSchema>;
@@ -66,14 +75,28 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
   const { data: availableUsers = [] } = useQuery({
     queryKey: ['available-users-for-conselheiro'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Primeiro, buscar todos os profile_ids já vinculados a conselheiros
+      const { data: linkedProfileIds, error: linkedError } = await supabase
+        .from('conselheiros')
+        .select('profile_id')
+        .not('profile_id', 'is', null);
+
+      if (linkedError) throw linkedError;
+
+      const linkedIds = linkedProfileIds?.map(item => item.profile_id) || [];
+
+      // Depois, buscar profiles que NÃO estão na lista de IDs vinculados
+      const query = supabase
         .from('profiles')
         .select('id, full_name, email, role')
-        .not('id', 'in', `(${
-          // Subquery para excluir usuários já vinculados
-          `SELECT profile_id FROM conselheiros WHERE profile_id IS NOT NULL`
-        })`)
         .order('full_name');
+
+      // Se há IDs vinculados, excluí-los da busca
+      if (linkedIds.length > 0) {
+        query.not('id', 'in', `(${linkedIds.map(id => `'${id}'`).join(',')})`);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data;
@@ -89,9 +112,9 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
       email: conselheiro?.email || '',
       telefone: conselheiro?.telefone || '',
       endereco: conselheiro?.endereco || '',
-      mandato_inicio: conselheiro?.mandato_inicio.split('T')[0] || '',
-      mandato_fim: conselheiro?.mandato_fim.split('T')[0] || '',
-      mandato_numero: conselheiro?.mandato_numero || undefined,
+      mandato_inicio: conselheiro?.mandato_inicio?.split('T')[0] || '',
+      mandato_fim: conselheiro?.mandato_fim?.split('T')[0] || '',
+      mandato_numero: conselheiro?.mandato_numero || 0,
       entidade_representada: conselheiro?.entidade_representada || '',
       segmento: conselheiro?.segmento || 'sociedade_civil',
       titular: conselheiro?.titular ?? true,
@@ -112,12 +135,15 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
         // Garantir que campos obrigatórios estão presentes
         const createData = {
           ...data,
-          nome_completo: data.nome_completo!,
-          entidade_representada: data.entidade_representada!,
-          mandato_inicio: data.mandato_inicio!,
-          mandato_fim: data.mandato_fim!,
-          segmento: data.segmento!,
+          nome_completo: data.nome_completo,
+          entidade_representada: data.entidade_representada,
+          mandato_inicio: data.mandato_inicio,
+          mandato_fim: data.mandato_fim,
+          segmento: data.segmento,
           titular: data.titular ?? true,
+          // Limpar campos vazios
+          email: data.email || undefined,
+          profile_id: data.profile_id || undefined,
         };
         await createConselheiro.mutateAsync(createData);
       }
@@ -130,7 +156,7 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
   const isLoading = createConselheiro.isPending || updateConselheiro.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-5">
       {/* Informações sobre integração com usuário */}
       {!isEditing && (
         <Card>
@@ -144,19 +170,20 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <Button
                 type="button"
                 variant={linkUserMode ? "default" : "outline"}
                 size="sm"
                 onClick={() => setLinkUserMode(!linkUserMode)}
+                className="w-full sm:w-auto"
               >
                 <User className="h-4 w-4 mr-2" />
                 {linkUserMode ? "Cancelar Vinculação" : "Vincular a Usuário Existente"}
               </Button>
               
               {!linkUserMode && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs justify-center sm:justify-start">
                   <UserPlus className="h-3 w-3 mr-1" />
                   Usuário será criado automaticamente se email fornecido
                 </Badge>
@@ -167,7 +194,7 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
           
           {/* Vincular usuário existente */}
           {linkUserMode && !isEditing && (
@@ -203,14 +230,14 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
             />
           )}
 
-          {/* Grid responsivo - Uma coluna no mobile, duas no desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Grid responsivo - Mobile-first approach */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Nome Completo - span completo */}
             <FormField
               control={form.control}
               name="nome_completo"
               render={({ field }) => (
-                <FormItem className="lg:col-span-2">
+                <FormItem className="md:col-span-2">
                   <FormLabel>Nome Completo *</FormLabel>
                   <FormControl>
                     <Input placeholder="Nome completo do conselheiro" {...field} />
@@ -244,9 +271,13 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
                   <FormControl>
                     <Input placeholder="email@exemplo.com" type="email" {...field} />
                   </FormControl>
-                  {!linkUserMode && (
+                  {!linkUserMode ? (
                     <FormDescription>
-                      Se fornecido, um usuário será criado automaticamente
+                      Obrigatório para criar acesso ao sistema
+                    </FormDescription>
+                  ) : (
+                    <FormDescription>
+                      Email do usuário vinculado (será atualizado)
                     </FormDescription>
                   )}
                   <FormMessage />
@@ -317,8 +348,8 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
                     <Input 
                       type="number" 
                       placeholder="Ex: 1, 2, 3..."
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
                     />
                   </FormControl>
                   <FormDescription>
@@ -364,7 +395,7 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
                 control={form.control}
                 name="status"
                 render={({ field }) => (
-                  <FormItem className="lg:col-span-2">
+                  <FormItem className="md:col-span-2">
                     <FormLabel>Status</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
@@ -396,7 +427,7 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
                 <FormControl>
                   <Textarea 
                     placeholder="Endereço completo do conselheiro"
-                    className="resize-none"
+                    className="resize-none min-h-[80px]"
                     rows={3}
                     {...field}
                   />
@@ -411,7 +442,7 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
             control={form.control}
             name="titular"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/30">
                 <FormControl>
                   <Checkbox
                     checked={field.value}
@@ -440,7 +471,7 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
                 <FormControl>
                   <Textarea 
                     placeholder="Observações gerais sobre o conselheiro"
-                    className="resize-none"
+                    className="resize-none min-h-[80px]"
                     rows={3}
                     {...field}
                   />
@@ -450,8 +481,8 @@ export function ConselheiroForm({ conselheiro, onSuccess }: ConselheiroFormProps
             )}
           />
 
-          {/* Buttons - responsivos */}
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+          {/* Buttons - mobile-first responsive */}
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 sm:pt-6">
             <Button type="button" variant="outline" onClick={onSuccess} className="w-full sm:w-auto">
               Cancelar
             </Button>

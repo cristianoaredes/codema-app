@@ -1,9 +1,9 @@
 import * as React from "react";
-import { Home, ChevronRight } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Home, ChevronRight as _ChevronRight } from "lucide-react";
+import { Link as _Link, useLocation as _useLocation } from "react-router-dom";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { cn } from "@/lib/utils";
-import { useBreadcrumbs, BreadcrumbItem } from "@/hooks/useBreadcrumbs";
+import { useBreadcrumbs, BreadcrumbItem as _BreadcrumbItem } from "@/hooks/useBreadcrumbs";
 
 export interface BreadcrumbItemConfig {
   label: string;
@@ -11,9 +11,7 @@ export interface BreadcrumbItemConfig {
   icon?: React.ReactNode;
 }
 
-export interface SmartBreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
-  // A propriedade items pode ser removida se sempre usarmos a geração automática
-}
+export type SmartBreadcrumbProps = React.HTMLAttributes<HTMLElement>
 
 // Auto-generate breadcrumbs from route with proper labels
 const routeLabels: Record<string, string> = {
@@ -44,7 +42,7 @@ const routeLabels: Record<string, string> = {
   '/configuracoes': 'Configurações'
 };
 
-function generateBreadcrumbs(pathname: string): BreadcrumbItemConfig[] {
+function _generateBreadcrumbs(pathname: string): BreadcrumbItemConfig[] {
   const breadcrumbs: BreadcrumbItemConfig[] = [];
   
   // Start with the root breadcrumb

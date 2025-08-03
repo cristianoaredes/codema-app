@@ -10,9 +10,9 @@ import { Conselheiro } from '@/types';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
@@ -41,8 +41,9 @@ export default function ConselheirosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSegmento, setFilterSegmento] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [_stats, _setStats] = useState(null); // Keeping for future use
 
   const { data: conselheiros = [], isLoading } = useConselheiros();
   const { data: mandatosExpirando = [] } = useConselheirosComMandatoExpirando(30);
@@ -56,7 +57,7 @@ export default function ConselheirosPage() {
     return matchesSearch && matchesSegmento && matchesStatus;
   }), [conselheiros, searchTerm, filterSegmento, filterStatus]);
 
-  const stats = useMemo(() => ({
+  const _computedStats = useMemo(() => ({
     total: conselheiros.length,
     ativos: conselheiros.filter(c => c.status === 'ativo').length,
     governo: conselheiros.filter(c => c.segmento === 'governo').length,
@@ -92,7 +93,15 @@ export default function ConselheirosPage() {
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" />Novo Conselheiro</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl"><ConselheiroForm onSuccess={() => setIsCreateDialogOpen(false)} /></DialogContent>
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader className="pb-4">
+                <DialogTitle>Novo Conselheiro</DialogTitle>
+                <DialogDescription>
+                  Cadastre um novo membro do Conselho Municipal de Defesa do Meio Ambiente
+                </DialogDescription>
+              </DialogHeader>
+              <ConselheiroForm onSuccess={() => setIsCreateDialogOpen(false)} />
+            </DialogContent>
           </Dialog>
         }
       >

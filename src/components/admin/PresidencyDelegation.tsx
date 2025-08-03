@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Crown, UserCheck, Clock, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
+// import { secureAuthService } from '@/services/auth/SecureAuthorizationService';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types/auth';
 
@@ -20,17 +22,51 @@ export const PresidencyDelegation: React.FC<PresidencyDelegationProps> = ({
   vicePresidents,
   onDelegationChange
 }) => {
-  const { profile } = useAuth();
+  const { user: _user, profile: _profile } = useAuth(); // Legacy compatibility
+  const { hasSecurePermission } = useSecureAuth();
   const { toast } = useToast();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVice, setSelectedVice] = useState<Profile | null>(null);
   const [expirationDate, setExpirationDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [canDelegate, setCanDelegate] = useState(false);
+  const [permissionLoading, setPermissionLoading] = useState(true);
 
-  // Apenas presidentes podem usar este componente
-  if (profile?.role !== 'presidente') {
-    return null;
+  // SECURE: Server-side permission validation for delegation
+  useEffect(() => {
+    const validateDelegationPermission = async () => {
+      setPermissionLoading(true);
+      try {
+        const hasPermission = await hasSecurePermission('delegation.manage');
+        setCanDelegate(hasPermission);
+      } catch (error) {
+        console.error('Delegation permission validation error:', error);
+        setCanDelegate(false);
+      } finally {
+        setPermissionLoading(false);
+      }
+    };
+    
+    validateDelegationPermission();
+  }, [hasSecurePermission]);
+
+  // Show loading while validating permissions
+  if (permissionLoading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // SECURE: Block access if user doesn't have delegation permission
+  if (!canDelegate) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        <p>Você não tem permissão para gerenciar delegações de presidência.</p>
+      </div>
+    );
   }
 
   const handleDelegatePresidency = async () => {
@@ -41,14 +77,14 @@ export const PresidencyDelegation: React.FC<PresidencyDelegationProps> = ({
       const expiresAt = expirationDate ? new Date(expirationDate).toISOString() : null;
       
       const { data, error } = await supabase
-        .rpc('delegate_presidency_to_vice' as any, {
+        .rpc('delegate_presidency_to_vice' as const, {
           vice_president_id: selectedVice.id,
           expires_at: expiresAt
         });
 
       if (error) throw error;
 
-      if ((data as any)?.success) {
+      if (data && typeof data === 'object' && 'success' in data && (data as {success: boolean}).success) {
         toast({
           title: 'Presidência delegada',
           description: `${selectedVice.full_name} agora está atuando como presidente${expirationDate ? ` até ${new Date(expirationDate).toLocaleDateString()}` : ''}.`,
@@ -56,17 +92,13 @@ export const PresidencyDelegation: React.FC<PresidencyDelegationProps> = ({
         
         setIsDialogOpen(false);
         setSelectedVice(null);
-        setExpirationDate('');
-        onDelegationChange();
-      } else {
-        throw new Error((data as any)?.error || 'Erro ao delegar presidência');
       }
     } catch (error) {
       console.error('Erro ao delegar presidência:', error);
       toast({
-        title: 'Erro ao delegar presidência',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Não foi possível criar a delegação.',
+        variant: 'destructive'
       });
     } finally {
       setIsLoading(false);
@@ -77,13 +109,13 @@ export const PresidencyDelegation: React.FC<PresidencyDelegationProps> = ({
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .rpc('revoke_presidency_delegation' as any, {
+        .rpc('revoke_presidency_delegation' as const, {
           vice_president_id: vicePresident.id
         });
 
       if (error) throw error;
 
-      if ((data as any)?.success) {
+      if (data && typeof data === 'object' && 'success' in data && (data as {success: boolean}).success) {
         toast({
           title: 'Delegação revogada',
           description: `A delegação de presidência para ${vicePresident.full_name} foi revogada.`,
@@ -91,7 +123,7 @@ export const PresidencyDelegation: React.FC<PresidencyDelegationProps> = ({
         
         onDelegationChange();
       } else {
-        throw new Error((data as any)?.error || 'Erro ao revogar delegação');
+        throw new Error((data && typeof data === 'object' && 'error' in data ? (data as {error: string}).error : null) || 'Erro ao revogar delegação');
       }
     } catch (error) {
       console.error('Erro ao revogar delegação:', error);

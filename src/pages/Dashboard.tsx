@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { DashboardCard, QuickActionCard } from "@/components/dashboard/DashboardCard";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { 
-  BarChart,
   Calendar,
   FileText,
   Database,
-  Users,
+  Users as _Users,
   AlertTriangle,
   Plus,
   Settings,
@@ -103,24 +102,19 @@ const Dashboard = () => {
   const dashboardCards = getCardsForRole(currentProfileRole);
   const quickActionsList = getQuickActionsForRole(currentProfileRole);
 
-  useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-    }
-  }, [user, profile]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
       const queries = [
         supabase.from("reports").select(`*, service_categories(name, icon)`).order("created_at", { ascending: false }).limit(5),
-        (supabase as any).from("reunioes").select("*", { count: 'exact' }),
-        (supabase as any).from("atas").select("*", { count: 'exact' }),
-        (supabase as any).from("resolucoes").select("*", { count: 'exact' }),
+        supabase.from("reunioes").select("*", { count: 'exact' }),
+        // Note: atas table might not exist in remote database yet, handle gracefully
+        supabase.from("atas").select("*", { count: 'exact' }).then(result => result).catch(() => ({ data: [], count: 0, error: null })),
+        supabase.from("resolucoes").select("*", { count: 'exact' }),
       ];
 
       if (hasAdminAccess) {
-        queries.push((supabase as any).from("conselheiros").select("*", { count: 'exact' }));
+        queries.push(supabase.from("profiles").select("*", { count: 'exact' }).in('role', ['conselheiro_titular', 'conselheiro_suplente']));
       }
 
       const results = await Promise.all(queries);
@@ -162,7 +156,13 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [hasAdminAccess, toast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user, profile, fetchDashboardData]);
 
   const getStatusColor = (status: string) => ({
     open: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -185,7 +185,7 @@ const Dashboard = () => {
     closed: "Fechado",
   }[status] || status);
 
-  const getPriorityLabel = (priority: string) => ({
+  const _getPriorityLabel = (priority: string) => ({
     urgent: "Urgente",
     high: "Alta",
     medium: "Média",

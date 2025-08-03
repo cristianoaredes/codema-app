@@ -20,7 +20,7 @@ const DemoModeContext = React.createContext<DemoModeContextType | undefined>(und
 export function DemoModeProvider({ children }: { children: React.ReactNode }) {
   const [isDemoMode, setIsDemoMode] = React.useState(false);
   const [simulatedRole, setSimulatedRole] = React.useState<string | null>(null);
-  const { profile } = useAuth();
+  const { profile: _profile } = useAuth();
 
   const enableDemoMode = () => {
     setIsDemoMode(true);

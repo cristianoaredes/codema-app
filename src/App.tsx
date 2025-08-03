@@ -4,25 +4,31 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
-
-import { useAuth } from "@/hooks/useAuth";
+// import { useAuth } from '@/hooks/useAuth'; // Already commented out
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DemoModeProvider } from "@/components/demo/DemoModeProvider";
 import { AppSidebar } from "@/components/common/Navigation/AppSidebar";
-import { Header } from "@/components/common";
-import { SmartBreadcrumb, BreadcrumbContainer } from "@/components/navigation/SmartBreadcrumb";
-import { GlobalSearch, SearchTrigger } from "@/components/navigation/GlobalSearch";
+import { Header } from "@/components/common"; // Added missing import
+import { SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
+import { SearchTrigger } from "@/components/navigation/GlobalSearch";
 import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import CreateReport from "./pages/CreateReport";
-import Reports from "./pages/Reports";
-import Reunioes from "./pages/Reunioes";
-import Documentos from "./pages/Documentos";
-import Processos from "./pages/Processos";
-import FMA from "./pages/FMA";
-import Ouvidoria from "./pages/Ouvidoria";
 import Profile from "./pages/Profile";
+import Reunioes from "./pages/Reunioes";
+// Relatórios
+import { CreateReport, Reports } from "./pages/relatorios";
+// FMA
+import { FMA } from "./pages/fma";
+// Ouvidoria
+import { Ouvidoria } from "./pages/ouvidoria";
+// Documentos
+import { Documentos } from "./pages/documentos";
+import NovoDocumento from "./pages/documentos/NovoDocumento";
+// Reuniões
+import NovaReuniao from "./pages/reunioes/NovaReuniao";
+// Processos
+import { Processos } from "./pages/processos";
 import ConselheirosPage from "./pages/codema/conselheiros";
 import AtasPage from "./pages/codema/atas";
 import ResolucoesPage from "./pages/codema/resolucoes";
@@ -54,21 +60,27 @@ const AuthenticatedLayout = () => {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar data-tour="sidebar" />
         <main className="flex-1 overflow-x-hidden">
-          <header className="h-16 flex items-center border-b bg-card px-4 sm:px-6 sticky top-0 z-20">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger />
-              <SearchTrigger onClick={commandPalette.toggle} className="md:hidden" />
+          <header className="h-14 sm:h-16 flex items-center border-b bg-card px-3 sm:px-4 md:px-6 sticky top-0 z-20">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <SidebarTrigger className="h-9 w-9 sm:h-10 sm:w-10" />
+              <SearchTrigger 
+                onClick={commandPalette.toggle} 
+                className="md:hidden h-9 w-9 sm:h-10 sm:w-10" 
+              />
             </div>
             <div className="hidden md:flex items-center flex-1 ml-4">
               <SmartBreadcrumb />
             </div>
-            <div className="flex items-center gap-4">
-              <SearchTrigger onClick={commandPalette.toggle} />
+            <div className="flex items-center gap-2 sm:gap-4">
+              <SearchTrigger 
+                onClick={commandPalette.toggle} 
+                className="hidden md:flex h-9 w-9 sm:h-10 sm:w-10"
+              />
               <Header /> {/* User profile button */}
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
             <Outlet />
           </div>
         </main>
@@ -115,7 +127,9 @@ const App = () => (
                 <Route path="/criar-relatorio" element={<CreateReport />} />
                 <Route path="/perfil" element={<Profile />} />
                 <Route path="/reunioes" element={<Reunioes />} />
+                <Route path="/reunioes/nova" element={<NovaReuniao />} />
                 <Route path="/documentos" element={<Documentos />} />
+                <Route path="/documentos/novo" element={<NovoDocumento />} />
                 <Route path="/processos" element={<Processos />} />
                 <Route path="/fma" element={<FMA />} />
                 <Route path="/ouvidoria" element={<Ouvidoria />} />

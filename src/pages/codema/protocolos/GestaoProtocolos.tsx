@@ -9,9 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { BreadcrumbWithActions, SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
-import { 
-  FileText, Hash, Calendar, BarChart3, RefreshCw, Search, Download, Plus, Settings, AlertCircle, CheckCircle, Info
-} from 'lucide-react';
+import { FileText, Search, Plus, Hash, Calendar, BarChart3, RefreshCw, Info, CheckCircle, Settings, AlertCircle } from 'lucide-react';
 import {
   gerarProtocolo, TipoProtocolo, ProtocoloInfo, TIPOS_PROTOCOLO_INFO, consultarProximoProtocolo,
   obterEstatisticasProtocolos, validarFormatoProtocolo, extrairInfoProtocolo
@@ -42,7 +40,7 @@ export default function GestaoProtocolos() {
     try {
       const dados = await obterEstatisticasProtocolos(anoFiltro);
       setEstatisticas(dados as unknown as EstatisticaProtocolo[]);
-    } catch (error) {
+    } catch (_error) {
       notification.show({ title: 'Erro', message: 'Erro ao carregar estatísticas de protocolos', variant: 'error' });
     } finally {
       setLoading(false);
@@ -55,7 +53,7 @@ export default function GestaoProtocolos() {
     try {
       const numero = await consultarProximoProtocolo(tipoSelecionado);
       setProximoNumero(numero);
-    } catch (error) {
+    } catch (_error) {
       notification.show({ title: 'Erro', message: 'Erro ao consultar próximo protocolo', variant: 'error' });
     }
   }, [tipoSelecionado, notification]);
@@ -71,7 +69,7 @@ export default function GestaoProtocolos() {
       notification.show({ title: 'Protocolo Gerado', message: `Protocolo ${numero} gerado com sucesso!`, variant: 'success' });
       await carregarEstatisticas();
       await consultarProximo();
-    } catch (error) {
+    } catch (_error) {
       notification.show({ title: 'Erro', message: 'Erro ao gerar protocolo', variant: 'error' });
     } finally {
       setCarregandoGerador(false);
@@ -98,7 +96,7 @@ export default function GestaoProtocolos() {
       console.log('Reset de sequência:', tipo);
       notification.show({ title: 'Sequência Resetada', message: `Sequência do tipo ${tipo} resetada com sucesso`, variant: 'success' });
       await carregarEstatisticas();
-    } catch (error) {
+    } catch (_error) {
       notification.show({ title: 'Erro', message: 'Erro ao resetar sequência', variant: 'error' });
     }
   };

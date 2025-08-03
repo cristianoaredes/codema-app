@@ -57,9 +57,14 @@ export function useCreateReuniao() {
       const { data, error } = await supabase
         .from('reunioes')
         .insert({
-          ...reuniao,
+          titulo: reuniao.titulo,
+          tipo: reuniao.tipo,
+          data_reuniao: reuniao.data_reuniao,
+          local: reuniao.local,
+          pauta: reuniao.pauta,
+          secretario_id: reuniao.secretario_id,
           protocolo: protocoloReuniao,
-          status: 'agendada'
+          status: reuniao.status || 'agendada'
         })
         .select()
         .single();
@@ -118,7 +123,7 @@ export function useConvocacoes(reuniao_id?: string) {
         .from('convocacoes')
         .select(`
           *,
-          conselheiros(nome_completo, email, telefone)
+          profiles!convocacoes_conselheiro_id_fkey(nome_completo, email, phone)
         `)
         .order('created_at', { ascending: false });
       
@@ -129,7 +134,28 @@ export function useConvocacoes(reuniao_id?: string) {
       const { data, error } = await query;
       
       if (error) throw error;
-      return data || [];
+      
+      // Validate and convert data to match our interface
+      if (!data) return [];
+      
+      const validTipoEnvio = ['email', 'whatsapp', 'postal'] as const;
+      const validStatus = ['pendente', 'enviada', 'entregue', 'erro'] as const;
+      const validConfirmacao = ['confirmada', 'rejeitada', 'pendente'] as const;
+      
+      const convertedData: Convocacao[] = data.map(item => ({
+        ...item,
+        tipo_envio: validTipoEnvio.includes(item.tipo_envio as typeof validTipoEnvio[number]) 
+          ? (item.tipo_envio as 'email' | 'whatsapp' | 'postal')
+          : 'email', // fallback seguro
+        status: validStatus.includes(item.status as typeof validStatus[number])
+          ? (item.status as 'pendente' | 'enviada' | 'entregue' | 'erro')
+          : 'pendente', // fallback seguro
+        confirmacao_presenca: item.confirmacao_presenca && validConfirmacao.includes(item.confirmacao_presenca as typeof validConfirmacao[number])
+          ? (item.confirmacao_presenca as 'confirmada' | 'rejeitada' | 'pendente')
+          : undefined
+      }));
+      
+      return convertedData;
     },
     enabled: !!reuniao_id
   });
@@ -143,7 +169,7 @@ export function usePresencas(reuniao_id: string) {
         .from('presencas')
         .select(`
           *,
-          conselheiros(nome_completo, entidade_representada)
+          profiles!presencas_conselheiro_id_fkey(nome_completo, entidade_representada)
         `)
         .eq('reuniao_id', reuniao_id)
         .order('created_at', { ascending: true });
@@ -176,10 +202,23 @@ export function useEnviarConvocacoes() {
   
   return useMutation({
     mutationFn: async (params: ConvocacaoCreateInput): Promise<void> => {
-      // Create convocações for each conselheiro
-      const convocacoes = params.conselheiros_ids.map(conselheiro_id => ({
+      // First, get conselheiro_ids from profile_ids
+      // Since convocacoes table references conselheiros.id, not profiles.id
+      const { data: conselheiros, error: conselheiroError } = await supabase
+        .from('conselheiros')
+        .select('id, profile_id')
+        .in('profile_id', params.conselheiros_ids);
+      
+      if (conselheiroError) throw conselheiroError;
+      
+      if (!conselheiros || conselheiros.length === 0) {
+        throw new Error('Nenhum conselheiro encontrado para os profiles selecionados');
+      }
+      
+      // Create convocações using the correct conselheiro_ids
+      const convocacoes = conselheiros.map(conselheiro => ({
         reuniao_id: params.reuniao_id,
-        conselheiro_id,
+        conselheiro_id: conselheiro.id,
         tipo_envio: params.tipo_envio === 'ambos' ? 'email' : params.tipo_envio,
         status: 'pendente'
       }));
@@ -195,6 +234,7 @@ export function useEnviarConvocacoes() {
       
       // TODO: Integrate with actual email/whatsapp sending service
       // For now, just mark as sent immediately
+      const conselheiroIds = conselheiros.map(c => c.id);
       const { error: updateError } = await supabase
         .from('convocacoes')
         .update({ 
@@ -202,7 +242,7 @@ export function useEnviarConvocacoes() {
           enviada_em: new Date().toISOString()
         })
         .eq('reuniao_id', params.reuniao_id)
-        .in('conselheiro_id', params.conselheiros_ids);
+        .in('conselheiro_id', conselheiroIds);
       
       if (updateError) throw updateError;
     },

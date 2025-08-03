@@ -4,12 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, Plus, AlertTriangle } from "lucide-react";
+import { Calendar, MapPin, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { BreadcrumbWithActions, SmartBreadcrumb } from "@/components/navigation/SmartBreadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LoadingSpinner } from "@/components/ui/loading";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { Reuniao } from "@/types";
 
@@ -62,7 +61,7 @@ const ReunioesPage = () => {
 
   useEffect(() => {
     fetchReunioes();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchReunioes = async () => {
     try {
@@ -74,8 +73,13 @@ const ReunioesPage = () => {
       
       const mappedData = data?.map(r => ({ ...r, data_hora: r.data_reuniao }));
       setReunioes(mappedData || []);
-    } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } catch (error) {
+      console.error('Error fetching reuniões:', error);
+      toast({ 
+        title: "Erro", 
+        description: error instanceof Error ? error.message : 'Erro desconhecido', 
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
     }
@@ -88,7 +92,7 @@ const ReunioesPage = () => {
       else if (new Date(r.data_hora) >= agora) acc.proximas.push(r);
       else acc.passadas.push(r);
       return acc;
-    }, { proximas: [], passadas: [], canceladas: [] });
+    }, { proximas: [] as Reuniao[], passadas: [] as Reuniao[], canceladas: [] as Reuniao[] });
   }, [reunioes]);
 
   const canManageReunioes = profile?.role && (

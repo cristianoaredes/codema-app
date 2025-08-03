@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from "@/hooks/useAuth";
+import { useSecureAuth } from "@/hooks/useSecureAuth";
+import { secureAuthService } from "@/services/auth/SecureAuthorizationService";
+import { UserRole } from "@/types/auth";
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -9,12 +12,11 @@ import { Label } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 import { Textarea } from '@/components/ui';
 import { useToast } from '@/hooks';
-import { Users, Search, Edit, Shield, UserCheck, User, Plus, UserX, UserPlus, Mail, Key, BarChart3, Eye, EyeOff } from 'lucide-react';
+import { Users, Search, Edit, Shield, UserCheck, User, UserX, UserPlus, Mail, BarChart3, Eye, EyeOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import { Tabs as _Tabs, TabsContent as _TabsContent, TabsList as _TabsList, TabsTrigger as _TabsTrigger } from '@/components/ui';
 import { UserManagementService, CreateUserRequest, InviteUserRequest } from '@/services/userManagement';
 import { PresidencyDelegation } from '@/components/admin/PresidencyDelegation';
-import { UserRole } from '@/types/auth';
 
 interface Profile {
   id: string;
@@ -40,7 +42,8 @@ interface UserStats {
 }
 
 const UserManagement = () => {
-  const { hasAdminAccess, profile } = useAuth();
+  const { profile } = useAuth(); // Legacy compatibility
+  const { hasSecurePermission } = useSecureAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<Profile[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -50,6 +53,7 @@ const UserManagement = () => {
   const [newRole, setNewRole] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [hasManagePermission, setHasManagePermission] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false);
   const [deactivationReason, setDeactivationReason] = useState('');
@@ -92,7 +96,9 @@ const UserManagement = () => {
     return roles.find(r => r.value === role) || roles[0];
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
+    if (!hasManagePermission) return;
+    
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -112,26 +118,30 @@ const UserManagement = () => {
         variant: 'destructive',
       });
     }
-  };
+  }, [hasManagePermission, toast]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
+    if (!hasManagePermission) return;
+    
     const result = await UserManagementService.getUserStats();
     if (result.success && result.data) {
       setStats(result.data as unknown as UserStats);
     }
-  };
+  }, [hasManagePermission]);
 
   const updateUserRole = async () => {
     if (!selectedUser || !newRole) return;
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole, updated_at: new Date().toISOString() })
-        .eq('id', selectedUser.id);
+      // SECURE: Use server-validated role update with audit logging
+      const result = await secureAuthService.secureUpdateUserRole(
+        selectedUser.id,
+        newRole as UserRole,
+        `Role changed from ${selectedUser.role} to ${newRole} via Admin UI`
+      );
 
-      if (error) {
-        throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Role update failed');
       }
 
       toast({
@@ -139,8 +149,7 @@ const UserManagement = () => {
         description: `Perfil de ${selectedUser.full_name || selectedUser.email} foi atualizado para ${getRoleInfo(newRole).label}.`,
       });
 
-      await fetchUsers();
-      await fetchStats();
+      await Promise.all([fetchUsers(), fetchStats()]);
       setIsEditDialogOpen(false);
       setSelectedUser(null);
       setNewRole('');
@@ -148,7 +157,7 @@ const UserManagement = () => {
       console.error('Error updating user role:', error);
       toast({
         title: 'Erro ao atualizar perfil',
-        description: 'Não foi possível atualizar o perfil do usuário.',
+        description: error instanceof Error ? error.message : 'Não foi possível atualizar o perfil do usuário.',
         variant: 'destructive',
       });
     }
@@ -175,8 +184,7 @@ const UserManagement = () => {
       });
       
       setIsCreateDialogOpen(false);
-      await fetchUsers();
-      await fetchStats();
+      await Promise.all([fetchUsers(), fetchStats()]);
     } else {
       toast({
         title: 'Erro ao criar usuário',
@@ -234,8 +242,7 @@ const UserManagement = () => {
       setIsDeactivateDialogOpen(false);
       setSelectedUser(null);
       setDeactivationReason('');
-      await fetchUsers();
-      await fetchStats();
+      await Promise.all([fetchUsers(), fetchStats()]);
     } else {
       toast({
         title: 'Erro ao alterar status',
@@ -260,26 +267,39 @@ const UserManagement = () => {
   const vicePresidents = users.filter(user => user.role === 'vice_presidente' && user.is_active !== false);
 
   useEffect(() => {
-    if (hasAdminAccess) {
-      const loadData = async () => {
-        setLoading(true);
-        await Promise.all([fetchUsers(), fetchStats()]);
+    const validatePermissions = async () => {
+      setLoading(true);
+      try {
+        const hasPermission = await hasSecurePermission('profiles.manage');
+        setHasManagePermission(hasPermission);
+        
+        // If user has permission, load data immediately
+        if (hasPermission) {
+          await Promise.all([fetchUsers(), fetchStats()]);
+        }
+      } catch (error) {
+        console.error('Permission validation error:', error);
+        setHasManagePermission(false);
+      } finally {
         setLoading(false);
-      };
-      loadData();
-    }
-  }, [hasAdminAccess]);
+      }
+    };
+    
+    validatePermissions();
+  }, [hasSecurePermission, fetchUsers, fetchStats]);
 
-  if (!hasAdminAccess) {
-    return null; // This should be handled by ProtectedRoute
-  }
-
+  // Show loading while validating permissions and loading data
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  // SECURE: Block access if user doesn't have permission
+  if (!hasManagePermission) {
+    return null; // This should be handled by ProtectedRoute
   }
 
   return (
@@ -343,7 +363,7 @@ const UserManagement = () => {
                 
                 <div>
                   <Label htmlFor="create-role">Perfil *</Label>
-                  <Select value={createForm.role} onValueChange={(value) => setCreateForm(prev => ({...prev, role: value as any}))}>
+                  <Select value={createForm.role} onValueChange={(value) => setCreateForm(prev => ({...prev, role: value as UserRole}))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -427,7 +447,7 @@ const UserManagement = () => {
                 
                 <div>
                   <Label htmlFor="invite-role">Perfil *</Label>
-                  <Select value={inviteForm.role} onValueChange={(value) => setInviteForm(prev => ({...prev, role: value as any}))}>
+                  <Select value={inviteForm.role} onValueChange={(value) => setInviteForm(prev => ({...prev, role: value as UserRole}))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -540,9 +560,8 @@ const UserManagement = () => {
       {profile?.role === 'presidente' && vicePresidents.length > 0 && (
         <PresidencyDelegation 
           vicePresidents={vicePresidents}
-          onDelegationChange={() => {
-            fetchUsers();
-            fetchStats();
+          onDelegationChange={async () => {
+            await Promise.all([fetchUsers(), fetchStats()]);
           }}
         />
       )}

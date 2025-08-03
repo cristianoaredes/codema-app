@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useNavigate } from "react-router-dom"
-import { useGlobalSearch } from "@/hooks/useGlobalSearch"
+import { useGlobalSearch as _useGlobalSearch } from "@/hooks/useGlobalSearch"
 
 interface SearchResult {
   id: string

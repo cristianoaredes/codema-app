@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { 
   FileText, 
@@ -16,7 +15,7 @@ import {
   Search, 
   Clock, 
   AlertTriangle, 
-  CheckCircle,
+  CheckCircle as _CheckCircle,
   Eye,
   Edit,
   UserCheck
@@ -41,7 +40,7 @@ interface Processo {
 }
 
 const Processos = () => {
-  const { user, profile } = useAuth();
+  const { user: _user, profile } = useAuth();
   const { toast } = useToast();
   const [processos, setProcessos] = useState<Processo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +67,7 @@ const Processos = () => {
         .from("processos")
         .select(`
           *,
-          relator:profiles!relator_id(full_name)
+          relator_profile:profiles!relator_id(full_name)
         `)
         .order("data_protocolo", { ascending: false });
 
@@ -89,9 +88,9 @@ const Processos = () => {
   const fetchConselheiros = async () => {
     try {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, role")
-        .in("role", ["conselheiro_titular", "conselheiro_suplente"])
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('role', ['conselheiro_titular', 'conselheiro_suplente'])
         .order("full_name");
 
       if (error) throw error;

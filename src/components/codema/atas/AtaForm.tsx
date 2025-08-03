@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, Trash2, Save, Eye, Users, ClipboardList } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, Save, ClipboardList } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,18 +127,27 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
     },
   });
 
-  // Buscar conselheiros para lista de presença
+  // Buscar conselheiros para lista de presença (agora usando profiles)
   const { data: conselheiros = [] } = useQuery({
     queryKey: ['conselheiros-ativos'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('conselheiros')
-        .select('id, nome, cargo, tipo, ativo')
-        .eq('ativo', true)
-        .order('nome');
+      const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('role', ['conselheiro_titular', 'conselheiro_suplente'])
+      .eq('is_active', true)
+      .order('full_name');
 
       if (error) throw error;
-      return data;
+      
+      // Mapear profiles para o formato esperado
+      return data.map(profile => ({
+        id: profile.id,
+        nome: profile.full_name,
+        cargo: profile.role === 'conselheiro_titular' ? 'Titular' : 'Suplente',
+        tipo: profile.role,
+        ativo: profile.is_active
+      }));
     },
   });
 
@@ -286,18 +295,57 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs defaultValue="dados-basicos" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="dados-basicos">Dados Básicos</TabsTrigger>
-            <TabsTrigger value="pauta">Pauta</TabsTrigger>
-            <TabsTrigger value="presenca">Presença</TabsTrigger>
-            <TabsTrigger value="deliberacoes">Deliberações</TabsTrigger>
-            {ata && <TabsTrigger value="revisoes">Revisões</TabsTrigger>}
-            {ata && <TabsTrigger value="pdf">PDF</TabsTrigger>}
-            {ata && <TabsTrigger value="versoes">Versões</TabsTrigger>}
-          </TabsList>
+          {/* Mobile: Scrollable horizontal tabs */}
+          <div className="block sm:hidden">
+            <TabsList className="flex h-auto w-full justify-start overflow-x-auto p-1">
+              <TabsTrigger value="dados-basicos" className="flex-shrink-0 text-xs px-3 py-2">
+                Básicos
+              </TabsTrigger>
+              <TabsTrigger value="pauta" className="flex-shrink-0 text-xs px-3 py-2">
+                Pauta
+              </TabsTrigger>
+              <TabsTrigger value="presenca" className="flex-shrink-0 text-xs px-3 py-2">
+                Presença
+              </TabsTrigger>
+              <TabsTrigger value="deliberacoes" className="flex-shrink-0 text-xs px-3 py-2">
+                Deliberações
+              </TabsTrigger>
+              {ata && (
+                <TabsTrigger value="revisoes" className="flex-shrink-0 text-xs px-3 py-2">
+                  Revisões
+                </TabsTrigger>
+              )}
+              {ata && (
+                <TabsTrigger value="pdf" className="flex-shrink-0 text-xs px-3 py-2">
+                  PDF
+                </TabsTrigger>
+              )}
+              {ata && (
+                <TabsTrigger value="versoes" className="flex-shrink-0 text-xs px-3 py-2">
+                  Versões
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
+          
+          {/* Desktop: Grid layout */}
+          <div className="hidden sm:block">
+            <TabsList className={cn(
+              "grid w-full",
+              ata ? "grid-cols-7" : "grid-cols-4"
+            )}>
+              <TabsTrigger value="dados-basicos">Dados Básicos</TabsTrigger>
+              <TabsTrigger value="pauta">Pauta</TabsTrigger>
+              <TabsTrigger value="presenca">Presença</TabsTrigger>
+              <TabsTrigger value="deliberacoes">Deliberações</TabsTrigger>
+              {ata && <TabsTrigger value="revisoes">Revisões</TabsTrigger>}
+              {ata && <TabsTrigger value="pdf">PDF</TabsTrigger>}
+              {ata && <TabsTrigger value="versoes">Versões</TabsTrigger>}
+            </TabsList>
+          </div>
 
-          <TabsContent value="dados-basicos" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TabsContent value="dados-basicos" className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="reuniao_id"
@@ -551,14 +599,14 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
                 const ausente = ausentes.includes(conselheiro.id);
 
                 return (
-                  <div key={conselheiro.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div key={conselheiro.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg space-y-2 sm:space-y-0">
                     <div>
                       <p className="font-medium">{conselheiro.nome}</p>
                       <p className="text-sm text-muted-foreground">
                         {conselheiro.cargo} - {conselheiro.tipo === 'titular' ? 'Titular' : 'Suplente'}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Button
                         type="button"
                         variant={presente ? "default" : "outline"}
@@ -583,7 +631,7 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
 
             <div className="mt-6">
               <h4 className="font-medium mb-2">Resumo de Presença</h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="text-center p-3 bg-green-50 rounded-lg">
                   <p className="text-2xl font-bold text-green-700">{presentes.length}</p>
                   <p className="text-sm text-green-600">Presentes</p>
@@ -651,7 +699,7 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
                           />
                         </div>
                         
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div>
                             <Label>Votos a Favor</Label>
                             <Input
@@ -765,7 +813,21 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
 
         <Separator />
 
-        <div className="flex justify-end gap-2">
+        {/* Mobile: Sticky bottom actions */}
+        <div className="block sm:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg z-10">
+          <div className="flex space-x-2">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={mutation.isPending} className="flex-1">
+              <Save className="w-4 h-4 mr-2" />
+              {mutation.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
+        </div>
+        
+        {/* Desktop: Regular actions */}
+        <div className="hidden sm:flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
           </Button>
@@ -774,6 +836,9 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
             {mutation.isPending ? "Salvando..." : "Salvar Ata"}
           </Button>
         </div>
+        
+        {/* Mobile: Bottom spacing for sticky actions */}
+        <div className="block sm:hidden h-20"></div>
       </form>
     </Form>
   );

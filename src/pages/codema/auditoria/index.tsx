@@ -46,7 +46,7 @@ export default function AuditoriaPage() {
       .map(row => row.map(field => `"${field}"`).join(','))
       .join('\n');
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new globalThis.Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `auditoria_codema_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;

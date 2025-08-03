@@ -20,12 +20,12 @@ import {
   DollarSign,
   Gavel,
   MessageSquare,
-  Settings,
+  Settings as _Settings,
   LogOut,
   Search,
   PlusCircle,
   Clock,
-  Star
+  Star as _Star
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -48,7 +48,7 @@ interface CommandItem {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate();
-  const { user, profile, hasAdminAccess, hasCODEMAAccess, signOut } = useAuth();
+  const { user, profile: _profile, hasAdminAccess, hasCODEMAAccess, signOut } = useAuth();
   const [search, setSearch] = React.useState("");
 
   // Comandos disponíveis baseados no role do usuário

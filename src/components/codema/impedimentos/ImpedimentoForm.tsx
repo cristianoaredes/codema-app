@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui';
 import { useCreateImpedimento } from '@/hooks';
-import { ImpedimentoCreateInput } from '@/types';
+import type { ImpedimentoCreateInput as _ImpedimentoCreateInput } from '@/types';
 
 const impedimentoSchema = z.object({
   conselheiro_id: z.string().min(1, 'Conselheiro é obrigatório'),

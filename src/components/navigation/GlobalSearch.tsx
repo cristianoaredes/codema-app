@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Search, X, Clock, FileText, Calendar, Users, Gavel, DollarSign } from "lucide-react";
+import { Search, X, Clock, FileText, Calendar, Users, Gavel, DollarSign as _DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { 
   Command,
@@ -50,7 +50,7 @@ export function GlobalSearch({
   const [recentSearches, setRecentSearches] = React.useState<string[]>([]);
   
   const navigate = useNavigate();
-  const { user, hasCODEMAAccess } = useAuth();
+  const { user: _user, hasCODEMAAccess } = useAuth();
 
   // Load recent searches from localStorage
   React.useEffect(() => {
@@ -173,23 +173,24 @@ export function GlobalSearch({
           });
         });
 
-        // Search counselors
-        const { data: counselors } = await supabase
-          .from('conselheiros')
-          .select('id, nome, instituicao, cargo, status')
-          .or(`nome.ilike.%${searchQuery}%,instituicao.ilike.%${searchQuery}%`)
+        // Search counselors (now using profiles table)
+        const { data: counselors, error: _counselorsError } = await supabase
+          .from('profiles')
+          .select('id, full_name, role')
+          .in('role', ['conselheiro_titular', 'conselheiro_suplente'])
+          .ilike('full_name', `%${searchQuery}%`)
           .limit(3);
 
         counselors?.forEach(counselor => {
           results.push({
             id: counselor.id,
             type: 'counselor',
-            title: counselor.nome,
-            description: `${counselor.cargo} - ${counselor.instituicao}`,
+            title: counselor.full_name,
+            description: `Conselheiro - ${counselor.email}`,
             url: `/codema/conselheiros/${counselor.id}`,
             icon: Users,
             metadata: {
-              status: counselor.status
+              status: 'ativo' // perfis ativos são considerados conselheiros
             }
           });
         });

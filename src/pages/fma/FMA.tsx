@@ -6,11 +6,11 @@ import {
   DollarSign, 
   Plus, 
   TrendingUp, 
-  TrendingDown,
-  PieChart,
+  TrendingDown as _TrendingDown,
+  PieChart as _PieChart,
   FileText,
-  Calendar,
-  AlertCircle,
+  Calendar as _Calendar,
+  AlertCircle as _AlertCircle,
   CheckCircle,
   Clock,
   Target
@@ -97,7 +97,7 @@ const FMA = () => {
     } finally {
       setLoading(false);
     }
-  }, [supabase, toast]);
+  }, [toast]);
 
   useEffect(() => {
     fetchFMAData();

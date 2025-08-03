@@ -43,7 +43,7 @@ export const validateEmailForRole = (email: string, role?: UserRole): {
 /**
  * Sugere domínios de email com base no perfil (exemplo futuro).
  */
-export const getSuggestedDomainsForRole = (role: UserRole): string[] => {
+export const getSuggestedDomainsForRole = (_role: UserRole): string[] => {
   // Lógica de sugestão pode ser implementada aqui.
   // Por enquanto, retorna um array vazio.
   return [];

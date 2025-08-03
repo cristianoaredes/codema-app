@@ -58,7 +58,7 @@ export function PdfGenerator({ ata, onPdfGenerated }: PdfGeneratorProps) {
 
       // Gerar dados do PDF
       const pdfData = generatePdfContent(ata);
-      const pdfBlob = new Blob([pdfData.content], { type: 'application/pdf' });
+      const pdfBlob = new globalThis.Blob([pdfData.content], { type: 'application/pdf' });
       
       // Em produção, fazer upload para storage
       const fileName = `ata-${ata.numero.replace('/', '-')}.pdf`;
@@ -343,7 +343,7 @@ startxref
 }
 
 // Função para calcular hash do arquivo (simulado)
-async function calculateFileHash(blob: Blob): Promise<string> {
+async function calculateFileHash(blob: globalThis.Blob): Promise<string> {
   // Em produção, usar crypto.subtle.digest
   const text = await blob.text();
   let hash = 0;
