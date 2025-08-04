@@ -1,21 +1,11 @@
-// Re-export all hooks
 export { useAuth, useAuthState, AuthContext } from './useAuth';
 export { useToast } from './use-toast';
 export { useNotifications } from './use-notifications';
 export { 
-  useConselheiros, 
-  useConselheiro, 
-  useCreateConselheiro, 
-  useUpdateConselheiro, 
-  useDeleteConselheiro, 
-  useConselheirosComMandatoExpirando 
+  useConselheiros
 } from './useConselheiros';
 export { 
-  useImpedimentos, 
-  useImpedimento,
-  useCreateImpedimento, 
-  useRevogarImpedimento,
-  useVerificarImpedimentos
+  useImpedimentos
 } from './useImpedimentos';
 export { 
   useReunioes, 
