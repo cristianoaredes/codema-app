@@ -15,14 +15,14 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Reunioes from "./pages/Reunioes";
 import { CreateReport, Reports } from "./pages/relatorios";
-import { FMA } from "./pages/fma";
+import FMA from "./pages/fma/FMA";
 import { Ouvidoria } from "./pages/ouvidoria";
 import { Documentos } from "./pages/documentos";
 import NovoDocumento from "./pages/documentos/NovoDocumento";
 import NovaReuniao from "./pages/reunioes/NovaReuniao";
 import { Processos } from "./pages/processos";
-import * as ConselheirosPageModule from "./pages/codema/conselheiros";
-import AtasPage from "./pages/codema/atas";
+import ConselheirosPage from "./pages/codema/conselheiros/ConselheirosPage";
+import AtasPage from "./pages/codema/atas/AtasPage";
 import ResolucoesPage from "./pages/codema/resolucoes";
 import AuditoriaPage from "./pages/codema/auditoria";
 import GestaoProtocolos from "./pages/codema/protocolos/GestaoProtocolos";
@@ -110,7 +110,7 @@ const App = () => (
                 <Route path="/processos" element={<Processos />} />
                 <Route path="/fma" element={<FMA />} />
                 <Route path="/ouvidoria" element={<Ouvidoria />} />
-                <Route path="/codema/conselheiros" element={ConselheirosPageModule && ConselheirosPageModule.default ? <ConselheirosPageModule.default /> : null} />
+                <Route path="/codema/conselheiros" element={<ConselheirosPage />} />
                 <Route path="/codema/atas" element={<AtasPage />} />
                 <Route path="/codema/resolucoes" element={<ResolucoesPage />} />
                 <Route path="/codema/auditoria" element={<AuditoriaPage />} />
