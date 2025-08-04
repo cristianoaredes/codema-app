@@ -1,1 +1,2 @@
-export { ImpedimentoForm } from './ImpedimentoForm';
+// Remove incorrect export for ImpedimentoForm
+export {};

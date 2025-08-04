@@ -1,12 +1,20 @@
-import { useState } from 'react';
-// ...imports unchanged
+import React from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+// Dummy convocacoes for demonstration
+const convocacoes = [
+  {
+    id: "1",
+    conselheiro_id: "abc123",
+    status: "enviada",
+    confirmacao_presenca: "confirmada"
+  }
+];
 
 export default function ReuniaoDetailPage() {
-  // ...unchanged
-
   return (
     <div className="container mx-auto px-6 py-8">
-      {/* ... */}
       <Card>
         <CardHeader>
           <CardTitle>Status das Convocações</CardTitle>
@@ -17,15 +25,12 @@ export default function ReuniaoDetailPage() {
         <CardContent>
           {convocacoes.length > 0 ? (
             <>
-              {/* ... */}
               <div className="space-y-2">
                 {convocacoes.map((convocacao) => (
                   <div key={convocacao.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <div>
                         <p className="font-medium">{convocacao.conselheiro_id}</p>
-                        {/* If you have a way to resolve conselheiro_id to a name, do it here */}
-                        {/* <p className="text-sm text-gray-600">{convocacao.email}</p> */}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -46,11 +51,14 @@ export default function ReuniaoDetailPage() {
               </div>
             </>
           ) : (
-            // ...unchanged
+            <Card>
+              <CardContent>
+                Nenhuma convocação encontrada.
+              </CardContent>
+            </Card>
           )}
         </CardContent>
       </Card>
-      {/* ... */}
     </div>
   );
 }

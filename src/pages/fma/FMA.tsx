@@ -4,7 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 // ...imports unchanged
 
 const FMA = () => {
-  // ...unchanged
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [newReceita, setNewReceita] = useState<any>({});
+  const [newProjeto, setNewProjeto] = useState<any>({});
 
   const createReceita = async () => {
     try {
@@ -48,3 +51,4 @@ const FMA = () => {
 
   // ...rest of file unchanged
 };
+export default FMA;

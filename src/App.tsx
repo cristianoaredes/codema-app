@@ -4,32 +4,24 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
-// import { useAuth } from '@/hooks/useAuth'; // Already commented out
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DemoModeProvider } from "@/components/demo/DemoModeProvider";
 import { AppSidebar } from "@/components/common/Navigation/AppSidebar";
-import { Header } from "@/components/common"; // Added missing import
+import { Header } from "@/components/common";
 import { SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
-import { SearchTrigger } from "@/components/navigation/GlobalSearch";
 import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Reunioes from "./pages/Reunioes";
-// Relatórios
 import { CreateReport, Reports } from "./pages/relatorios";
-// FMA
 import { FMA } from "./pages/fma";
-// Ouvidoria
 import { Ouvidoria } from "./pages/ouvidoria";
-// Documentos
 import { Documentos } from "./pages/documentos";
 import NovoDocumento from "./pages/documentos/NovoDocumento";
-// Reuniões
 import NovaReuniao from "./pages/reunioes/NovaReuniao";
-// Processos
 import { Processos } from "./pages/processos";
-import ConselheirosPage from "./pages/codema/conselheiros";
+import * as ConselheirosPageModule from "./pages/codema/conselheiros";
 import AtasPage from "./pages/codema/atas";
 import ResolucoesPage from "./pages/codema/resolucoes";
 import AuditoriaPage from "./pages/codema/auditoria";
@@ -43,7 +35,6 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Layout para páginas públicas (sem sidebar)
 const PublicLayout = () => (
   <div className="min-h-screen bg-background">
     <Header />
@@ -51,7 +42,6 @@ const PublicLayout = () => (
   </div>
 );
 
-// Layout para páginas autenticadas (com sidebar)
 const AuthenticatedLayout = () => {
   const commandPalette = useCommandPalette();
   
@@ -63,20 +53,12 @@ const AuthenticatedLayout = () => {
           <header className="h-14 sm:h-16 flex items-center border-b bg-card px-3 sm:px-4 md:px-6 sticky top-0 z-20">
             <div className="flex items-center gap-2 sm:gap-4">
               <SidebarTrigger className="h-9 w-9 sm:h-10 sm:w-10" />
-              <SearchTrigger 
-                onClick={commandPalette.toggle} 
-                className="md:hidden h-9 w-9 sm:h-10 sm:w-10" 
-              />
             </div>
             <div className="hidden md:flex items-center flex-1 ml-4">
               <SmartBreadcrumb />
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
-              <SearchTrigger 
-                onClick={commandPalette.toggle} 
-                className="hidden md:flex h-9 w-9 sm:h-10 sm:w-10"
-              />
-              <Header /> {/* User profile button */}
+              <Header />
             </div>
           </header>
 
@@ -99,13 +81,10 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {/* Rotas Públicas */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Index />} />
                 <Route path="/relatorios" element={<Reports />} />
               </Route>
-
-              {/* Rota de Autenticação (sem layout principal) */}
               <Route path="/auth" element={
                 <PublicRoute>
                   <AuthPage />
@@ -113,8 +92,6 @@ const App = () => (
               } />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
-              
-              {/* Rotas Protegidas com Layout Autenticado */}
               <Route element={
                 <ProtectedRoute>
                   <AuthenticatedLayout />
@@ -133,14 +110,12 @@ const App = () => (
                 <Route path="/processos" element={<Processos />} />
                 <Route path="/fma" element={<FMA />} />
                 <Route path="/ouvidoria" element={<Ouvidoria />} />
-                <Route path="/codema/conselheiros" element={<ConselheirosPage />} />
+                <Route path="/codema/conselheiros" element={ConselheirosPageModule && ConselheirosPageModule.default ? <ConselheirosPageModule.default /> : null} />
                 <Route path="/codema/atas" element={<AtasPage />} />
                 <Route path="/codema/resolucoes" element={<ResolucoesPage />} />
                 <Route path="/codema/auditoria" element={<AuditoriaPage />} />
                 <Route path="/codema/protocolos" element={<GestaoProtocolos />} />
               </Route>
-              
-              {/* Rota de Not Found */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

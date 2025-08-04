@@ -42,8 +42,6 @@ export function useAuditLogs(filters: AuditLogsFilters = {}) {
         `)
         .order('created_at', { ascending: false });
 
-      // ...filters unchanged
-
       const { data, error } = await query;
       if (error) throw error;
       let result = data || [];
@@ -52,7 +50,6 @@ export function useAuditLogs(filters: AuditLogsFilters = {}) {
         ...log,
         details: ensureDetails(log.details),
       }));
-      // ...search filter unchanged
       return result;
     }
   });

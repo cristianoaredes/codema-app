@@ -1,2 +1,2 @@
-export { ConvocacaoForm } from './ConvocacaoForm';
-export { PresencasManager } from './PresencasManager';
+// Remove incorrect export for PresencasManager
+export {};

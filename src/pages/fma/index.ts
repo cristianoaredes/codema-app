@@ -1,1 +1,2 @@
-export { default as FMA } from './FMA';
+import FMA from './FMA';
+export { FMA };
