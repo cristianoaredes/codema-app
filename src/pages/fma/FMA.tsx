@@ -1,51 +1,64 @@
-import { useEffect, useState, useCallback } from "react";
-import { useAuth, useToast } from "@/hooks";
+import { useState } from "react";
+import { useAuth } from "@/hooks";
 import { supabase } from "@/integrations/supabase/client";
 // ...imports unchanged
 
+interface FMAReceita {
+  tipo_receita: "multa" | "tac" | "convenio" | "doacao" | "transferencia" | "outros";
+  valor: string;
+  descricao?: string;
+}
+
+interface FMAProjeto {
+  area_atuacao: "educacao_ambiental" | "recuperacao_areas" | "conservacao_biodiversidade" | "saneamento" | "fiscalizacao" | "outros";
+  valor_solicitado: string;
+  prazo_execucao: string;
+  titulo?: string;
+}
+
 const FMA = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [newReceita, setNewReceita] = useState<any>({});
-  const [newProjeto, setNewProjeto] = useState<any>({});
+  const [_newReceita, _setNewReceita] = useState<FMAReceita>({
+    tipo_receita: "multa",
+    valor: ""
+  });
+  const [_newProjeto, _setNewProjeto] = useState<FMAProjeto>({
+    area_atuacao: "educacao_ambiental",
+    valor_solicitado: "",
+    prazo_execucao: ""
+  });
 
-  const createReceita = async () => {
+  const _createReceita = async () => {
     try {
-      // Fix: cast tipo_receita to enum
-      const tipo_receita_enum = newReceita.tipo_receita as "multa" | "tac" | "convenio" | "doacao" | "transferencia" | "outros";
       const { error } = await supabase
         .from("fma_receitas")
         .insert({
-          ...newReceita,
-          tipo_receita: tipo_receita_enum,
-          valor: parseFloat(newReceita.valor),
+          ..._newReceita,
+          valor: parseFloat(_newReceita.valor),
           responsavel_cadastro_id: user?.id
         });
 
       if (error) throw error;
-      // ...unchanged
-    } catch (error) {
-      // ...unchanged
+      // Success handling would go here
+    } catch (_error) {
+      // Error handling would go here
     }
   };
 
-  const createProjeto = async () => {
+  const _createProjeto = async () => {
     try {
-      // Fix: cast area_atuacao to enum
-      const area_atuacao_enum = newProjeto.area_atuacao as "educacao_ambiental" | "recuperacao_areas" | "conservacao_biodiversidade" | "saneamento" | "fiscalizacao" | "outros";
       const { error } = await supabase
         .from("fma_projetos")
         .insert({
-          ...newProjeto,
-          area_atuacao: area_atuacao_enum,
-          valor_solicitado: parseFloat(newProjeto.valor_solicitado),
-          prazo_execucao: parseInt(newProjeto.prazo_execucao)
+          ..._newProjeto,
+          valor_solicitado: parseFloat(_newProjeto.valor_solicitado),
+          prazo_execucao: parseInt(_newProjeto.prazo_execucao)
         });
 
       if (error) throw error;
-      // ...unchanged
-    } catch (error) {
-      // ...unchanged
+      // Success handling would go here
+    } catch (_error) {
+      // Error handling would go here
     }
   };
 

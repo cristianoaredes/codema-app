@@ -1,4 +1,9 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-// ...rest of file unchanged
+import React from "react";
+
+const AtaReviewSystem: React.FC = () => (
+  <div className="p-4">
+    <p>AtaReviewSystem component - em desenvolvimento</p>
+  </div>
+);
+
+export default AtaReviewSystem;

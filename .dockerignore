@@ -1,0 +1,93 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.vite/
+*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment files (use .env.example instead)
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (optional, include if needed in container)
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+netlify.toml
+
+# Mobile app builds
+ios/
+android/
+capacitor.config.ts
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Logs
+logs/
+*.log
+
+# Docker files (don't copy these into the image)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Scripts that shouldn't be in production
+scripts/seed-*.js
+scripts/test-*.js
+
+# Archive and backup files
+archive/
+backup/
+*.bak
+*.backup
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Package manager lock files (we'll regenerate)
+# Comment these out if you want to ensure exact versions
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, AuthPage, ProtectedRoute, PublicRoute } from "@/components/auth";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -10,30 +11,54 @@ import { AppSidebar } from "@/components/common/Navigation/AppSidebar";
 import { Header } from "@/components/common";
 import { SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
 import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Eager load para páginas críticas
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import Reunioes from "./pages/Reunioes";
-import { CreateReport, Reports } from "./pages/relatorios";
-import FMA from "./pages/fma/FMA";
-import { Ouvidoria } from "./pages/ouvidoria";
-import { Documentos } from "./pages/documentos";
-import NovoDocumento from "./pages/documentos/NovoDocumento";
-import NovaReuniao from "./pages/reunioes/NovaReuniao";
-import { Processos } from "./pages/processos";
-import ConselheirosPage from "./pages/codema/conselheiros/ConselheirosPage";
-import AtasPage from "./pages/codema/atas/AtasPage";
-import ResolucoesPage from "./pages/codema/resolucoes";
-import AuditoriaPage from "./pages/codema/auditoria";
-import GestaoProtocolos from "./pages/codema/protocolos/GestaoProtocolos";
-import UserManagement from "./pages/admin/UserManagement";
-import DataSeeder from "./pages/admin/DataSeeder";
-import Documentation from "./pages/admin/Documentation";
 import AuthCallback from "./pages/AuthCallback";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
+// Lazy load para páginas secundárias
+const Profile = lazy(() => import("./pages/Profile"));
+const Reunioes = lazy(() => import("./pages/Reunioes"));
+const NovaReuniao = lazy(() => import("./pages/reunioes/NovaReuniao"));
+
+// Lazy load para módulos
+const FMA = lazy(() => import("./pages/fma/FMA"));
+const Ouvidoria = lazy(() => import("./pages/ouvidoria").then(m => ({ default: m.Ouvidoria })));
+const Documentos = lazy(() => import("./pages/documentos").then(m => ({ default: m.Documentos })));
+const NovoDocumento = lazy(() => import("./pages/documentos/NovoDocumento"));
+const Processos = lazy(() => import("./pages/processos").then(m => ({ default: m.Processos })));
+
+// Lazy load para relatórios
+const Reports = lazy(() => import("./pages/relatorios").then(m => ({ default: m.Reports })));
+const CreateReport = lazy(() => import("./pages/relatorios").then(m => ({ default: m.CreateReport })));
+
+// Lazy load para módulos CODEMA
+const ConselheirosPage = lazy(() => import("./pages/codema/conselheiros"));
+const AtasPage = lazy(() => import("./pages/codema/atas"));
+const ResolucoesPage = lazy(() => import("./pages/codema/resolucoes"));
+const AuditoriaPage = lazy(() => import("./pages/codema/auditoria"));
+const GestaoProtocolos = lazy(() => import("./pages/codema/protocolos"));
+
+// Lazy load para admin
+const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
+const DataSeeder = lazy(() => import("./pages/admin/DataSeeder"));
+const Documentation = lazy(() => import("./pages/admin/Documentation"));
+
 const queryClient = new QueryClient();
+
+// Loading component para lazy loading
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="space-y-4 text-center">
+      <Skeleton className="h-12 w-12 rounded-full mx-auto" />
+      <Skeleton className="h-4 w-32 mx-auto" />
+    </div>
+  </div>
+);
 
 const PublicLayout = () => (
   <div className="min-h-screen bg-background">
@@ -63,7 +88,9 @@ const AuthenticatedLayout = () => {
           </header>
 
           <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
-            <Outlet />
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
         <CommandPalette open={commandPalette.open} onOpenChange={commandPalette.setOpen} />
@@ -83,7 +110,11 @@ const App = () => (
             <Routes>
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Index />} />
-                <Route path="/relatorios" element={<Reports />} />
+                <Route path="/relatorios" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Reports />
+                  </Suspense>
+                } />
               </Route>
               <Route path="/auth" element={
                 <PublicRoute>

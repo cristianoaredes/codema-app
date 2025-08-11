@@ -22,13 +22,23 @@ import type { UserRole as _UserRole } from '../types/auth';
 
 // Interface para estatísticas do dashboard
 export interface DashboardStats {
+  totalReports: number;
+  reunioesAgendadas: number;
+  atasPendentes: number;
+  resolucoesPendentes: number;
+  conselheiros: number;
+  myReports: number;
+  reportGrowth: number;
+  fmaBalance: number;
+  auditAlerts: number;
   totalConselheiros: number;
   totalReunioes: number;
   totalResolucoes: number;
   totalProtocolos: number;
+  totalAtas: number;
+  totalImpedimentos: number;
   protocolosPendentes: number;
   reunioesProximas: number;
-  resolucoesPendentes: number;
   [key: string]: number | undefined;
 }
 

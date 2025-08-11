@@ -66,11 +66,7 @@ const Documentos = () => {
     }
   }, [user, fetchDocumentos]);
 
-  useEffect(() => {
-    filterDocumentos();
-  }, [documentos, searchTerm, tipoFilter, statusFilter]);
-
-  const filterDocumentos = () => {
+  const filterDocumentos = useCallback(() => {
     let filtered = documentos;
 
     // Filtro de busca
@@ -94,7 +90,11 @@ const Documentos = () => {
     }
 
     setFilteredDocumentos(filtered);
-  };
+  }, [documentos, searchTerm, tipoFilter, statusFilter]);
+
+  useEffect(() => {
+    filterDocumentos();
+  }, [filterDocumentos]);
 
   const getTipoColor = (tipo: string) => {
     switch (tipo) {

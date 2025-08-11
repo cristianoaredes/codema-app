@@ -1,8 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ImpedimentoConselheiro, ImpedimentoCreateInput } from '@/types/conselheiro';
-import { logAction } from '@/utils';
-import { toast } from 'sonner';
+import { ImpedimentoConselheiro } from '@/types/conselheiro';
 
 // Helper to cast string to enum
 function toTipoImpedimento(val: string): ImpedimentoConselheiro['tipo_impedimento'] {
@@ -41,7 +39,7 @@ export function useImpedimentos(filtros?: {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []).map((item: any) => ({
+      return (data || []).map((item) => ({
         ...item,
         tipo_impedimento: toTipoImpedimento(item.tipo_impedimento),
       }));

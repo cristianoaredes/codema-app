@@ -65,10 +65,7 @@ export default function ResolucoesPage() {
     queryFn: async () => {
       let query = supabase
         .from('resolucoes')
-        .select(`
-          *,
-          created_by_profile:profiles!created_by(full_name)
-        `)
+        .select('*')
         .order('numero', { ascending: false });
 
       if (searchTerm) {

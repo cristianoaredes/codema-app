@@ -39,7 +39,14 @@
       "Bash(curl:*)",
       "Bash(git commit:*)",
       "Bash(rg:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(docker-compose:*)",
+      "Bash(pg_ctl:*)",
+      "Bash(brew services stop:*)",
+      "Bash(docker:*)",
+      "mcp__supabase-global__list_tables",
+      "mcp__supabase-global__execute_sql",
+      "mcp__supabase-global__apply_migration"
     ],
     "deny": []
   }

@@ -5,17 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Eye, EyeOff, Info, User, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { 
+  DemoModeContext, 
+  availableRoles, 
+  useDemoMode,
+  useEffectiveRole,
+  useEffectivePermissions 
+} from "./DemoModeProvider.utils";
 
-interface DemoModeContextType {
-  isDemoMode: boolean;
-  enableDemoMode: () => void;
-  disableDemoMode: () => void;
-  toggleDemoMode: () => void;
-  simulateRole: (role: string) => void;
-  simulatedRole: string | null;
-}
-
-const DemoModeContext = React.createContext<DemoModeContextType | undefined>(undefined);
+export { useDemoMode, useEffectiveRole, useEffectivePermissions } from "./DemoModeProvider.utils";
 
 export function DemoModeProvider({ children }: { children: React.ReactNode }) {
   const [isDemoMode, setIsDemoMode] = React.useState(false);
@@ -67,14 +65,6 @@ export function DemoModeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useDemoMode() {
-  const context = React.useContext(DemoModeContext);
-  if (context === undefined) {
-    throw new Error('useDemoMode must be used within a DemoModeProvider');
-  }
-  return context;
-}
-
 function DemoModeIndicator() {
   const { isDemoMode, disableDemoMode, simulateRole, simulatedRole } = useDemoMode();
   const { profile } = useAuth();
@@ -83,14 +73,6 @@ function DemoModeIndicator() {
   if (!isDemoMode) return null;
 
   const currentRole = simulatedRole || profile?.role || 'citizen';
-  const availableRoles = [
-    { id: 'citizen', label: 'Cidadão', description: 'Acesso básico para relatórios' },
-    { id: 'conselheiro_titular', label: 'Conselheiro Titular', description: 'Membro ativo do CODEMA' },
-    { id: 'conselheiro_suplente', label: 'Conselheiro Suplente', description: 'Membro suplente do CODEMA' },
-    { id: 'secretario', label: 'Secretário', description: 'Secretário executivo do CODEMA' },
-    { id: 'presidente', label: 'Presidente', description: 'Presidente do CODEMA' },
-    { id: 'admin', label: 'Administrador', description: 'Acesso completo ao sistema' }
-  ];
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -124,7 +106,7 @@ function DemoModeIndicator() {
           </div>
           <CardDescription className="text-orange-700">
             Explorando funcionalidades como: <Badge variant="outline" className="text-orange-800">
-              {availableRoles.find(r => r.id === currentRole)?.label}
+              {availableRoles.find(r => r.value === currentRole)?.label}
             </Badge>
           </CardDescription>
         </CardHeader>
@@ -144,13 +126,13 @@ function DemoModeIndicator() {
                 <div className="grid grid-cols-2 gap-2">
                   {availableRoles.map((role) => (
                     <Button
-                      key={role.id}
-                      variant={currentRole === role.id ? "default" : "outline"}
+                      key={role.value}
+                      variant={currentRole === role.value ? "default" : "outline"}
                       size="sm"
-                      onClick={() => simulateRole(role.id)}
+                      onClick={() => simulateRole(role.value)}
                       className={cn(
                         "justify-start h-auto p-2 text-xs",
-                        currentRole === role.id 
+                        currentRole === role.value 
                           ? "bg-orange-600 text-white hover:bg-orange-700" 
                           : "border-orange-200 text-orange-800 hover:bg-orange-100"
                       )}
@@ -174,27 +156,4 @@ function DemoModeIndicator() {
       </Card>
     </div>
   );
-}
-
-// Hook to get effective role (considering demo mode)
-export function useEffectiveRole() {
-  const { simulatedRole } = useDemoMode();
-  const { profile } = useAuth();
-  
-  return simulatedRole || profile?.role || 'citizen';
-}
-
-// Hook to check if user has access in demo mode
-export function useEffectivePermissions() {
-  const effectiveRole = useEffectiveRole();
-  const { isDemoMode } = useDemoMode();
-  
-  const hasAdminAccess = effectiveRole === 'admin' || (isDemoMode && effectiveRole === 'admin');
-  const hasCODEMAAccess = ['conselheiro_titular', 'conselheiro_suplente', 'secretario', 'presidente', 'admin'].includes(effectiveRole);
-  
-  return {
-    hasAdminAccess,
-    hasCODEMAAccess,
-    effectiveRole
-  };
 }

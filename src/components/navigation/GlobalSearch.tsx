@@ -9,27 +9,65 @@ type SearchResult = {
   title: string;
   description: string;
   url: string;
-  icon: React.ComponentType<any>;
-  metadata: Record<string, any>;
+  icon: React.ComponentType<{ className?: string }>;
+  metadata: Record<string, unknown>;
 };
 
 interface GlobalSearchProps {
-  variant?: string;
+  variant?: 'inline' | 'modal' | 'header';
   placeholder?: string;
   className?: string;
 }
 
-export function GlobalSearch({ 
-  variant = 'inline', 
-  placeholder = "Pesquisar...",
-  className 
-}: GlobalSearchProps) {
+interface ReportResult {
+  id: string;
+  title: string;
+  description?: string;
+  location: string;
+  status: string;
+  priority: string;
+  category_id?: string;
+  created_at: string;
+}
+
+interface MeetingResult {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  data_reuniao: string;
+  status: string;
+}
+
+interface MinuteResult {
+  id: string;
+  titulo: string;
+  conteudo?: string;
+  data_reuniao?: string;
+  status: string;
+}
+
+interface ResolutionResult {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  status: string;
+  created_at: string;
+}
+
+interface CounselorResult {
+  id: string;
+  full_name: string;
+  role: string;
+  email?: string;
+}
+
+export function GlobalSearch(): React.ReactElement {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const { hasCODEMAAccess } = useAuth();
 
   // Perform search
-  const performSearch = useCallback(async (searchQuery: string) => {
+  const _performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setResults([]);
       return;
@@ -46,7 +84,7 @@ export function GlobalSearch({
         .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%`)
         .limit(5);
 
-      (reports || []).forEach((report: any) => {
+      (reports || []).forEach((report: ReportResult) => {
         results.push({
           id: report.id,
           type: 'report',
@@ -71,7 +109,7 @@ export function GlobalSearch({
           .or(`titulo.ilike.%${searchQuery}%,descricao.ilike.%${searchQuery}%`)
           .limit(3);
 
-        (meetings || []).forEach((meeting: any) => {
+        (meetings || []).forEach((meeting: MeetingResult) => {
           results.push({
             id: meeting.id,
             type: 'meeting',
@@ -93,7 +131,7 @@ export function GlobalSearch({
           .or(`titulo.ilike.%${searchQuery}%,conteudo.ilike.%${searchQuery}%`)
           .limit(3);
 
-        (minutes || []).forEach((minute: any) => {
+        (minutes || []).forEach((minute: MinuteResult) => {
           results.push({
             id: minute.id,
             type: 'minute',
@@ -102,7 +140,7 @@ export function GlobalSearch({
             url: `/codema/atas/${minute.id}`,
             icon: FileText,
             metadata: {
-              date: minute.data_reuniao,
+              date: minute.data_reuniao || '',
               status: minute.status
             }
           });
@@ -115,7 +153,7 @@ export function GlobalSearch({
           .or(`titulo.ilike.%${searchQuery}%,descricao.ilike.%${searchQuery}%`)
           .limit(3);
 
-        (resolutions || []).forEach((resolution: any) => {
+        (resolutions || []).forEach((resolution: ResolutionResult) => {
           results.push({
             id: resolution.id,
             type: 'resolution',
@@ -138,7 +176,7 @@ export function GlobalSearch({
           .ilike('full_name', `%${searchQuery}%`)
           .limit(3);
 
-        (counselors || []).forEach((counselor: any) => {
+        (counselors || []).forEach((counselor: CounselorResult) => {
           results.push({
             id: counselor.id,
             type: 'counselor',

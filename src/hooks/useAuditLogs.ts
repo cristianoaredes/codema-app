@@ -25,8 +25,8 @@ interface AuditLogsFilters {
   limit?: number;
 }
 
-function ensureDetails(details: any): Record<string, unknown> | null {
-  if (details && typeof details === 'object' && !Array.isArray(details)) return details;
+function ensureDetails(details: unknown): Record<string, unknown> | null {
+  if (details && typeof details === 'object' && !Array.isArray(details)) return details as Record<string, unknown>;
   return null;
 }
 
@@ -46,7 +46,7 @@ export function useAuditLogs(filters: AuditLogsFilters = {}) {
       if (error) throw error;
       let result = data || [];
       // Fix details field
-      result = result.map((log: any) => ({
+      result = result.map((log) => ({
         ...log,
         details: ensureDetails(log.details),
       }));

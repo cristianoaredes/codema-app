@@ -103,8 +103,7 @@ export function RevocationSystem({ resolucaoId, resolucao }: RevocationSystemPro
         .select(`
           *,
           resolucao_original:resolucao_original_id(numero, titulo),
-          resolucao_revogadora:resolucao_revogadora_id(numero, titulo),
-          created_by_profile:profiles!created_by(full_name)
+          resolucao_revogadora:resolucao_revogadora_id(numero, titulo)
         `)
         .eq('resolucao_original_id', resolucaoId)
         .order('data_revogacao', { ascending: false });
@@ -123,8 +122,7 @@ export function RevocationSystem({ resolucaoId, resolucao }: RevocationSystemPro
         .select(`
           *,
           resolucao_original:resolucao_original_id(numero, titulo),
-          resolucao_revogadora:resolucao_revogadora_id(numero, titulo),
-          created_by_profile:profiles!created_by(full_name)
+          resolucao_revogadora:resolucao_revogadora_id(numero, titulo)
         `)
         .eq('resolucao_revogadora_id', resolucaoId)
         .order('data_revogacao', { ascending: false });

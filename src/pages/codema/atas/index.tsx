@@ -1,4 +1,19 @@
-import { useState } from "react";
-// Remove import and usage of ResponsiveTable, AtaForm, AtaReviewSystem
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// ...rest of file unchanged
+const AtasPage: React.FC = () => {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Atas das Reuniões</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Página de gestão de atas em desenvolvimento.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AtasPage;
