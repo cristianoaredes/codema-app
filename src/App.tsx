@@ -10,6 +10,7 @@ import { DemoModeProvider } from "@/components/demo/DemoModeProvider";
 import { AppSidebar } from "@/components/common/Navigation/AppSidebar";
 import { Header } from "@/components/common";
 import { SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
+import { MobileNavigation } from '@/components/navigation/MobileNavigation';
 import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -74,26 +75,31 @@ const AuthenticatedLayout = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar data-tour="sidebar" />
-        <main className="flex-1 overflow-x-hidden">
-          <header className="h-14 sm:h-16 flex items-center border-b bg-card px-3 sm:px-4 md:px-6 sticky top-0 z-20">
+        <main className="flex-1 overflow-x-hidden relative">
+          {/* Mobile-optimized header with better touch targets */}
+          <header className="h-14 sm:h-16 flex items-center border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 px-3 sm:px-4 md:px-6 sticky top-0 z-20">
             <div className="flex items-center gap-2 sm:gap-4">
-              <SidebarTrigger className="h-9 w-9 sm:h-10 sm:w-10" />
+              <SidebarTrigger className="h-10 w-10 sm:h-10 sm:w-10 touch-manipulation" />
             </div>
-            <div className="hidden md:flex items-center flex-1 ml-4">
+            {/* Show breadcrumb on tablets and up */}
+            <div className="hidden sm:flex items-center flex-1 ml-4">
               <SmartBreadcrumb />
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
+            {/* Mobile-optimized header actions */}
+            <div className="flex items-center gap-2 sm:gap-4 ml-auto">
               <Header />
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+          {/* Content area with better mobile padding and safe areas for iOS */}
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 pb-safe">
             <Suspense fallback={<PageLoader />}>
               <Outlet />
             </Suspense>
           </div>
         </main>
         <CommandPalette open={commandPalette.open} onOpenChange={commandPalette.setOpen} />
+        <MobileNavigation />
       </div>
     </SidebarProvider>
   );

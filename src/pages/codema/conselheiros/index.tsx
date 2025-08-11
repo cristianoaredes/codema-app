@@ -142,100 +142,103 @@ const ConselheirosPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header - Mobile optimized */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Conselheiros CODEMA</h1>
-          <p className="text-muted-foreground">Gerencie os membros do conselho</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Conselheiros CODEMA</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Gerencie os membros do conselho</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport} className="text-xs sm:text-sm">
+            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Exportar</span>
+            <span className="sm:hidden">Export</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={handleImport}>
-            <Upload className="h-4 w-4 mr-2" />
-            Importar
+          <Button variant="outline" size="sm" onClick={handleImport} className="text-xs sm:text-sm">
+            <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Importar</span>
+            <span className="sm:hidden">Import</span>
           </Button>
-          <Button onClick={() => { setEditingConselheiro(undefined); setShowForm(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Conselheiro
+          <Button onClick={() => { setEditingConselheiro(undefined); setShowForm(true); }} size="sm" className="text-xs sm:text-sm">
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Novo Conselheiro</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </div>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">Total</p>
+      {/* Statistics - Mobile optimized grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+        <Card className="hover:shadow-sm transition-shadow">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold">{stats.total}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Total</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">{stats.ativos}</div>
-            <p className="text-xs text-muted-foreground">Ativos</p>
+        <Card className="hover:shadow-sm transition-shadow">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{stats.ativos}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Ativos</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.titulares}</div>
-            <p className="text-xs text-muted-foreground">Titulares</p>
+        <Card className="hover:shadow-sm transition-shadow">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold">{stats.titulares}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Titulares</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.suplentes}</div>
-            <p className="text-xs text-muted-foreground">Suplentes</p>
+        <Card className="hover:shadow-sm transition-shadow">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold">{stats.suplentes}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Suplentes</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">{stats.mandatosVencendo}</div>
-            <p className="text-xs text-muted-foreground">Mandatos Vencendo</p>
+        <Card className="hover:shadow-sm transition-shadow col-span-2 sm:col-span-1">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-yellow-600">{stats.mandatosVencendo}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Mandatos Vencendo</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Mobile optimized */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Buscar por nome ou entidade..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 text-sm"
+              />
             </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os Status</SelectItem>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="inativo">Inativo</SelectItem>
-                <SelectItem value="licenciado">Licenciado</SelectItem>
-                <SelectItem value="afastado">Afastado</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterSegmento} onValueChange={setFilterSegmento}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Segmento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os Segmentos</SelectItem>
-                <SelectItem value="governo">Governo</SelectItem>
-                <SelectItem value="sociedade_civil">Sociedade Civil</SelectItem>
-                <SelectItem value="setor_produtivo">Setor Produtivo</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2">
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="licenciado">Licenciado</SelectItem>
+                  <SelectItem value="afastado">Afastado</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterSegmento} onValueChange={setFilterSegmento}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Segmento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="governo">Governo</SelectItem>
+                  <SelectItem value="sociedade_civil">Sociedade Civil</SelectItem>
+                  <SelectItem value="setor_produtivo">Setor Produtivo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -264,7 +267,7 @@ const ConselheirosPage: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredConselheiros.map((conselheiro) => (
             <ConselheiroCard
               key={conselheiro.id}
@@ -277,24 +280,26 @@ const ConselheirosPage: React.FC = () => {
         </div>
       )}
 
-      {/* Form Dialog */}
+      {/* Form Dialog - Mobile fullscreen */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="sm:max-w-4xl w-full sm:w-auto h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto p-0 sm:p-6">
+          <DialogHeader className="p-4 sm:p-0">
+            <DialogTitle className="text-lg sm:text-xl">
               {editingConselheiro ? 'Editar Conselheiro' : 'Novo Conselheiro'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               {editingConselheiro 
                 ? 'Atualize as informações do conselheiro abaixo' 
                 : 'Preencha as informações para cadastrar um novo conselheiro'}
             </DialogDescription>
           </DialogHeader>
-          <ConselheiroForm
-            conselheiro={editingConselheiro}
-            onSuccess={handleFormSuccess}
-            onCancel={() => setShowForm(false)}
-          />
+          <div className="p-4 sm:p-0">
+            <ConselheiroForm
+              conselheiro={editingConselheiro}
+              onSuccess={handleFormSuccess}
+              onCancel={() => setShowForm(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
