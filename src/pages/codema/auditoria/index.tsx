@@ -123,7 +123,6 @@ export default function AuditoriaPage() {
               <Select value={filterAction} onValueChange={setFilterAction}>
                 <SelectTrigger><SelectValue placeholder="Filtrar por ação" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as ações</SelectItem>
                   <SelectItem value="CREATE">Criação</SelectItem>
                   <SelectItem value="UPDATE">Atualização</SelectItem>
                   <SelectItem value="DELETE">Exclusão</SelectItem>
@@ -134,7 +133,6 @@ export default function AuditoriaPage() {
               <Select value={filterEntity} onValueChange={setFilterEntity}>
                 <SelectTrigger><SelectValue placeholder="Filtrar por entidade" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as entidades</SelectItem>
                   <SelectItem value="conselheiro">Conselheiro</SelectItem>
                   <SelectItem value="reuniao">Reunião</SelectItem>
                   <SelectItem value="processo">Processo</SelectItem>
