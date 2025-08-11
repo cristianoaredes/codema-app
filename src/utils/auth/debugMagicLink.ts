@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
  * Testa diferentes configurações de Magic Link
  */
 export async function debugMagicLink(email: string): Promise<void> {
+  if (!import.meta.env.DEV) return;
+  
   console.log('🔗 DEBUGGING MAGIC LINK');
   console.log('━'.repeat(50));
   console.log(`📧 Testando para: ${email}`);
@@ -89,6 +91,8 @@ export async function debugMagicLink(email: string): Promise<void> {
  * Verifica configurações do Supabase Auth
  */
 export async function checkSupabaseAuthConfig(): Promise<void> {
+  if (!import.meta.env.DEV) return;
+  
   console.log('⚙️ VERIFICANDO CONFIGURAÇÕES SUPABASE');
   console.log('━'.repeat(50));
   
@@ -108,11 +112,11 @@ export async function checkSupabaseAuthConfig(): Promise<void> {
     }
     
     // Tentar obter configurações
-    console.log('🌐 URL do Supabase:', supabase.supabaseUrl);
-    console.log('🔑 Usando chave anon válida:', !!supabase.supabaseKey);
+    console.log('🔑 Supabase URL:', process.env.VITE_SUPABASE_URL);
+    console.log('🔑 Usando chave anon válida:', !!process.env.VITE_SUPABASE_ANON_KEY);
     
     // Verificar conectividade
-    const { data, error } = await supabase.from('profiles').select('count').limit(1);
+    const { data: _data, error } = await supabase.from('profiles').select('count').limit(1);
     if (error) {
       console.error('❌ Erro de conectividade:', error.message);
     } else {
@@ -128,16 +132,18 @@ export async function checkSupabaseAuthConfig(): Promise<void> {
  * Testa Password Reset para comparação
  */
 export async function testPasswordReset(email: string): Promise<void> {
+  if (!import.meta.env.DEV) return;
+  
   console.log('🔑 TESTANDO PASSWORD RESET (para comparação)');
   console.log('━'.repeat(50));
   console.log(`📧 Testando para: ${email}`);
   
   try {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { data: _data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/reset-password`,
     });
     
-    console.log('📤 Resultado Password Reset:', { data, error });
+    console.log('📤 Resultado Password Reset:', { error });
     if (error) {
       console.error('❌ Erro Password Reset:', error.message);
     } else {
@@ -153,14 +159,16 @@ export async function testPasswordReset(email: string): Promise<void> {
  * Verifica se SMTP customizado está configurado
  */
 export async function checkSMTPConfiguration(): Promise<void> {
+  if (!import.meta.env.DEV) return;
+  
   console.log('📧 VERIFICANDO CONFIGURAÇÃO SMTP');
   console.log('━'.repeat(50));
   
   try {
-    const response = await fetch(`${supabase.supabaseUrl}/auth/v1/settings`, {
+    const response = await fetch(`${process.env.VITE_SUPABASE_URL}/auth/v1/settings`, {
       headers: {
-        'apikey': supabase.supabaseKey,
-        'Authorization': `Bearer ${supabase.supabaseKey}`
+        supabaseKey: process.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${process.env.VITE_SUPABASE_ANON_KEY}`
       }
     });
     

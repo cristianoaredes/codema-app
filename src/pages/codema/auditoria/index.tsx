@@ -46,7 +46,7 @@ export default function AuditoriaPage() {
       .map(row => row.map(field => `"${field}"`).join(','))
       .join('\n');
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new globalThis.Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `auditoria_codema_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
@@ -123,7 +123,6 @@ export default function AuditoriaPage() {
               <Select value={filterAction} onValueChange={setFilterAction}>
                 <SelectTrigger><SelectValue placeholder="Filtrar por ação" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as ações</SelectItem>
                   <SelectItem value="CREATE">Criação</SelectItem>
                   <SelectItem value="UPDATE">Atualização</SelectItem>
                   <SelectItem value="DELETE">Exclusão</SelectItem>
@@ -134,7 +133,6 @@ export default function AuditoriaPage() {
               <Select value={filterEntity} onValueChange={setFilterEntity}>
                 <SelectTrigger><SelectValue placeholder="Filtrar por entidade" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as entidades</SelectItem>
                   <SelectItem value="conselheiro">Conselheiro</SelectItem>
                   <SelectItem value="reuniao">Reunião</SelectItem>
                   <SelectItem value="processo">Processo</SelectItem>

@@ -276,7 +276,7 @@ export class UserManagementService {
       // Send email notification
       await EmailService.sendPasswordResetNotification(
         profile.email,
-        profile.full_name || 'Usuário',
+        (profile as Profile).full_name || 'Usuário',
         newPassword
       );
 

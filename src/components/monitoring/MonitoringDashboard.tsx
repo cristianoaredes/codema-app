@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { Card, CardContent, CardDescription as _CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Alert, AlertDescription } from '@/components/ui';
@@ -14,7 +14,7 @@ import {
   TrendingUp,
   Shield,
   Database,
-  Wifi
+  Wifi as _Wifi
 } from 'lucide-react';
 import { metricsCollector } from '@/utils';
 import { healthMonitor } from '@/utils';

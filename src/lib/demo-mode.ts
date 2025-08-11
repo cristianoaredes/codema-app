@@ -114,7 +114,7 @@ export const demoAPI = {
     };
   },
 
-  signInWithOtp: async (email: string) => {
+  signInWithOtp: async (_email: string) => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     return { error: null };
   },

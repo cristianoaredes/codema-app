@@ -9,7 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export async function forceUserRefresh(): Promise<{ success: boolean; profile?: unknown; message: string }> {
   try {
-    console.log('🔄 Forçando refresh da sessão do usuário...');
+    if (import.meta.env.DEV) {
+      console.log('🔄 Forçando refresh da sessão do usuário...');
+    }
     
     // 1. Refresh da sessão
     const { data: session, error: sessionError } = await supabase.auth.refreshSession();
@@ -18,7 +20,9 @@ export async function forceUserRefresh(): Promise<{ success: boolean; profile?: 
       return { success: false, message: `Erro ao refresh da sessão: ${sessionError.message}` };
     }
     
-    console.log('✅ Sessão refreshed:', session?.session?.user?.email);
+    if (import.meta.env.DEV) {
+      console.log('✅ Sessão refreshed:', session?.session?.user?.email);
+    }
     
     // 2. Buscar dados atualizados do perfil
     if (session?.session?.user?.id) {
@@ -33,11 +37,13 @@ export async function forceUserRefresh(): Promise<{ success: boolean; profile?: 
         return { success: false, message: `Erro ao buscar perfil: ${profileError.message}` };
       }
       
-      console.log('✅ Perfil atualizado:', {
-        email: profile?.email,
-        role: profile?.role,
-        name: profile?.full_name
-      });
+      if (import.meta.env.DEV) {
+        console.log('✅ Perfil atualizado:', {
+          email: profile?.email,
+          role: profile?.role,
+          name: profile?.full_name
+        });
+      }
       
       // 3. Perguntar se quer recarregar a página
       const shouldReload = confirm(`
@@ -50,10 +56,14 @@ Deseja recarregar a página para aplicar as mudanças?
       `);
       
       if (shouldReload) {
-        console.log('🔄 Recarregando página para aplicar mudanças...');
+        if (import.meta.env.DEV) {
+          console.log('🔄 Recarregando página para aplicar mudanças...');
+        }
         window.location.reload();
       } else {
-        console.log('ℹ️ Página não foi recarregada. As mudanças podem não aparecer até o próximo refresh.');
+        if (import.meta.env.DEV) {
+          console.log('ℹ️ Página não foi recarregada. As mudanças podem não aparecer até o próximo refresh.');
+        }
       }
       
       return { 
@@ -78,19 +88,23 @@ export async function checkUserDataConsistency(): Promise<{ consistent: boolean;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.log('❌ Usuário não logado');
+      if (import.meta.env.DEV) {
+        console.log('❌ Usuário não logado');
+      }
       return { consistent: false, sessionRole: 'none', dbRole: 'none' };
     }
     
-    console.log('🔍 Verificando consistência dos dados...');
-    
-    // Dados da sessão atual
-    console.log('📱 Dados da sessão local:', {
-      id: user.id,
-      email: user.email,
-      metadata: user.user_metadata,
-      app_metadata: user.app_metadata
-    });
+    if (import.meta.env.DEV) {
+      console.log('🔍 Verificando consistência dos dados...');
+      
+      // Dados da sessão atual
+      console.log('📱 Dados da sessão local:', {
+        id: user.id,
+        email: user.email,
+        metadata: user.user_metadata,
+        app_metadata: user.app_metadata
+      });
+    }
     
     // Dados do perfil no banco
     const { data: profile, error } = await supabase
@@ -104,23 +118,27 @@ export async function checkUserDataConsistency(): Promise<{ consistent: boolean;
       return { consistent: false, sessionRole: 'error', dbRole: 'error' };
     }
     
-    console.log('🗄️ Dados do perfil no banco:', {
-      id: profile?.id,
-      email: profile?.email,
-      role: profile?.role,
-      name: profile?.full_name,
-      updated_at: profile?.updated_at
-    });
+    if (import.meta.env.DEV) {
+      console.log('🗄️ Dados do perfil no banco:', {
+        id: profile?.id,
+        email: profile?.email,
+        role: profile?.role,
+        name: profile?.full_name,
+        updated_at: profile?.updated_at
+      });
+    }
     
     // Verificar discrepância
     const sessionRole = user.user_metadata?.role || user.app_metadata?.role || 'citizen';
     const dbRole = profile?.role || 'citizen';
     
     if (sessionRole !== dbRole) {
-      console.warn('⚠️ DISCREPÂNCIA DETECTADA!');
-      console.warn(`   Sessão local: ${sessionRole}`);
-      console.warn(`   Banco de dados: ${dbRole}`);
-      console.warn('   🔧 Execute: await forceUserRefresh()');
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ DISCREPÂNCIA DETECTADA!');
+        console.warn(`   Sessão local: ${sessionRole}`);
+        console.warn(`   Banco de dados: ${dbRole}`);
+        console.warn('   🔧 Execute: await forceUserRefresh()');
+      }
       
       return { 
         consistent: false, 
@@ -129,8 +147,10 @@ export async function checkUserDataConsistency(): Promise<{ consistent: boolean;
         profile 
       };
     } else {
-      console.log('✅ Dados consistentes');
-      console.log(`   Role atual: ${dbRole}`);
+      if (import.meta.env.DEV) {
+        console.log('✅ Dados consistentes');
+        console.log(`   Role atual: ${dbRole}`);
+      }
       
       return { 
         consistent: true, 
@@ -150,6 +170,8 @@ export async function checkUserDataConsistency(): Promise<{ consistent: boolean;
  * Mostra status rápido do usuário atual
  */
 export async function quickUserStatus(): Promise<void> {
+  if (!import.meta.env.DEV) return;
+  
   try {
     console.log('👤 STATUS RÁPIDO DO USUÁRIO:');
     console.log('━'.repeat(40));

@@ -7,7 +7,6 @@ import {
   isRememberMeEnabled,
   setRememberMeEnabled,
   checkPersistentSession,
-  createPersistentSession,
   revokePersistentSession,
   revokeAllPersistentSessions
 } from '@/utils';
@@ -214,7 +213,9 @@ export const useAuthState = () => {
   const setRememberMe = useCallback((enabled: boolean): void => {
     setRememberMeEnabledState(enabled);
     setRememberMeEnabled(enabled);
-    console.log(`🔐 Remember Me ${enabled ? 'habilitado' : 'desabilitado'}`);
+    if (import.meta.env.DEV) {
+      console.log(`🔐 Remember Me ${enabled ? 'habilitado' : 'desabilitado'}`);
+    }
   }, []);
 
   /**
@@ -226,14 +227,9 @@ export const useAuthState = () => {
       return [];
     }
 
-    try {
-      // Por enquanto, retorna array vazio pois estamos usando versão simplificada
-      // TODO: Implementar busca real quando resolver problemas de tipagem
-      return [];
-    } catch (error) {
-      console.error('Erro ao buscar sessões persistentes:', error);
-      return [];
-    }
+    // Por enquanto, retorna array vazio pois estamos usando versão simplificada
+    // TODO: Implementar busca real quando resolver problemas de tipagem
+    return [];
   }, [user]);
 
   /**
@@ -242,7 +238,9 @@ export const useAuthState = () => {
   const revokePersistentSessionById = useCallback(async (deviceId: string): Promise<{ error: string | null }> => {
     try {
       const result = await revokePersistentSession(deviceId);
-      console.log('✅ Sessão persistente revogada');
+      if (import.meta.env.DEV) {
+        console.log('✅ Sessão persistente revogada');
+      }
       return result;
     } catch (error) {
       console.error('Erro ao revogar sessão:', error);
@@ -262,7 +260,9 @@ export const useAuthState = () => {
       
       await revokeAllPersistentSessions(user.id);
       setRememberMeEnabledState(false);
-      console.log('✅ Todas as sessões persistentes revogadas');
+      if (import.meta.env.DEV) {
+        console.log('✅ Todas as sessões persistentes revogadas');
+      }
       return { error: null };
     } catch (error) {
       console.error('Erro ao revogar todas as sessões:', error);
@@ -287,7 +287,9 @@ export const useAuthState = () => {
    * Maneja mudanças no estado de autenticação
    */
   const handleAuthStateChange = useCallback(async (event: string, newSession: Session | null) => {
-    console.log('🔄 Auth state changed:', event, newSession?.user?.email || 'No user');
+    if (import.meta.env.DEV) {
+      console.log('🔄 Auth state changed:', event, newSession?.user?.email || 'No user');
+    }
     
     try {
       setError(null);
@@ -329,7 +331,9 @@ export const useAuthState = () => {
         // Inicializa o estado do Remember Me
         const rememberMeState = isRememberMeEnabled();
         setRememberMeEnabledState(rememberMeState);
-        console.log(`🔐 Remember Me inicializado: ${rememberMeState ? 'habilitado' : 'desabilitado'}`);
+        if (import.meta.env.DEV) {
+          console.log(`🔐 Remember Me inicializado: ${rememberMeState ? 'habilitado' : 'desabilitado'}`);
+        }
 
         // Verifica se existe sessão persistente válida
         if (rememberMeState) {

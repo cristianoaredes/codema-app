@@ -101,7 +101,7 @@ export class UserRoleManager {
 
       // Também atualizar metadados do usuário no auth se necessário
       try {
-        const { data: authData, error: authError } = await supabase.auth.updateUser({
+        const { data: _authData, error: authError } = await supabase.auth.updateUser({
           data: {
             role: updates.newRole,
             full_name: updates.fullName || data.full_name

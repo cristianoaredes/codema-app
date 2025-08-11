@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { ChevronRight, Home, Search, Menu, X } from "lucide-react"
+import { ChevronRight, Search, Menu as _Menu, X } from "lucide-react"
 import { Button } from "./button"
 import { Input } from "./input"
 import { useMediaQuery } from "@/hooks/use-media-query"

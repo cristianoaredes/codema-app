@@ -1,22 +1,17 @@
-import { useState } from "react";
 import { LucideIcon } from "lucide-react";
 import { 
   Home, 
   FileText, 
   PlusCircle, 
   User, 
-  Settings,
-  Shield,
   BarChart3,
   Users,
-  Bell,
   Calendar,
   FolderOpen,
   DollarSign,
   Gavel,
   Eye,
   UserCog,
-  Archive,
   ClipboardCheck,
   MessageSquare,
   LogOut,
@@ -58,7 +53,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { profile, hasAdminAccess, hasCODEMAAccess, signOut } = useAuth();
   const { toast } = useToast();
-  const currentPath = location.pathname;
+  const _currentPath = location.pathname;
   const collapsed = state === "collapsed";
 
   const handleSignOut = async () => {

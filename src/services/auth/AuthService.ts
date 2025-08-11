@@ -1,4 +1,4 @@
-import { AuthError, Session, User, AuthResponse } from '@supabase/supabase-js';
+import { AuthError, Session, User, AuthResponse as _AuthResponse } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Profile, UserRole, PersistentSession } from '@/types';
 import { canSendEmail, recordEmailAttempt, formatTimeRemaining } from '@/utils';
@@ -8,10 +8,9 @@ import {
   getPersistentSessions,
   revokePersistentSession,
   revokeAllPersistentSessions,
-  clearRememberMeSettings
 } from '@/utils';
-import { metricsCollector, measurePerformance } from '@/utils';
-import { withAuthRetry, withResilientOperation, authCircuitBreaker } from '@/utils';
+import { metricsCollector } from '@/utils';
+import { withResilientOperation, authCircuitBreaker } from '@/utils';
 import { healthMonitor } from '@/utils';
 
 /**
@@ -72,8 +71,7 @@ interface UpdateProfileData {
 /**
  * Interface para resposta de operações de auth
  */
-interface AuthOperationResult {
-  success: boolean;
+interface _AuthOperationResult {
   error: string | null;
   data?: User | Profile | Session | null;
 }
@@ -123,7 +121,7 @@ export class AuthService {
     data?: Record<string, string | number | boolean | null>
   ): Promise<void> {
     try {
-      await (supabase as any).from('audit_logs').insert({
+      await supabase.from('audit_logs').insert({
         user_id: userId || null,
         action: action,
         entity: 'auth',
@@ -667,7 +665,7 @@ export class AuthService {
       }
 
       // Implementar lógica de convite via Edge Function
-      const { data: response, error } = await supabase.functions.invoke('invite-user', {
+      const { data: _response, error } = await supabase.functions.invoke('invite-user', {
         body: {
           email: data.email,
           role: data.role,
@@ -748,7 +746,7 @@ export class AuthService {
   public async checkPersistentSession(): Promise<{
     isValid: boolean;
     session?: PersistentSession;
-    error?: string;
+  
   }> {
     return checkPersistentSession();
   }

@@ -1,23 +1,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  Book, 
-  Users, 
-  Shield, 
-  User, 
-  Crown, 
-  UserCheck, 
+import {
+  Book,
+  Users,
+  Shield,
+  User,
+  Crown,
+  UserCheck,
   Calendar,
   FileText,
-  Gavel,
   DollarSign,
-  BarChart3,
   MessageSquare,
-  Plus,
-  Eye,
   Settings,
-  Database,
   CheckCircle,
   XCircle,
   AlertTriangle
@@ -297,7 +291,7 @@ export default function Documentation() {
                       {roleData.role}
                     </Badge>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {roleData.permissions.map((permission, idx) => (
                       <div key={idx} className="flex items-center gap-2 text-sm">
@@ -367,18 +361,18 @@ export default function Documentation() {
               <div>
                 <h4 className="font-semibold mb-2">Suporte Técnico</h4>
                 <ul className="list-disc list-inside space-y-2 text-gray-600">
-                    <li>Através da plataforma, na seção "Suporte".</li>
-                    <li>
-                      Email:{" "}
-                      <a
-                        href="mailto:suporte@municonnect.com.br"
-                        className="text-blue-600 hover:underline"
-                      >
-                        suporte@municonnect.com.br
-                      </a>
-                    </li>
-                    <li>Telefone: (31) 99999-9999 (fictício)</li>
-                  </ul>
+                  <li>Através da plataforma, na seção "Suporte".</li>
+                  <li>
+                    Email:{" "}
+                    <a
+                      href="mailto:suporte@municonnect.com.br"
+                      className="text-blue-600 hover:underline"
+                    >
+                      suporte@municonnect.com.br
+                    </a>
+                  </li>
+                  <li>Telefone: (31) 99999-9999 (fictício)</li>
+                </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">Ouvidoria</h4>

@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Card,
   CardContent,
@@ -22,14 +25,45 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 
+const magicLinkSchema = z.object({
+  email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
+});
+
+const loginSchema = z.object({
+  email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  rememberMe: z.boolean().default(true),
+});
+
+const signupSchema = z.object({
+  fullName: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+});
+
+type MagicLinkFormData = z.infer<typeof magicLinkSchema>;
+type LoginFormData = z.infer<typeof loginSchema>;
+type SignupFormData = z.infer<typeof signupSchema>;
+
 export function AuthPage() {
   const [activeTab, setActiveTab] = useState<'magic' | 'password' | 'signup'>('magic');
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [rememberMeChecked, setRememberMeChecked] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  
+  const magicLinkForm = useForm<MagicLinkFormData>({
+    resolver: zodResolver(magicLinkSchema),
+    defaultValues: { email: "" },
+  });
+  
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "", rememberMe: true },
+  });
+  
+  const signupForm = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: { fullName: "", email: "", password: "" },
+  });
   
   const carouselSlides = [
     {
@@ -53,18 +87,9 @@ export function AuthPage() {
   const { setRememberMe } = useAuth();
   const navigate = useNavigate();
 
-  const handleMagicLink = async () => {
-    if (!email) {
-      toast({ 
-        title: "Email necessário", 
-        description: "Por favor, insira seu email para receber o link de acesso.", 
-        variant: "destructive" 
-      });
-      return;
-    }
-
+  const handleMagicLink = async (data: MagicLinkFormData) => {
     setIsLoading(true);
-    const result = await authService.signInWithMagicLink(email);
+    const result = await authService.signInWithMagicLink(data.email);
     
     if (result.error) {
       toast({ 
@@ -83,43 +108,46 @@ export function AuthPage() {
     setIsLoading(false);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ 
+      email: data.email, 
+      password: data.password 
+    });
 
     if (error) {
       toast({ title: "Erro no Login", description: error.message, variant: "destructive" });
-    } else if (data.user && data.session) {
-      if (rememberMeChecked) {
-        await createPersistentSession(data.user.id, data.session.refresh_token, rememberMeChecked);
+    } else if (authData.user && authData.session) {
+      if (data.rememberMe) {
+        await createPersistentSession(authData.user.id, authData.session.refresh_token, data.rememberMe);
       }
-      setRememberMe(rememberMeChecked);
+      setRememberMe(data.rememberMe);
       toast({ title: "Login realizado com sucesso!", description: "Bem-vindo à plataforma MuniConnect." });
       navigate("/");
     }
     setIsLoading(false);
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignup = async (data: SignupFormData) => {
     setIsLoading(true);
     const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
+      email: data.email,
+      password: data.password,
+      options: { data: { full_name: data.fullName } },
     });
 
     if (error) {
       toast({ title: 'Erro no Cadastro', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Cadastro realizado!', description: 'Verifique seu e-mail para confirmar sua conta.' });
-      setActiveTab('magic'); // Go back to magic link tab after successful signup
+      setActiveTab('magic');
+      signupForm.reset();
     }
     setIsLoading(false);
   };
 
   const handlePasswordReset = async () => {
+    const email = loginForm.getValues('email');
     if (!email) {
       toast({ title: 'Email necessário', description: 'Por favor, insira seu email para recuperar a senha.', variant: 'destructive' });
       return;
@@ -146,7 +174,7 @@ export function AuthPage() {
             </div>
             <CardTitle className="text-2xl font-bold text-gray-900">Verifique seu e-mail</CardTitle>
             <CardDescription className="text-gray-600">
-              Enviamos um link de acesso para <strong>{email}</strong>
+              Enviamos um link de acesso para <strong>{magicLinkForm.getValues('email')}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -226,7 +254,7 @@ export function AuthPage() {
           <Card className="shadow-xl border-0">
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-2xl font-bold text-gray-900">Bem-vindo!</CardTitle>
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full mt-4">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'magic' | 'password' | 'signup')} className="w-full mt-4">
                 <TabsList className="grid w-full grid-cols-3 bg-muted p-1 rounded-lg">
                   <TabsTrigger value="magic" className="flex items-center justify-center gap-1">
                     <Mail className="w-4 h-4" /> E-mail (sem senha)
@@ -243,21 +271,23 @@ export function AuthPage() {
             <CardContent>
               <Tabs value={activeTab} className="mt-4">
                 <TabsContent value="magic">
-                  <div className="space-y-4">
+                  <form onSubmit={magicLinkForm.handleSubmit(handleMagicLink)} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="email-magic">Email</Label>
                       <Input
                         id="email-magic"
                         type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        {...magicLinkForm.register('email')}
                         placeholder="seu.email@exemplo.com"
-                        required
+                        className={magicLinkForm.formState.errors.email ? 'border-red-500' : ''}
                       />
+                      {magicLinkForm.formState.errors.email && (
+                        <p className="text-sm text-red-600">{magicLinkForm.formState.errors.email.message}</p>
+                      )}
                     </div>
                     <Button
+                      type="submit"
                       className="w-full bg-blue-600 hover:bg-blue-700"
-                      onClick={handleMagicLink}
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -277,37 +307,40 @@ export function AuthPage() {
                         Entrar com senha
                       </button>
                     </p>
-                  </div>
+                  </form>
                 </TabsContent>
 
                 <TabsContent value="password">
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="email-login">Email</Label>
                       <Input
                         id="email-login"
                         type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
+                        {...loginForm.register('email')}
+                        className={loginForm.formState.errors.email ? 'border-red-500' : ''}
                       />
+                      {loginForm.formState.errors.email && (
+                        <p className="text-sm text-red-600">{loginForm.formState.errors.email.message}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password-login">Senha</Label>
                       <Input
                         id="password-login"
                         type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
+                        {...loginForm.register('password')}
+                        className={loginForm.formState.errors.password ? 'border-red-500' : ''}
                       />
+                      {loginForm.formState.errors.password && (
+                        <p className="text-sm text-red-600">{loginForm.formState.errors.password.message}</p>
+                      )}
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id="remember-me"
-                          checked={rememberMeChecked}
-                          onCheckedChange={(c) => setRememberMeChecked(Boolean(c))}
+                          {...loginForm.register('rememberMe')}
                         />
                         <label htmlFor="remember-me">Lembrar-me</label>
                       </div>
@@ -347,35 +380,41 @@ export function AuthPage() {
                 </TabsContent>
 
                 <TabsContent value="signup">
-                  <form onSubmit={handleSignup} className="space-y-4">
+                  <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="fullName">Nome Completo</Label>
                       <Input
                         id="fullName"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        required
+                        {...signupForm.register('fullName')}
+                        className={signupForm.formState.errors.fullName ? 'border-red-500' : ''}
                       />
+                      {signupForm.formState.errors.fullName && (
+                        <p className="text-sm text-red-600">{signupForm.formState.errors.fullName.message}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email-signup">Email</Label>
                       <Input
                         id="email-signup"
                         type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
+                        {...signupForm.register('email')}
+                        className={signupForm.formState.errors.email ? 'border-red-500' : ''}
                       />
+                      {signupForm.formState.errors.email && (
+                        <p className="text-sm text-red-600">{signupForm.formState.errors.email.message}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password-signup">Senha</Label>
                       <Input
                         id="password-signup"
                         type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
+                        {...signupForm.register('password')}
+                        className={signupForm.formState.errors.password ? 'border-red-500' : ''}
                       />
+                      {signupForm.formState.errors.password && (
+                        <p className="text-sm text-red-600">{signupForm.formState.errors.password.message}</p>
+                      )}
                     </div>
                     <Button
                       type="submit"

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { History, Eye, FileText, User, Clock, ArrowRight, GitBranch } from "lucide-react";
+import { Clock, Eye, History, GitBranch, ArrowRight, User } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +48,7 @@ interface DeliberacaoItem {
   descricao: string;
 }
 
-interface AnexoItem {
+interface _AnexoItem {
   nome: string;
   url?: string;
 }
@@ -72,8 +72,8 @@ interface AtaVersion {
 
 export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
   const [selectedVersions, setSelectedVersions] = useState<[number, number] | null>(null);
-  const [showVersionDialog, setShowVersionDialog] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState<AtaVersion | null>(null);
+  const [_showVersionDialog, _setShowVersionDialog] = useState(false);
+  const [_selectedVersion, setSelectedVersion] = useState<AtaVersion | null>(null);
 
   // Buscar versões da ata
   const { data: versions = [], isLoading } = useQuery({
@@ -216,7 +216,7 @@ export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
     return JSON.stringify(arr1) !== JSON.stringify(arr2);
   };
 
-  const formatJsonContent = (content: unknown) => {
+  const _formatJsonContent = (content: any): string => {
     return JSON.stringify(content, null, 2);
   };
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertTriangle, Search, FileX, Calendar, Eye, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Search, FileX, Calendar, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,8 +103,7 @@ export function RevocationSystem({ resolucaoId, resolucao }: RevocationSystemPro
         .select(`
           *,
           resolucao_original:resolucao_original_id(numero, titulo),
-          resolucao_revogadora:resolucao_revogadora_id(numero, titulo),
-          profiles:created_by(full_name)
+          resolucao_revogadora:resolucao_revogadora_id(numero, titulo)
         `)
         .eq('resolucao_original_id', resolucaoId)
         .order('data_revogacao', { ascending: false });
@@ -124,8 +122,7 @@ export function RevocationSystem({ resolucaoId, resolucao }: RevocationSystemPro
         .select(`
           *,
           resolucao_original:resolucao_original_id(numero, titulo),
-          resolucao_revogadora:resolucao_revogadora_id(numero, titulo),
-          profiles:created_by(full_name)
+          resolucao_revogadora:resolucao_revogadora_id(numero, titulo)
         `)
         .eq('resolucao_revogadora_id', resolucaoId)
         .order('data_revogacao', { ascending: false });

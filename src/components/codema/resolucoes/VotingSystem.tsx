@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Vote, Check, X, Minus, AlertTriangle, Users, Clock, CheckCircle } from "lucide-react";
+import { Vote, Check, X, Minus, AlertTriangle, Users as _Users, Clock, CheckCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { logAction } from "@/utils/monitoring";
+import { Resolucao } from "@/types/resolucao";
 
 interface VotingSystemProps {
   resolucaoId: string;
@@ -39,7 +40,7 @@ interface Voto {
   };
 }
 
-interface Conselheiro {
+interface _Conselheiro {
   id: string;
   nome: string;
   cargo: string;
@@ -56,10 +57,10 @@ export function VotingSystem({ resolucaoId, canVote, onClose }: VotingSystemProp
   const [justificativa, setJustificativa] = useState<string>('');
   const [impedimento, setImpedimento] = useState<boolean>(false);
   const [motivoImpedimento, setMotivoImpedimento] = useState<string>('');
-  const [votacaoIniciada, setVotacaoIniciada] = useState<boolean>(false);
+  const [_votacaoIniciada, setVotacaoIniciada] = useState<boolean>(false);
 
   // Buscar dados da resolução
-  const { data: resolucao } = useQuery({
+  const { data: resolucao } = useQuery<Resolucao>({
     queryKey: ['resolucao', resolucaoId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -73,18 +74,39 @@ export function VotingSystem({ resolucaoId, canVote, onClose }: VotingSystemProp
     },
   });
 
-  // Buscar conselheiros ativos
+  // Buscar conselheiros ativos (agora usando profiles)
   const { data: conselheiros = [] } = useQuery({
     queryKey: ['conselheiros-votacao'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('conselheiros')
+        .from('profiles')
         .select('*')
-        .eq('ativo', true)
-        .order('nome');
+        .in('role', ['conselheiro_titular', 'conselheiro_suplente'])
+        .eq('is_active', true)
+        .order('full_name');
 
       if (error) throw error;
-      return data as Conselheiro[];
+      
+      // Mapear profiles para o formato de Conselheiro
+      return (data || []).map(profile => ({
+        id: profile.id,
+        profile_id: profile.id,
+        nome_completo: profile.full_name || '',
+        email: profile.email || undefined,
+        telefone: profile.phone || undefined,
+        endereco: profile.address || undefined,
+        // Campos padrão pois não existem na tabela profiles
+        mandato_inicio: new Date().toISOString(),
+        mandato_fim: new Date().toISOString(),
+        entidade_representada: '',
+        segmento: 'sociedade_civil',
+        titular: profile.role === 'conselheiro_titular',
+        status: profile.is_active ? 'ativo' : 'inativo',
+        faltas_consecutivas: 0,
+        total_faltas: 0,
+        created_at: profile.created_at,
+        updated_at: profile.updated_at,
+      }));
     },
   });
 
@@ -96,7 +118,7 @@ export function VotingSystem({ resolucaoId, canVote, onClose }: VotingSystemProp
         .from('resolucoes_votos')
         .select(`
           *,
-          conselheiros(nome, cargo, tipo)
+          profiles:profile_id(full_name, role)
         `)
         .eq('resolucao_id', resolucaoId)
         .order('data_voto');
@@ -112,21 +134,24 @@ export function VotingSystem({ resolucaoId, canVote, onClose }: VotingSystemProp
     queryFn: async () => {
       if (!profile?.id) return null;
       
-      const { data, error } = await supabase
-        .from('conselheiros')
-        .select('*')
-        .eq('user_id', profile.id)
-        .eq('ativo', true)
-        .single();
+      const { data: conselheirosAtivos } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('role', ['conselheiro_titular', 'conselheiro_suplente'])
+        .eq('is_active', true)
+        .order('full_name');
 
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
+      const meuConselheiro = conselheirosAtivos.find(c => c.id === profile.id);
+
+      if (!meuConselheiro) return null;
+
+      return meuConselheiro;
     },
     enabled: !!profile?.id && canVote,
   });
 
   // Verificar se já votei
-  const meuVotoExistente = votos.find(v => v.conselheiro_id === meuConselheiro?.id);
+  const meuVotoExistente = votos.find(v => v.profile_id === meuConselheiro?.id);
 
   // Iniciar votação
   const iniciarVotacaoMutation = useMutation({
@@ -177,7 +202,7 @@ export function VotingSystem({ resolucaoId, canVote, onClose }: VotingSystemProp
 
       const votoData = {
         resolucao_id: resolucaoId,
-        conselheiro_id: meuConselheiro.id,
+        profile_id: meuConselheiro.id,
         voto: impedimento ? 'impedimento' : meuVoto,
         justificativa: justificativa || null,
         impedimento,
@@ -187,7 +212,7 @@ export function VotingSystem({ resolucaoId, canVote, onClose }: VotingSystemProp
       const { data, error } = await supabase
         .from('resolucoes_votos')
         .upsert(votoData, {
-          onConflict: 'resolucao_id,conselheiro_id'
+          onConflict: 'resolucao_id,profile_id'
         })
         .select()
         .single();
@@ -277,7 +302,7 @@ export function VotingSystem({ resolucaoId, canVote, onClose }: VotingSystemProp
   const votosContra = votos.filter(v => v.voto === 'contra').length;
   const abstencoes = votos.filter(v => v.voto === 'abstencao').length;
   const impedimentos = votos.filter(v => v.impedimento).length;
-  const ausentes = totalConselheiros - votos.length;
+  const _ausentes = totalConselheiros - votos.length;
   const quorumNecessario = Math.floor(totalConselheiros / 2) + 1;
   const quorumPresente = votosComputados.length;
   const quorumAtingido = quorumPresente >= quorumNecessario;

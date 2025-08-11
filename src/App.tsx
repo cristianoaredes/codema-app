@@ -1,43 +1,65 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, AuthPage, ProtectedRoute, PublicRoute } from "@/components/auth";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
-
-import { useAuth } from "@/hooks/useAuth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DemoModeProvider } from "@/components/demo/DemoModeProvider";
 import { AppSidebar } from "@/components/common/Navigation/AppSidebar";
 import { Header } from "@/components/common";
-import { SmartBreadcrumb, BreadcrumbContainer } from "@/components/navigation/SmartBreadcrumb";
-import { GlobalSearch, SearchTrigger } from "@/components/navigation/GlobalSearch";
+import { SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
 import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Eager load para páginas críticas
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import CreateReport from "./pages/CreateReport";
-import Reports from "./pages/Reports";
-import Reunioes from "./pages/Reunioes";
-import Documentos from "./pages/Documentos";
-import Processos from "./pages/Processos";
-import FMA from "./pages/FMA";
-import Ouvidoria from "./pages/Ouvidoria";
-import Profile from "./pages/Profile";
-import ConselheirosPage from "./pages/codema/conselheiros";
-import AtasPage from "./pages/codema/atas";
-import ResolucoesPage from "./pages/codema/resolucoes";
-import AuditoriaPage from "./pages/codema/auditoria";
-import GestaoProtocolos from "./pages/codema/protocolos/GestaoProtocolos";
-import UserManagement from "./pages/admin/UserManagement";
-import DataSeeder from "./pages/admin/DataSeeder";
-import Documentation from "./pages/admin/Documentation";
 import AuthCallback from "./pages/AuthCallback";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
+// Lazy load para páginas secundárias
+const Profile = lazy(() => import("./pages/Profile"));
+const Reunioes = lazy(() => import("./pages/Reunioes"));
+const NovaReuniao = lazy(() => import("./pages/reunioes/NovaReuniao"));
+
+// Lazy load para módulos
+const FMA = lazy(() => import("./pages/fma/FMA"));
+const Ouvidoria = lazy(() => import("./pages/ouvidoria").then(m => ({ default: m.Ouvidoria })));
+const Documentos = lazy(() => import("./pages/documentos").then(m => ({ default: m.Documentos })));
+const NovoDocumento = lazy(() => import("./pages/documentos/NovoDocumento"));
+const Processos = lazy(() => import("./pages/processos").then(m => ({ default: m.Processos })));
+
+// Lazy load para relatórios
+const Reports = lazy(() => import("./pages/relatorios").then(m => ({ default: m.Reports })));
+const CreateReport = lazy(() => import("./pages/relatorios").then(m => ({ default: m.CreateReport })));
+
+// Lazy load para módulos CODEMA
+const ConselheirosPage = lazy(() => import("./pages/codema/conselheiros"));
+const AtasPage = lazy(() => import("./pages/codema/atas"));
+const ResolucoesPage = lazy(() => import("./pages/codema/resolucoes"));
+const AuditoriaPage = lazy(() => import("./pages/codema/auditoria"));
+const GestaoProtocolos = lazy(() => import("./pages/codema/protocolos"));
+
+// Lazy load para admin
+const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
+const DataSeeder = lazy(() => import("./pages/admin/DataSeeder"));
+const Documentation = lazy(() => import("./pages/admin/Documentation"));
+
 const queryClient = new QueryClient();
 
-// Layout para páginas públicas (sem sidebar)
+// Loading component para lazy loading
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="space-y-4 text-center">
+      <Skeleton className="h-12 w-12 rounded-full mx-auto" />
+      <Skeleton className="h-4 w-32 mx-auto" />
+    </div>
+  </div>
+);
+
 const PublicLayout = () => (
   <div className="min-h-screen bg-background">
     <Header />
@@ -45,7 +67,6 @@ const PublicLayout = () => (
   </div>
 );
 
-// Layout para páginas autenticadas (com sidebar)
 const AuthenticatedLayout = () => {
   const commandPalette = useCommandPalette();
   
@@ -54,22 +75,22 @@ const AuthenticatedLayout = () => {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar data-tour="sidebar" />
         <main className="flex-1 overflow-x-hidden">
-          <header className="h-16 flex items-center border-b bg-card px-4 sm:px-6 sticky top-0 z-20">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger />
-              <SearchTrigger onClick={commandPalette.toggle} className="md:hidden" />
+          <header className="h-14 sm:h-16 flex items-center border-b bg-card px-3 sm:px-4 md:px-6 sticky top-0 z-20">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <SidebarTrigger className="h-9 w-9 sm:h-10 sm:w-10" />
             </div>
             <div className="hidden md:flex items-center flex-1 ml-4">
               <SmartBreadcrumb />
             </div>
-            <div className="flex items-center gap-4">
-              <SearchTrigger onClick={commandPalette.toggle} />
-              <Header /> {/* User profile button */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Header />
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-6">
-            <Outlet />
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
         <CommandPalette open={commandPalette.open} onOpenChange={commandPalette.setOpen} />
@@ -87,13 +108,14 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {/* Rotas Públicas */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Index />} />
-                <Route path="/relatorios" element={<Reports />} />
+                <Route path="/relatorios" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Reports />
+                  </Suspense>
+                } />
               </Route>
-
-              {/* Rota de Autenticação (sem layout principal) */}
               <Route path="/auth" element={
                 <PublicRoute>
                   <AuthPage />
@@ -101,8 +123,6 @@ const App = () => (
               } />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
-              
-              {/* Rotas Protegidas com Layout Autenticado */}
               <Route element={
                 <ProtectedRoute>
                   <AuthenticatedLayout />
@@ -115,7 +135,9 @@ const App = () => (
                 <Route path="/criar-relatorio" element={<CreateReport />} />
                 <Route path="/perfil" element={<Profile />} />
                 <Route path="/reunioes" element={<Reunioes />} />
+                <Route path="/reunioes/nova" element={<NovaReuniao />} />
                 <Route path="/documentos" element={<Documentos />} />
+                <Route path="/documentos/novo" element={<NovoDocumento />} />
                 <Route path="/processos" element={<Processos />} />
                 <Route path="/fma" element={<FMA />} />
                 <Route path="/ouvidoria" element={<Ouvidoria />} />
@@ -125,8 +147,6 @@ const App = () => (
                 <Route path="/codema/auditoria" element={<AuditoriaPage />} />
                 <Route path="/codema/protocolos" element={<GestaoProtocolos />} />
               </Route>
-              
-              {/* Rota de Not Found */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

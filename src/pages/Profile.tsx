@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   User, 
   Mail, 
-  Phone, 
+  Phone as _Phone, 
   MapPin, 
   Save,
   FileText,
@@ -56,6 +56,26 @@ const Profile = () => {
   });
 
   useEffect(() => {
+    const fetchUserReports = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("reports")
+          .select(`
+            *,
+            service_categories(name)
+          `)
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        setUserReports(data || []);
+      } catch (error) {
+        console.error("Erro ao carregar relatórios do usuário:", error);
+      }
+    };
+
     if (profile) {
       setFormData({
         full_name: profile.full_name || "",
@@ -65,27 +85,7 @@ const Profile = () => {
       });
       fetchUserReports();
     }
-  }, [profile]);
-
-  const fetchUserReports = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("reports")
-        .select(`
-          *,
-          service_categories(name)
-        `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setUserReports(data || []);
-    } catch (error) {
-      console.error("Erro ao carregar relatórios do usuário:", error);
-    }
-  };
+  }, [profile, user]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();

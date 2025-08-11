@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Eye, Edit2, FileText, Download, Clock, CheckCircle, XCircle, Gavel, Vote, Users } from "lucide-react";
+import { FileText, Plus, Edit, Edit2, Vote, CheckCircle, XCircle, Gavel, Users, Eye, Download } from 'lucide-react';
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -42,7 +42,6 @@ interface Resolucao {
   profiles?: {
     full_name: string;
   };
-  [key: string]: any;
 }
 
 export default function ResolucoesPage() {
@@ -64,12 +63,9 @@ export default function ResolucoesPage() {
   const { data: resolucoes = [], isLoading } = useQuery({
     queryKey: ['resolucoes', searchTerm, statusFilter, tipoFilter],
     queryFn: async () => {
-      let query = (supabase as any)
+      let query = supabase
         .from('resolucoes')
-        .select(`
-          *,
-          profiles:created_by(full_name)
-        `)
+        .select('*')
         .order('numero', { ascending: false });
 
       if (searchTerm) {
@@ -93,22 +89,22 @@ export default function ResolucoesPage() {
   const { data: stats } = useQuery({
     queryKey: ['resolucoes-stats'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('resolucoes')
         .select('status, tipo, resultado_votacao');
 
       if (error) throw error;
 
       const total = data.length;
-      const minutas = data.filter((r: any) => r.status === 'minuta').length;
-      const emVotacao = data.filter((r: any) => r.status === 'em_votacao').length;
-      const aprovadas = data.filter((r: any) => r.status === 'aprovada').length;
-      const publicadas = data.filter((r: any) => r.status === 'publicada').length;
-      const rejeitadas = data.filter((r: any) => r.status === 'rejeitada').length;
+      const minutas = data.filter((r: Resolucao) => r.status === 'minuta').length;
+      const emVotacao = data.filter((r: Resolucao) => r.status === 'em_votacao').length;
+      const aprovadas = data.filter((r: Resolucao) => r.status === 'aprovada').length;
+      const publicadas = data.filter((r: Resolucao) => r.status === 'publicada').length;
+      const rejeitadas = data.filter((r: Resolucao) => r.status === 'rejeitada').length;
 
-      const normativas = data.filter((r: any) => r.tipo === 'normativa').length;
-      const deliberativas = data.filter((r: any) => r.tipo === 'deliberativa').length;
-      const administrativas = data.filter((r: any) => r.tipo === 'administrativa').length;
+      const normativas = data.filter((r: Resolucao) => r.tipo === 'normativa').length;
+      const deliberativas = data.filter((r: Resolucao) => r.tipo === 'deliberativa').length;
+      const administrativas = data.filter((r: Resolucao) => r.tipo === 'administrativa').length;
 
       return { 
         total, minutas, emVotacao, aprovadas, publicadas, rejeitadas,
@@ -120,7 +116,7 @@ export default function ResolucoesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'minuta':
-        return <Badge variant="outline" className="bg-gray-50"><Edit2 className="w-3 h-3 mr-1" />Minuta</Badge>;
+        return <Badge variant="outline" className="bg-gray-50"><Edit className="w-3 h-3 mr-1" />Minuta</Badge>;
       case 'em_votacao':
         return <Badge variant="outline" className="bg-yellow-50 text-yellow-700"><Vote className="w-3 h-3 mr-1" />Em Votação</Badge>;
       case 'aprovada':
@@ -133,15 +129,6 @@ export default function ResolucoesPage() {
         return <Badge variant="outline" className="bg-orange-50 text-orange-700"><XCircle className="w-3 h-3 mr-1" />Revogada</Badge>;
       default:
         return <Badge variant="outline">Minuta</Badge>;
-    }
-  };
-
-  const getTipoLabel = (tipo: string) => {
-    switch (tipo) {
-      case 'normativa': return 'Normativa';
-      case 'deliberativa': return 'Deliberativa';
-      case 'administrativa': return 'Administrativa';
-      default: return tipo;
     }
   };
 

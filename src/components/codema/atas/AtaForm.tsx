@@ -1,440 +1,233 @@
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { CalendarIcon, Plus, Trash2, Save, Eye, Users, ClipboardList } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { AtaReviewSystem } from "./AtaReviewSystem";
-import { PdfGenerator } from "./PdfGenerator";
-import { VersionControl } from "./VersionControl";
-
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { logAction } from "@/utils/monitoring";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, Save, X, FileText, Clock, Eye } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Ata, AtaStatus } from '@/types/ata';
 
 const ataSchema = z.object({
-  reuniao_id: z.string().min(1, "Selecione uma reunião"),
-  template_id: z.string().optional(),
-  data_reuniao: z.date({ required_error: "Data da reunião é obrigatória" }),
-  hora_inicio: z.string().min(1, "Hora de início é obrigatória"),
-  hora_fim: z.string().optional(),
-  local_reuniao: z.string().min(1, "Local da reunião é obrigatório"),
-  tipo_reuniao: z.enum(["ordinaria", "extraordinaria", "publica"], {
-    required_error: "Selecione o tipo de reunião"
+  numero: z.string()
+    .min(3, 'Número deve ter pelo menos 3 caracteres')
+    .max(50, 'Número deve ter no máximo 50 caracteres'),
+  titulo: z.string()
+    .min(5, 'Título deve ter pelo menos 5 caracteres')
+    .max(200, 'Título deve ter no máximo 200 caracteres'),
+  conteudo: z.string()
+    .min(10, 'Conteúdo deve ter pelo menos 10 caracteres')
+    .max(50000, 'Conteúdo deve ter no máximo 50.000 caracteres'),
+  data_reuniao: z.date({
+    required_error: 'Data da reunião é obrigatória',
   }),
-  observacoes: z.string().optional(),
+  status: z.enum(['rascunho', 'em_revisao', 'aprovada', 'publicada'], {
+    required_error: 'Status é obrigatório',
+  }),
+  reuniao_id: z.string().optional(),
 });
 
 type AtaFormData = z.infer<typeof ataSchema>;
 
 interface AtaFormProps {
-  ata?: {
-    id?: string;
-    numero?: string;
-    data_reuniao?: string;
-    conteudo?: string;
-    status?: string;
-    [key: string]: unknown;
-  };
-  onClose: () => void;
+  ata?: Ata;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+  initialReuniaoId?: string;
 }
 
-interface ItemPauta {
-  id: string;
-  titulo: string;
-  descricao: string;
-  ordem: number;
-}
-
-interface Presente {
-  id: string;
-  nome: string;
-  cargo: string;
-  tipo: 'titular' | 'suplente' | 'convidado';
-}
-
-interface Deliberacao {
-  id: string;
-  item_pauta_id: string;
-  decisao: string;
-  votos_favor: number;
-  votos_contra: number;
-  abstencoes: number;
-  observacoes: string;
-}
-
-export function AtaForm({ ata, onClose }: AtaFormProps) {
-  const { profile } = useAuth();
+const AtaForm: React.FC<AtaFormProps> = ({
+  ata,
+  onSuccess,
+  onCancel,
+  initialReuniaoId,
+}) => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const [itensPauta, setItensPauta] = useState<ItemPauta[]>([]);
-  const [presentes, setPresentes] = useState<Presente[]>([]);
-  const [ausentes, setAusentes] = useState<string[]>([]);
-  const [deliberacoes, setDeliberacoes] = useState<Deliberacao[]>([]);
+  const isEditing = Boolean(ata);
 
   const form = useForm<AtaFormData>({
     resolver: zodResolver(ataSchema),
     defaultValues: {
-      data_reuniao: new Date(),
-      hora_inicio: "09:00",
-      tipo_reuniao: "ordinaria",
+      numero: ata?.numero || '',
+      titulo: ata?.titulo || '',
+      conteudo: ata?.conteudo || '',
+      data_reuniao: ata?.data_reuniao ? new Date(ata.data_reuniao) : new Date(),
+      status: ata?.status || 'rascunho',
+      reuniao_id: ata?.reuniao_id || initialReuniaoId || '',
     },
   });
 
-  // Buscar reuniões disponíveis
-  const { data: reunioes = [] } = useQuery({
-    queryKey: ['reunioes-para-ata'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('reunioes')
-        .select('id, titulo, data_reuniao, tipo, local')
-        .order('data_reuniao', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Buscar templates disponíveis
-  const { data: templates = [] } = useQuery({
-    queryKey: ['atas-templates'],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('atas_templates')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome');
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Buscar conselheiros para lista de presença
-  const { data: conselheiros = [] } = useQuery({
-    queryKey: ['conselheiros-ativos'],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('conselheiros')
-        .select('id, nome, cargo, tipo, ativo')
-        .eq('ativo', true)
-        .order('nome');
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Preencher dados se estiver editando
-  useEffect(() => {
-    if (ata) {
-      form.reset({
-        reuniao_id: ata.reuniao_id as string,
-        template_id: ata.template_id as string,
-        data_reuniao: new Date(ata.data_reuniao as string),
-        hora_inicio: ata.hora_inicio as string,
-        hora_fim: ata.hora_fim as string,
-        local_reuniao: ata.local_reuniao as string,
-        tipo_reuniao: ata.tipo_reuniao as "ordinaria" | "extraordinaria" | "publica",
-        observacoes: ata.observacoes as string,
-      });
-
-      setItensPauta((ata.pauta as ItemPauta[]) || []);
-      setPresentes((ata.presentes as Presente[]) || []);
-      setAusentes((ata.ausentes as string[]) || []);
-      setDeliberacoes((ata.deliberacoes as Deliberacao[]) || []);
+  const getStatusIcon = (status: AtaStatus) => {
+    switch (status) {
+      case 'rascunho':
+        return <FileText className="h-4 w-4" />;
+      case 'em_revisao':
+        return <Clock className="h-4 w-4" />;
+      case 'aprovada':
+      case 'publicada':
+        return <Eye className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
     }
-  }, [ata, form]);
+  };
 
-  const mutation = useMutation({
-    mutationFn: async (data: AtaFormData) => {
-      const ataData = {
+
+  const onSubmit = async (data: AtaFormData) => {
+    try {
+      const payload = {
         ...data,
-        pauta: itensPauta,
-        presentes,
-        ausentes,
-        deliberacoes,
-        data_reuniao: format(data.data_reuniao, 'yyyy-MM-dd'),
+        data_reuniao: data.data_reuniao.toISOString(),
       };
 
-      if (ata) {
-        // Incrementar versão ao atualizar
-        const { data: updatedAta, error } = await (supabase as any)
+      let error;
+      
+      if (isEditing) {
+        ({ error } = await supabase
           .from('atas')
-          .update({
-            ...ataData,
-            versao: (ata.versao as number) + 1,
-            updated_by: profile?.id,
-          })
-          .eq('id', ata.id)
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        await logAction(
-          'update_ata',
-          'atas',
-          ata.id,
-          { numero: ata.numero as string, versao: (ata.versao as number) + 1 }
-        );
-
-        return updatedAta;
+          .update(payload)
+          .eq('id', ata!.id));
       } else {
-        // Gerar número da ata
-        const { data: numero } = await supabase.rpc('generate_document_number', { doc_type: 'ata' });
-
-        const { data: newAta, error } = await (supabase as any)
+        ({ error } = await supabase
           .from('atas')
-          .insert({
-            ...ataData,
-            numero,
-            created_by: profile?.id,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        await logAction(
-          'create_ata',
-          'atas',
-          newAta.id,
-          { numero: newAta.numero }
-        );
-
-        return newAta;
+          .insert([{
+            ...payload,
+            created_by: 'current-user-id', // TODO: Get from auth context
+          }]));
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['atas'] });
+
+      if (error) throw error;
+
       toast({
-        title: "Sucesso",
-        description: ata ? "Ata atualizada com sucesso" : "Ata criada com sucesso",
+        title: isEditing ? 'Ata atualizada' : 'Ata criada',
+        description: isEditing 
+          ? 'A ata foi atualizada com sucesso.' 
+          : 'A ata foi criada com sucesso.',
       });
-      onClose();
-    },
-    onError: (error) => {
+
+      onSuccess?.();
+    } catch (error) {
+      console.error('Erro ao salvar ata:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao salvar ata: " + error.message,
-        variant: "destructive",
+        title: 'Erro ao salvar',
+        description: 'Ocorreu um erro ao salvar a ata. Tente novamente.',
+        variant: 'destructive',
       });
-    },
-  });
-
-  const adicionarItemPauta = () => {
-    const novoItem: ItemPauta = {
-      id: Date.now().toString(),
-      titulo: '',
-      descricao: '',
-      ordem: itensPauta.length + 1,
-    };
-    setItensPauta([...itensPauta, novoItem]);
-  };
-
-  const removerItemPauta = (id: string) => {
-    setItensPauta(itensPauta.filter(item => item.id !== id));
-  };
-
-  const atualizarItemPauta = (id: string, campo: keyof ItemPauta, valor: string | number) => {
-    setItensPauta(itensPauta.map(item => 
-      item.id === id ? { ...item, [campo]: valor } : item
-    ));
-  };
-
-  const marcarPresenca = (conselheiro: { id: string; nome: string; cargo: string; tipo: string }, presente: boolean) => {
-    if (presente) {
-      const novoPresente: Presente = {
-        id: conselheiro.id,
-        nome: conselheiro.nome,
-        cargo: conselheiro.cargo,
-        tipo: conselheiro.tipo as "titular" | "suplente" | "convidado",
-      };
-      setPresentes([...presentes.filter(p => p.id !== conselheiro.id), novoPresente]);
-      setAusentes(ausentes.filter(id => id !== conselheiro.id));
-    } else {
-      setAusentes([...ausentes.filter(id => id !== conselheiro.id), conselheiro.id]);
-      setPresentes(presentes.filter(p => p.id !== conselheiro.id));
     }
   };
-
-  const onSubmit = (data: AtaFormData) => {
-    mutation.mutate(data);
-  };
-
-  const canReview = profile?.role && ['conselheiro_titular', 'conselheiro_suplente', 'presidente'].includes(profile.role);
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Tabs defaultValue="dados-basicos" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="dados-basicos">Dados Básicos</TabsTrigger>
-            <TabsTrigger value="pauta">Pauta</TabsTrigger>
-            <TabsTrigger value="presenca">Presença</TabsTrigger>
-            <TabsTrigger value="deliberacoes">Deliberações</TabsTrigger>
-            {ata && <TabsTrigger value="revisoes">Revisões</TabsTrigger>}
-            {ata && <TabsTrigger value="pdf">PDF</TabsTrigger>}
-            {ata && <TabsTrigger value="versoes">Versões</TabsTrigger>}
-          </TabsList>
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <span>{isEditing ? 'Editar Ata' : 'Nova Ata'}</span>
+        </CardTitle>
+        <CardDescription>
+          {isEditing 
+            ? 'Atualize as informações da ata' 
+            : 'Crie uma nova ata de reunião do CODEMA'}
+        </CardDescription>
+      </CardHeader>
 
-          <TabsContent value="dados-basicos" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="reuniao_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Reunião</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Informações Básicas */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">Informações Básicas</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="numero"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número da Ata *</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma reunião" />
-                        </SelectTrigger>
+                        <Input placeholder="ATA-001/2024" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {reunioes.map((reuniao) => (
-                          <SelectItem key={reuniao.id} value={reuniao.id}>
-                            {reuniao.titulo} - {format(new Date(reuniao.data_reuniao), 'dd/MM/yyyy')}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormDescription>Número sequencial único da ata</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="data_reuniao"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Data da Reunião *</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, 'dd/MM/yyyy')
+                              ) : (
+                                <span>Selecione a data</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date('1900-01-01')
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
-                name="template_id"
+                name="titulo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Template (Opcional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um template" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.id}>
-                            {template.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="data_reuniao"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Data da Reunião</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "dd/MM/yyyy")
-                            ) : (
-                              <span>Selecione uma data</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tipo_reuniao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Reunião</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ordinaria">Ordinária</SelectItem>
-                        <SelectItem value="extraordinaria">Extraordinária</SelectItem>
-                        <SelectItem value="publica">Audiência Pública</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="hora_inicio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hora de Início</FormLabel>
+                    <FormLabel>Título *</FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="hora_fim"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hora de Fim (Opcional)</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
+                      <Input 
+                        placeholder="Ata da Reunião Ordinária - Janeiro 2024"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -442,339 +235,123 @@ export function AtaForm({ ata, onClose }: AtaFormProps) {
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="local_reuniao"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Local da Reunião</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Plenário da Câmara Municipal" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Status */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">Status</h3>
+              
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status da Ata *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="rascunho">
+                          <div className="flex items-center space-x-2">
+                            <div className="text-gray-600">
+                              {getStatusIcon('rascunho')}
+                            </div>
+                            <span>📝 Rascunho</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="em_revisao">
+                          <div className="flex items-center space-x-2">
+                            <div className="text-yellow-600">
+                              {getStatusIcon('em_revisao')}
+                            </div>
+                            <span>⏳ Em Revisão</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="aprovada">
+                          <div className="flex items-center space-x-2">
+                            <div className="text-green-600">
+                              {getStatusIcon('aprovada')}
+                            </div>
+                            <span>✅ Aprovada</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="publicada">
+                          <div className="flex items-center space-x-2">
+                            <div className="text-blue-600">
+                              {getStatusIcon('publicada')}
+                            </div>
+                            <span>🌐 Publicada</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Rascunho: em elaboração | Em Revisão: aguardando aprovação | Aprovada: pronta para publicar | Publicada: disponível publicamente
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <FormField
-              control={form.control}
-              name="observacoes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Observações (Opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Observações gerais sobre a reunião..."
-                      className="min-h-[100px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </TabsContent>
+            {/* Conteúdo */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">Conteúdo</h3>
+              
+              <FormField
+                control={form.control}
+                name="conteudo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Conteúdo da Ata *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="1. ABERTURA\n\nFoi aberta a reunião às 14h00, pelo presidente...\n\n2. PRESENÇA\n\nEstiveram presentes os conselheiros...\n\n3. PAUTA\n\n3.1. Item 1 da pauta...\n\n4. DELIBERAÇÕES\n\n...\n\n5. ENCERRAMENTO\n\nNada mais havendo a tratar, foi encerrada a reunião às 16h30."
+                        rows={15}
+                        {...field} 
+                        className="font-mono text-sm"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Digite o conteúdo completo da ata. Use formatação clara com títulos numerados.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-          <TabsContent value="pauta" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-medium">Pauta da Reunião</h3>
-                <p className="text-sm text-muted-foreground">
-                  Adicione os itens que serão discutidos na reunião
-                </p>
-              </div>
-              <Button type="button" onClick={adicionarItemPauta}>
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Item
+            {/* Botões */}
+            <div className="flex justify-end space-x-4 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                className="flex items-center space-x-2"
+              >
+                <X className="h-4 w-4" />
+                <span>Cancelar</span>
+              </Button>
+              
+              <Button 
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="flex items-center space-x-2"
+              >
+                <Save className="h-4 w-4" />
+                <span>
+                  {form.formState.isSubmitting 
+                    ? 'Salvando...' 
+                    : isEditing ? 'Atualizar' : 'Criar Ata'}
+                </span>
               </Button>
             </div>
-
-            <div className="space-y-4">
-              {itensPauta.map((item, index) => (
-                <Card key={item.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-center">
-                      <Badge variant="outline">Item {index + 1}</Badge>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removerItemPauta(item.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <Label>Título do Item</Label>
-                      <Input
-                        value={item.titulo}
-                        onChange={(e) => atualizarItemPauta(item.id, 'titulo', e.target.value)}
-                        placeholder="Título do item da pauta"
-                      />
-                    </div>
-                    <div>
-                      <Label>Descrição</Label>
-                      <Textarea
-                        value={item.descricao}
-                        onChange={(e) => atualizarItemPauta(item.id, 'descricao', e.target.value)}
-                        placeholder="Descrição detalhada do item"
-                        className="min-h-[80px]"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {itensPauta.length === 0 && (
-                <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-                  <ClipboardList className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-gray-500">Nenhum item da pauta adicionado</p>
-                  <p className="text-sm text-gray-400">Clique em "Adicionar Item" para começar</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="presenca" className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium">Lista de Presença</h3>
-              <p className="text-sm text-muted-foreground">
-                Marque os conselheiros presentes na reunião
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {conselheiros.map((conselheiro) => {
-                const presente = presentes.some(p => p.id === conselheiro.id);
-                const ausente = ausentes.includes(conselheiro.id);
-
-                return (
-                  <div key={conselheiro.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{conselheiro.nome}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {conselheiro.cargo} - {conselheiro.tipo === 'titular' ? 'Titular' : 'Suplente'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={presente ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => marcarPresenca(conselheiro, true)}
-                      >
-                        Presente
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={ausente ? "destructive" : "outline"}
-                        size="sm"
-                        onClick={() => marcarPresenca(conselheiro, false)}
-                      >
-                        Ausente
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-6">
-              <h4 className="font-medium mb-2">Resumo de Presença</h4>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-700">{presentes.length}</p>
-                  <p className="text-sm text-green-600">Presentes</p>
-                </div>
-                <div className="text-center p-3 bg-red-50 rounded-lg">
-                  <p className="text-2xl font-bold text-red-700">{ausentes.length}</p>
-                  <p className="text-sm text-red-600">Ausentes</p>
-                </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-700">{conselheiros.length}</p>
-                  <p className="text-sm text-blue-600">Total</p>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="deliberacoes" className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium">Deliberações</h3>
-              <p className="text-sm text-muted-foreground">
-                Registre as decisões tomadas para cada item da pauta
-              </p>
-            </div>
-
-            {itensPauta.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-                <ClipboardList className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                <p className="text-gray-500">Adicione itens da pauta primeiro</p>
-                <p className="text-sm text-gray-400">As deliberações são baseadas nos itens da pauta</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {itensPauta.map((item) => {
-                  const deliberacao = deliberacoes.find(d => d.item_pauta_id === item.id);
-                  
-                  return (
-                    <Card key={item.id}>
-                      <CardHeader>
-                        <CardTitle className="text-base">{item.titulo}</CardTitle>
-                        <CardDescription>{item.descricao}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div>
-                          <Label>Decisão</Label>
-                          <Textarea
-                            value={deliberacao?.decisao || ''}
-                            onChange={(e) => {
-                              const novaDeliberacao = {
-                                id: deliberacao?.id || Date.now().toString(),
-                                item_pauta_id: item.id,
-                                decisao: e.target.value,
-                                votos_favor: deliberacao?.votos_favor || 0,
-                                votos_contra: deliberacao?.votos_contra || 0,
-                                abstencoes: deliberacao?.abstencoes || 0,
-                                observacoes: deliberacao?.observacoes || '',
-                              };
-                              
-                              setDeliberacoes(prev => 
-                                prev.some(d => d.id === novaDeliberacao.id)
-                                  ? prev.map(d => d.id === novaDeliberacao.id ? novaDeliberacao : d)
-                                  : [...prev, novaDeliberacao]
-                              );
-                            }}
-                            placeholder="Descreva a decisão tomada para este item"
-                          />
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-3">
-                          <div>
-                            <Label>Votos a Favor</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={deliberacao?.votos_favor || ''}
-                              onChange={(e) => {
-                                const votos = parseInt(e.target.value) || 0;
-                                const novaDeliberacao = {
-                                  id: deliberacao?.id || Date.now().toString(),
-                                  item_pauta_id: item.id,
-                                  decisao: deliberacao?.decisao || '',
-                                  votos_favor: votos,
-                                  votos_contra: deliberacao?.votos_contra || 0,
-                                  abstencoes: deliberacao?.abstencoes || 0,
-                                  observacoes: deliberacao?.observacoes || '',
-                                };
-                                
-                                setDeliberacoes(prev => 
-                                  prev.some(d => d.id === novaDeliberacao.id)
-                                    ? prev.map(d => d.id === novaDeliberacao.id ? novaDeliberacao : d)
-                                    : [...prev, novaDeliberacao]
-                                );
-                              }}
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label>Votos Contra</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={deliberacao?.votos_contra || ''}
-                              onChange={(e) => {
-                                const votos = parseInt(e.target.value) || 0;
-                                const novaDeliberacao = {
-                                  id: deliberacao?.id || Date.now().toString(),
-                                  item_pauta_id: item.id,
-                                  decisao: deliberacao?.decisao || '',
-                                  votos_favor: deliberacao?.votos_favor || 0,
-                                  votos_contra: votos,
-                                  abstencoes: deliberacao?.abstencoes || 0,
-                                  observacoes: deliberacao?.observacoes || '',
-                                };
-                                
-                                setDeliberacoes(prev => 
-                                  prev.some(d => d.id === novaDeliberacao.id)
-                                    ? prev.map(d => d.id === novaDeliberacao.id ? novaDeliberacao : d)
-                                    : [...prev, novaDeliberacao]
-                                );
-                              }}
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label>Abstenções</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={deliberacao?.abstencoes || ''}
-                              onChange={(e) => {
-                                const abstencoes = parseInt(e.target.value) || 0;
-                                const novaDeliberacao = {
-                                  id: deliberacao?.id || Date.now().toString(),
-                                  item_pauta_id: item.id,
-                                  decisao: deliberacao?.decisao || '',
-                                  votos_favor: deliberacao?.votos_favor || 0,
-                                  votos_contra: deliberacao?.votos_contra || 0,
-                                  abstencoes: abstencoes,
-                                  observacoes: deliberacao?.observacoes || '',
-                                };
-                                
-                                setDeliberacoes(prev => 
-                                  prev.some(d => d.id === novaDeliberacao.id)
-                                    ? prev.map(d => d.id === novaDeliberacao.id ? novaDeliberacao : d)
-                                    : [...prev, novaDeliberacao]
-                                );
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Revisões Tab */}
-          {ata && (
-            <TabsContent value="revisoes">
-              <AtaReviewSystem ataId={ata.id} canReview={canReview} />
-            </TabsContent>
-          )}
-
-          {/* PDF Tab */}
-          {ata && (
-            <TabsContent value="pdf">
-              <PdfGenerator ata={ata} />
-            </TabsContent>
-          )}
-
-          {/* Versões Tab */}
-          {ata && (
-            <TabsContent value="versoes">
-              <VersionControl ataId={ata.id as string} currentVersion={ata.versao as number} />
-            </TabsContent>
-          )}
-        </Tabs>
-
-        <Separator />
-
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={mutation.isPending}>
-            <Save className="w-4 h-4 mr-2" />
-            {mutation.isPending ? "Salvando..." : "Salvar Ata"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default AtaForm;

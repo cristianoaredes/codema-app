@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { DashboardCard, QuickActionCard } from "@/components/dashboard/DashboardCard";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { 
-  BarChart,
   Calendar,
   FileText,
   Database,
-  Users,
+  Users as _Users,
   AlertTriangle,
   Plus,
   Settings,
@@ -81,7 +80,7 @@ const Dashboard = () => {
     conselheiros: 0,
     myReports: 0,
     reportGrowth: 0,
-    fmaBalance: 0,
+    fmaBalance: 150000,
     auditAlerts: 0,
     totalConselheiros: 0,
     totalReunioes: 0,
@@ -101,293 +100,407 @@ const Dashboard = () => {
   // Get role-specific configuration based on the current (real or simulated) role
   const roleConfig = getRoleConfig(currentProfileRole);
   const dashboardCards = getCardsForRole(currentProfileRole);
-  const quickActionsList = getQuickActionsForRole(currentProfileRole);
+  const quickActions = getQuickActionsForRole(currentProfileRole);
 
-  useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-    }
-  }, [user, profile]);
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
+  const fetchDashboardData = useCallback(async () => {
     try {
-      const queries = [
-        supabase.from("reports").select(`*, service_categories(name, icon)`).order("created_at", { ascending: false }).limit(5),
-        (supabase as any).from("reunioes").select("*", { count: 'exact' }),
-        (supabase as any).from("atas").select("*", { count: 'exact' }),
-        (supabase as any).from("resolucoes").select("*", { count: 'exact' }),
-      ];
+      setLoading(true);
+      const queries = [];
+      
+      // Queries sempre executadas
+      queries.push(
+        supabase
+          .from("reports")
+          .select(`*, service_categories(name, icon)`)
+          .order("created_at", { ascending: false })
+          .limit(5)
+      );
 
-      if (hasAdminAccess) {
-        queries.push((supabase as any).from("conselheiros").select("*", { count: 'exact' }));
+      // Query para meus relatórios se houver usuário logado
+      if (user) {
+        queries.push(
+          supabase
+            .from("reports")
+            .select("id")
+            .eq("user_id", user.id)
+        );
+      }
+
+      // Queries CODEMA baseadas no perfil atual (real ou simulado)
+      if (hasCODEMAAccess || ['conselheiro_titular', 'conselheiro_suplente', 'secretario', 'presidente', 'admin'].includes(currentProfileRole)) {
+        queries.push(
+          supabase.from("reunioes").select("*", { count: 'exact' }),
+          supabase.from("atas").select("*", { count: 'exact' }).eq("status", "pendente"),
+          supabase.from("resolucoes").select("*", { count: 'exact' }).eq("status", "em_votacao")
+        );
+      }
+
+      // Queries administrativas baseadas no perfil atual
+      if (hasAdminAccess || ['admin', 'secretario', 'presidente'].includes(currentProfileRole)) {
+        queries.push(
+          supabase
+            .from("profiles")
+            .select("*", { count: 'exact' })
+            .in('role', ['conselheiro_titular', 'conselheiro_suplente'])
+        );
       }
 
       const results = await Promise.all(queries);
       
-      const [reportsResult, reunioesResult, atasResult, resolucoesResult, conselheirosResult] = results;
+      // Process results
+      const newStats: DashboardStats = { ...stats };
+      let reportIndex = 0;
 
-      const reports = reportsResult.data || [];
-      const totalReunioes = reunioesResult.count || 0;
-      const totalAtas = atasResult.count || 0;
-      const totalResolucoes = resolucoesResult.count || 0;
-      const totalConselheiros = conselheirosResult?.count || 0;
+      // Recent reports
+      if (results[reportIndex]?.data) {
+        setRecentReports(results[reportIndex].data as Report[]);
+        newStats.totalReports = results[reportIndex].data.length;
+      } else {
+        newStats.totalReports = 0;
+      }
+      reportIndex++;
 
-      const reunioesAgendadas = (reunioesResult.data || []).filter((r: any) => new Date(r.data_hora) > new Date()).length;
-      const atasPendentes = (atasResult.data || []).filter((a: any) => a.status === 'rascunho').length;
-      const resolucoesPendentes = (resolucoesResult.data || []).filter((r: any) => r.status === 'em_votacao').length;
+      // My reports count
+      if (user && results[reportIndex]) {
+        newStats.myReports = results[reportIndex].data?.length || 0;
+        reportIndex++;
+      }
+
+      // CODEMA stats - verificação para perfis com acesso
+      if (hasCODEMAAccess || ['conselheiro_titular', 'conselheiro_suplente', 'secretario', 'presidente', 'admin'].includes(currentProfileRole)) {
+        if (results[reportIndex]) {
+          newStats.reunioesAgendadas = results[reportIndex].count || 0;
+          reportIndex++;
+        }
+        if (results[reportIndex]) {
+          newStats.atasPendentes = results[reportIndex].count || 0;
+          reportIndex++;
+        }
+        if (results[reportIndex]) {
+          newStats.resolucoesPendentes = results[reportIndex].count || 0;
+          reportIndex++;
+        }
+      }
+
+      // Admin stats - verificação para perfis administrativos
+      if (hasAdminAccess || ['admin', 'secretario', 'presidente'].includes(currentProfileRole)) {
+        if (results[reportIndex]) {
+          newStats.conselheiros = results[reportIndex].count || 0;
+          reportIndex++;
+        }
+      }
+
+      // Calculate growth (mock data for now)
+      newStats.reportGrowth = Math.floor(Math.random() * 20) - 10;
+      newStats.fmaBalance = 150000 + Math.random() * 50000;
+      newStats.auditAlerts = Math.floor(Math.random() * 5);
       
-      setStats(prev => ({
-        ...prev,
-        totalReports: reports.length,
-        reunioesAgendadas,
-        atasPendentes,
-        resolucoesPendentes,
-        conselheiros: totalConselheiros,
-        totalConselheiros,
-        totalReunioes,
-        totalResolucoes,
-        totalAtas,
-      }));
+      // Ensure all required properties are set
+      newStats.totalConselheiros = newStats.conselheiros || 0;
+      newStats.totalReunioes = newStats.reunioesAgendadas || 0;
+      newStats.totalResolucoes = newStats.resolucoesPendentes || 0;
+      newStats.totalProtocolos = 0;
+      newStats.totalAtas = newStats.atasPendentes || 0;
+      newStats.totalImpedimentos = 0;
+      newStats.protocolosPendentes = 0;
+      newStats.reunioesProximas = newStats.reunioesAgendadas || 0;
 
-      setRecentReports(reports as unknown as Report[]);
-
-    } catch (error: any) {
-      console.error("Erro ao carregar dados do dashboard:", error);
+      setStats(newStats);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível carregar os dados do dashboard.",
-        variant: "destructive"
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar os dados do dashboard",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
+  }, [user, hasCODEMAAccess, hasAdminAccess, currentProfileRole, toast]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  const handleQuickAction = (path: string) => {
+    navigate(path);
   };
 
-  const getStatusColor = (status: string) => ({
-    open: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    in_progress: "bg-blue-100 text-blue-800 border-blue-200",
-    resolved: "bg-green-100 text-green-800 border-green-200",
-    closed: "bg-gray-100 text-gray-800 border-gray-200",
-  }[status] || "bg-gray-100 text-gray-800 border-gray-200");
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "destructive";
+      case "medium":
+        return "default";
+      case "low":
+        return "secondary";
+      default:
+        return "outline";
+    }
+  };
 
-  const getPriorityColor = (priority: string) => ({
-    urgent: "bg-red-100 text-red-800",
-    high: "bg-orange-100 text-orange-800",
-    medium: "bg-yellow-100 text-yellow-800",
-    low: "bg-gray-100 text-gray-800",
-  }[priority] || "bg-gray-100 text-gray-800");
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "open":
+        return "default";
+      case "in_progress":
+        return "secondary";
+      case "resolved":
+        return "outline";
+      default:
+        return "outline";
+    }
+  };
 
-  const getStatusLabel = (status: string) => ({
-    open: "Aberto",
-    in_progress: "Em Andamento",
-    resolved: "Resolvido",
-    closed: "Fechado",
-  }[status] || status);
-
-  const getPriorityLabel = (priority: string) => ({
-    urgent: "Urgente",
-    high: "Alta",
-    medium: "Média",
-    low: "Baixa",
-  }[priority] || priority);
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <div className="h-8 w-64 bg-muted animate-pulse rounded mb-2" />
-            <div className="h-5 w-48 bg-muted animate-pulse rounded" />
-          </div>
-          <div className="flex gap-2">
-            <div className="h-10 w-32 bg-muted animate-pulse rounded" />
-            <div className="h-10 w-10 bg-muted animate-pulse rounded" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-          {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} className="h-24" />)}
-          </div>
-          <div className="lg:col-span-2">
-            <CardSkeleton className="h-96" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Função para simular outro perfil
+  const handleRoleSimulation = (role: UserRole | "reset") => {
+    if (role === "reset") {
+      setSimulatedRole(null);
+      toast({
+        title: "Simulação encerrada",
+        description: "Voltando ao perfil original",
+      });
+    } else {
+      setSimulatedRole(role);
+      toast({
+        title: "Simulação ativada",
+        description: `Visualizando como: ${roleConfig.title}`,
+      });
+    }
+  };
 
   return (
-    <motion.div 
-      className="container mx-auto px-4 sm:px-6 py-8"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      {/* Role Simulator - Development Only */}
-      {process.env.NODE_ENV === 'development' && (
-        <Card className="mb-6 bg-yellow-50 border-yellow-200">
+    <div className="space-y-6">
+      {/* Welcome Guide */}
+      {welcomeGuide.isVisible && (
+        <WelcomeGuide onDismiss={welcomeGuide.dismiss} />
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            {roleConfig.title}
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            {roleConfig.description}
+          </p>
+        </div>
+        
+        {/* Seletor de simulação de perfil - apenas para admins */}
+        {hasAdminAccess && (
+          <div className="flex items-center gap-2">
+            <Select 
+              value={simulatedRole || "current"}
+              onValueChange={(value) => handleRoleSimulation(value as UserRole | "reset")}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Simular perfil" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="current">Perfil Atual</SelectItem>
+                <SelectItem value="citizen">Cidadão</SelectItem>
+                <SelectItem value="conselheiro_titular">Conselheiro Titular</SelectItem>
+                <SelectItem value="conselheiro_suplente">Conselheiro Suplente</SelectItem>
+                <SelectItem value="secretario">Secretário</SelectItem>
+                <SelectItem value="presidente">Presidente</SelectItem>
+                <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="reset">Encerrar Simulação</SelectItem>
+              </SelectContent>
+            </Select>
+            {simulatedRole && (
+              <Badge variant="secondary">
+                Simulando: {roleConfig.title.split(' - ')[1]}
+              </Badge>
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button asChild>
+            <Link to="/criar-relatorio">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Relatório
+            </Link>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate("/perfil")}>
+                <Settings className="mr-2 h-4 w-4" />
+                Configurações
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/ajuda")}>
+                <Database className="mr-2 h-4 w-4" />
+                Ajuda
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
+        ) : (
+          dashboardCards.map((card, index) => {
+            const value = card.getValue(stats);
+            const change = card.change ? card.change(stats) : undefined;
+            const trend = card.trend ? card.trend(stats) : undefined;
+            const priority = typeof card.priority === 'function' 
+              ? card.priority(stats) 
+              : card.priority;
+
+            return (
+              <motion.div
+                key={card.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <DashboardCard
+                  title={card.title}
+                  value={value}
+                  description={card.description}
+                  change={change}
+                  trend={trend}
+                  priority={priority}
+                  icon={<card.icon className="h-5 w-5" />}
+                  action={card.action ? {
+                    label: card.action.label,
+                    onClick: () => navigate(card.action!.path)
+                  } : undefined}
+                  quickActions={card.quickActions?.map(qa => ({
+                    label: qa.label,
+                    onClick: () => navigate(qa.path),
+                    icon: qa.icon ? <qa.icon className="h-4 w-4 mr-2" /> : undefined
+                  }))}
+                />
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Quick Actions */}
+      {quickActions.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Ações Rápidas</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {quickActions.map((action, index) => (
+              <motion.div
+                key={action.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <QuickActionCard
+                  title={action.title}
+                  description={action.description}
+                  icon={<action.icon className="h-6 w-6 text-primary" />}
+                  onClick={() => handleQuickAction(action.path)}
+                />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Reports */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Relatórios Recentes</CardTitle>
+          <CardDescription>
+            Últimas contribuições da comunidade
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))}
+            </div>
+          ) : recentReports.length > 0 ? (
+            <div className="space-y-4">
+              {recentReports.map((report) => (
+                <div
+                  key={report.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                  onClick={() => navigate(`/relatorios/${report.id}`)}
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{report.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={getStatusColor(report.status)}>
+                          {report.status}
+                        </Badge>
+                        <Badge variant={getPriorityColor(report.priority)}>
+                          {report.priority}
+                        </Badge>
+                        {report.location && (
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {report.location}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(report.created_at).toLocaleDateString("pt-BR")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                Nenhum relatório disponível
+              </p>
+              <Button asChild className="mt-4">
+                <Link to="/criar-relatorio">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar Primeiro Relatório
+                </Link>
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Admin Alert */}
+      {hasAdminAccess && stats.auditAlerts > 0 && (
+        <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              Simulador de Perfil (Apenas Desenvolvimento)
+              Alertas de Sistema
             </CardTitle>
-            <CardDescription>
-              Selecione um perfil para visualizar o dashboard como se fosse aquele usuário.
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="max-w-xs">
-              <Select 
-                value={simulatedRole || profile?.role || 'citizen'} 
-                onValueChange={(value) => setSimulatedRole(value as UserRole)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um perfil" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="presidente">Presidente</SelectItem>
-                  <SelectItem value="secretario">Secretário</SelectItem>
-                  <SelectItem value="conselheiro_titular">Conselheiro Titular</SelectItem>
-                  <SelectItem value="conselheiro_suplente">Conselheiro Suplente</SelectItem>
-                  <SelectItem value="citizen">Cidadão</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Existem {stats.auditAlerts} alertas de auditoria que requerem sua atenção.
+            </p>
+            <Button asChild className="mt-4" variant="outline">
+              <Link to="/codema/auditoria">
+                Ver Alertas
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       )}
-
-      {welcomeGuide.isVisible && <WelcomeGuide onDismiss={welcomeGuide.dismiss} />}
-
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{roleConfig.title}</h1>
-          <p className="text-muted-foreground mt-1">{roleConfig.description}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link to="/criar-relatorio">
-            <Button className="flex items-center gap-2" data-tour="new-report-btn">
-              <Plus className="w-4 h-4" />
-              Novo Relatório
-            </Button>
-          </Link>
-          {hasCODEMAAccess && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/reunioes')}><Calendar className="mr-2 h-4 w-4" /><span>Reuniões</span></DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/codema/atas')}><FileText className="mr-2 h-4 w-4" /><span>Atas</span></DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/admin/settings')}><Settings className="mr-2 h-4 w-4" /><span>Configurações</span></DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
-
-      <motion.div 
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8"
-        data-tour="dashboard-cards"
-        variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
-        initial="hidden"
-        animate="visible"
-      >
-        {dashboardCards.map((cardConfig) => (
-          <motion.div key={cardConfig.id} variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }}>
-            <DashboardCard
-              title={cardConfig.title}
-              value={cardConfig.getValue(stats)}
-              description={cardConfig.description}
-              change={cardConfig.change?.(stats)}
-              trend={cardConfig.trend?.(stats)}
-              priority={typeof cardConfig.priority === 'function' ? cardConfig.priority(stats) : cardConfig.priority}
-              icon={<cardConfig.icon className="h-6 w-6" />}
-              action={cardConfig.action ? { label: cardConfig.action.label, onClick: () => navigate(cardConfig.action!.path) } : undefined}
-            />
-          </motion.div>
-        ))}
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
-          {quickActionsList.length > 0 && (
-            <>
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Ações Rápidas</h2>
-                <p className="text-sm text-muted-foreground mt-1">Atalhos para as funções mais importantes.</p>
-              </div>
-              <div className="space-y-4" data-tour="quick-actions">
-                {quickActionsList.map((action) => (
-                  <QuickActionCard
-                    key={action.id}
-                    title={action.title}
-                    description={action.description}
-                    icon={<action.icon className="h-5 w-5" />}
-                    onClick={() => navigate(action.path)}
-                    data-tour={action.id === 'ombudsman' ? 'ombudsman' : undefined}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="lg:col-span-2">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle>Relatórios Recentes</CardTitle>
-              <CardDescription>Últimas atividades e relatórios enviados.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                {recentReports.length > 0 ? (
-                  recentReports.map((report) => (
-                    <div key={report.id} className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors">
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className={`flex items-center justify-center h-10 w-10 rounded-lg ${getPriorityColor(report.priority)}`}>
-                          <AlertTriangle className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground truncate">{report.title}</p>
-                          <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                            <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /><span>{report.location}</span></div>
-                            <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /><span>{new Date(report.created_at).toLocaleDateString('pt-BR')}</span></div>
-                          </div>
-                        </div>
-                      </div>
-                      <Badge variant="secondary" className={`ml-4 ${getStatusColor(report.status).replace('bg-', 'bg-opacity-20 ')}`}>{getStatusLabel(report.status)}</Badge>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-16">
-                    <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                      <FileText className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum relatório encontrado</h3>
-                    <p className="text-muted-foreground mb-6 max-w-sm mx-auto">Parece que ainda não há atividades. Que tal criar o primeiro relatório?</p>
-                    <div className="flex justify-center gap-4">
-                      <Link to="/criar-relatorio"><Button><Plus className="mr-2 h-4 w-4" />Criar Relatório</Button></Link>
-                      {hasAdminAccess && (<Link to="/admin/data-seeder"><Button variant="outline"><Database className="mr-2 h-4 w-4" />Popular Dados</Button></Link>)}
-                    </div>
-                  </div>
-                )}
-              </div>
-              {recentReports.length > 0 && (
-                <div className="mt-6 text-center">
-                  <Link to="/relatorios"><Button variant="outline">Ver Todos os Relatórios</Button></Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </motion.div>
+    </div>
   );
 };
 

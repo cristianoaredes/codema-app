@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { FileText, Star, AlertTriangle, ArrowDown } from "lucide-react";
+import { FileText, Star, AlertTriangle, ArrowDown as _ArrowDown } from "lucide-react";
 import heroImage from "@/assets/municipal-hero.jpg";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";

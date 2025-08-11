@@ -56,7 +56,7 @@ export class EmailService {
     fullName: string,
     role: UserRole,
     invitationToken: string,
-    message?: string
+    _message: string
   ) {
     try {
       const template = emailTemplates.invite(fullName, role);

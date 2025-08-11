@@ -1,15 +1,18 @@
 export interface Reuniao {
   id: string;
   titulo: string;
-  tipo: string; // Mudado para string para maior flexibilidade
-  data_hora: string; // Corrigido de data_reuniao
+  tipo: string;
+  data_reuniao: string; // Alinhado com schema real
   local: string;
   pauta: string | null;
   ata: string | null;
-  status: string; // Mudado para string
+  status: string;
   created_at: string;
   updated_at: string;
   secretario_id: string;
+  protocolo: string | null;
+  protocolo_ata: string | null;
+  protocolo_convocacao: string | null;
   
   // Mantendo campos opcionais para retrocompatibilidade, se necessário
   numero_reuniao?: string;
@@ -47,22 +50,25 @@ export interface Presenca {
 export interface ConvocacaoTemplate {
   id: string;
   nome: string;
-  tipo_reuniao: 'ordinaria' | 'extraordinaria' | 'publica';
-  assunto: string;
+  tipo_reuniao: string;
+  assunto_email: string; // Alinhado com schema real
   corpo_email: string;
-  corpo_whatsapp?: string;
-  ativo: boolean;
-  created_at: string;
-  updated_at: string;
+  corpo_whatsapp: string | null;
+  ativo: boolean | null;
+  dias_antecedencia: number | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface ReuniaoCreateInput {
   titulo: string;
-  tipo: 'ordinaria' | 'extraordinaria' | 'audiencia_publica';
+  tipo: string;
   data_reuniao: string;
   local: string;
-  pauta: string;
-  quorum_necessario?: number;
+  pauta?: string | null;
+  secretario_id: string; // Campo obrigatório no schema
+  protocolo?: string | null;
+  status?: string;
 }
 
 export interface ReuniaoUpdateInput extends Partial<ReuniaoCreateInput> {

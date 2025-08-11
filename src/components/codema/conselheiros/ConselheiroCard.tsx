@@ -1,236 +1,293 @@
-import { useState } from 'react';
-import { MoreVertical, Mail, Phone, Calendar, Building, AlertTriangle, Edit, Trash2 } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui';
-import { Badge } from '@/components/ui';
-import { Button } from '@/components/ui';
-import { Avatar, AvatarFallback } from '@/components/ui';
+import React, { useState } from 'react';
+import { MoreVertical, Mail, Phone, Calendar, Building, AlertTriangle, Edit, Trash2, User } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui';
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui';
-import { Conselheiro } from '@/types';
-import { ConselheiroForm } from './ConselheiroForm';
-import { useDeleteConselheiro } from '@/hooks';
-import { format, isBefore, differenceInDays } from 'date-fns';
+} from '@/components/ui/dialog';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Conselheiro } from '@/types/conselheiro';
 
 interface ConselheiroCardProps {
   conselheiro: Conselheiro;
+  onEdit?: (conselheiro: Conselheiro) => void;
+  onDelete?: (id: string) => void;
+  canEdit?: boolean;
 }
 
-export function ConselheiroCard({ conselheiro }: ConselheiroCardProps) {
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  
-  const deleteConselheiro = useDeleteConselheiro();
-
-  const mandatoFim = new Date(conselheiro.mandato_fim);
-  const hoje = new Date();
-  const diasParaVencimento = differenceInDays(mandatoFim, hoje);
-  const mandatoExpirando = diasParaVencimento <= 30 && diasParaVencimento >= 0;
-  const mandatoVencido = isBefore(mandatoFim, hoje);
+const ConselheiroCard: React.FC<ConselheiroCardProps> = ({
+  conselheiro,
+  onEdit,
+  onDelete,
+  canEdit = false,
+}) => {
+  const [showDetails, setShowDetails] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ativo': return 'bg-green-100 text-green-800';
-      case 'inativo': return 'bg-gray-100 text-gray-800';
-      case 'licenciado': return 'bg-yellow-100 text-yellow-800';
-      case 'afastado': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'ativo':
+        return 'bg-green-100 text-green-800';
+      case 'inativo':
+        return 'bg-gray-100 text-gray-800';
+      case 'licenciado':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'afastado':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getSegmentoColor = (segmento: string) => {
+  const getSegmentoIcon = (segmento: string) => {
     switch (segmento) {
-      case 'governo': return 'bg-blue-100 text-blue-800';
-      case 'sociedade_civil': return 'bg-purple-100 text-purple-800';
-      case 'setor_produtivo': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'governo':
+        return '🏛️';
+      case 'sociedade_civil':
+        return '👥';
+      case 'setor_produtivo':
+        return '🏭';
+      default:
+        return '📋';
     }
   };
 
-  const getSegmentoLabel = (segmento: string) => {
-    switch (segmento) {
-      case 'governo': return 'Governo';
-      case 'sociedade_civil': return 'Sociedade Civil';
-      case 'setor_produtivo': return 'Setor Produtivo';
-      default: return segmento;
-    }
+  const isNearExpiration = () => {
+    const today = new Date();
+    const mandatoFim = new Date(conselheiro.mandato_fim);
+    const diffTime = mandatoFim.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 90 && diffDays > 0;
   };
 
-  const handleDelete = async () => {
-    try {
-      await deleteConselheiro.mutateAsync(conselheiro.id);
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      console.error('Erro ao deletar conselheiro:', error);
-    }
+  const isExpired = () => {
+    const today = new Date();
+    const mandatoFim = new Date(conselheiro.mandato_fim);
+    return mandatoFim < today;
+  };
+
+  const getInitials = (nome: string) => {
+    return nome
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
     <>
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-lg transition-shadow duration-300">
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Avatar>
-                <AvatarFallback>
-                  {conselheiro.nome_completo.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+              <Avatar className="h-12 w-12">
+                <AvatarFallback className="bg-primary/10">
+                  {getInitials(conselheiro.nome_completo)}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-gray-900 truncate">
+              <div>
+                <h3 className="font-semibold text-lg leading-tight">
                   {conselheiro.nome_completo}
                 </h3>
-                <p className="text-sm text-gray-600 truncate">
-                  {conselheiro.entidade_representada}
+                <p className="text-sm text-muted-foreground">
+                  {conselheiro.titular ? 'Conselheiro Titular' : 'Conselheiro Suplente'}
                 </p>
               </div>
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="text-red-600"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Remover
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center space-x-2">
+              {(isNearExpiration() || isExpired()) && (
+                <AlertTriangle 
+                  className={`h-5 w-5 ${isExpired() ? 'text-red-500' : 'text-yellow-500'}`}
+                />
+              )}
+              <Badge className={getStatusColor(conselheiro.status)}>
+                {conselheiro.status}
+              </Badge>
+              {canEdit && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowDetails(true)}>
+                      <User className="h-4 w-4 mr-2" />
+                      Ver Detalhes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onEdit?.(conselheiro)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      className="text-red-600"
+                      onClick={() => onDelete?.(conselheiro.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remover
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-3">
-          {/* Status and Alerts */}
-          <div className="flex flex-wrap gap-2">
-            <Badge className={getStatusColor(conselheiro.status)}>
-              {conselheiro.status}
-            </Badge>
-            <Badge className={getSegmentoColor(conselheiro.segmento)}>
-              {getSegmentoLabel(conselheiro.segmento)}
-            </Badge>
-            {conselheiro.titular && (
-              <Badge variant="outline">Titular</Badge>
-            )}
+          <div className="flex items-center space-x-2 text-sm">
+            <Building className="h-4 w-4 text-muted-foreground" />
+            <span>{conselheiro.entidade_representada}</span>
+            <span className="text-lg">{getSegmentoIcon(conselheiro.segmento)}</span>
           </div>
 
-          {/* Mandate Alert */}
-          {(mandatoExpirando || mandatoVencido) && (
-            <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded-md">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <span className="text-sm text-yellow-800">
-                {mandatoVencido 
-                  ? 'Mandato vencido'
-                  : `Mandato expira em ${diasParaVencimento} dias`
-                }
-              </span>
+          {conselheiro.email && (
+            <div className="flex items-center space-x-2 text-sm">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span className="truncate">{conselheiro.email}</span>
             </div>
           )}
 
-          {/* Contact Info */}
-          <div className="space-y-2">
-            {conselheiro.email && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Mail className="h-4 w-4" />
-                <span className="truncate">{conselheiro.email}</span>
-              </div>
-            )}
-            {conselheiro.telefone && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Phone className="h-4 w-4" />
-                <span>{conselheiro.telefone}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Mandate Info */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Calendar className="h-4 w-4" />
-              <span>
-                {format(new Date(conselheiro.mandato_inicio), 'dd/MM/yyyy', { locale: ptBR })} - {' '}
-                {format(new Date(conselheiro.mandato_fim), 'dd/MM/yyyy', { locale: ptBR })}
-              </span>
+          {conselheiro.telefone && (
+            <div className="flex items-center space-x-2 text-sm">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <span>{conselheiro.telefone}</span>
             </div>
-            {conselheiro.mandato_numero && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Building className="h-4 w-4" />
-                <span>Mandato nº {conselheiro.mandato_numero}</span>
-              </div>
-            )}
+          )}
+
+          <div className="flex items-center space-x-2 text-sm">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span>
+              Mandato: {format(new Date(conselheiro.mandato_inicio), 'MMM/yyyy', { locale: ptBR })} - {format(new Date(conselheiro.mandato_fim), 'MMM/yyyy', { locale: ptBR })}
+            </span>
           </div>
 
-          {/* Attendance Info */}
-          {conselheiro.faltas_consecutivas > 0 && (
-            <div className="text-sm text-red-600">
-              {conselheiro.faltas_consecutivas} falta(s) consecutiva(s)
+          {conselheiro.total_faltas > 0 && (
+            <div className="flex justify-between text-xs text-muted-foreground mt-3 pt-3 border-t">
+              <span>Faltas: {conselheiro.total_faltas}</span>
+              {conselheiro.faltas_consecutivas > 0 && (
+                <span className="text-yellow-600">
+                  Consecutivas: {conselheiro.faltas_consecutivas}
+                </span>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      {/* Dialog de Detalhes */}
+      <Dialog open={showDetails} onOpenChange={setShowDetails}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Editar Conselheiro</DialogTitle>
-            <DialogDescription>
-              Atualize as informações do conselheiro
-            </DialogDescription>
+            <DialogTitle className="flex items-center space-x-2">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback>{getInitials(conselheiro.nome_completo)}</AvatarFallback>
+              </Avatar>
+              <span>{conselheiro.nome_completo}</span>
+            </DialogTitle>
           </DialogHeader>
-          <ConselheiroForm 
-            conselheiro={conselheiro}
-            onSuccess={() => setIsEditDialogOpen(false)} 
-          />
-        </DialogContent>
-      </Dialog>
+          
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="font-medium text-sm">Tipo</label>
+                <p>{conselheiro.titular ? 'Titular' : 'Suplente'}</p>
+              </div>
+              <div>
+                <label className="font-medium text-sm">Status</label>
+                <Badge className={getStatusColor(conselheiro.status)}>
+                  {conselheiro.status}
+                </Badge>
+              </div>
+            </div>
 
-      {/* Delete Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar Remoção</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja remover o conselheiro {conselheiro.nome_completo}?
-              Esta ação não pode ser desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDelete}
-              disabled={deleteConselheiro.isPending}
-            >
-              {deleteConselheiro.isPending ? 'Removendo...' : 'Remover'}
-            </Button>
+            <div>
+              <label className="font-medium text-sm">Entidade Representada</label>
+              <p className="flex items-center space-x-2">
+                <span>{conselheiro.entidade_representada}</span>
+                <span className="text-lg">{getSegmentoIcon(conselheiro.segmento)}</span>
+                <span className="text-sm text-muted-foreground">({conselheiro.segmento.replace('_', ' ')})</span>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="font-medium text-sm">Mandato Início</label>
+                <p>{format(new Date(conselheiro.mandato_inicio), 'dd/MM/yyyy', { locale: ptBR })}</p>
+              </div>
+              <div>
+                <label className="font-medium text-sm">Mandato Fim</label>
+                <p className={isExpired() ? 'text-red-600' : isNearExpiration() ? 'text-yellow-600' : ''}>
+                  {format(new Date(conselheiro.mandato_fim), 'dd/MM/yyyy', { locale: ptBR })}
+                  {isExpired() && ' (Expirado)'}
+                  {isNearExpiration() && !isExpired() && ' (Próximo ao vencimento)'}
+                </p>
+              </div>
+            </div>
+
+            {(conselheiro.email || conselheiro.telefone) && (
+              <div className="grid grid-cols-2 gap-4">
+                {conselheiro.email && (
+                  <div>
+                    <label className="font-medium text-sm">Email</label>
+                    <p className="break-all">{conselheiro.email}</p>
+                  </div>
+                )}
+                {conselheiro.telefone && (
+                  <div>
+                    <label className="font-medium text-sm">Telefone</label>
+                    <p>{conselheiro.telefone}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(conselheiro.total_faltas > 0 || conselheiro.faltas_consecutivas > 0) && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="font-medium text-sm">Total de Faltas</label>
+                  <p>{conselheiro.total_faltas}</p>
+                </div>
+                <div>
+                  <label className="font-medium text-sm">Faltas Consecutivas</label>
+                  <p className={conselheiro.faltas_consecutivas >= 3 ? 'text-red-600' : 'text-yellow-600'}>
+                    {conselheiro.faltas_consecutivas}
+                    {conselheiro.faltas_consecutivas >= 3 && ' (⚠️ Limite atingido)'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {conselheiro.observacoes && (
+              <div>
+                <label className="font-medium text-sm">Observações</label>
+                <p className="text-sm text-muted-foreground mt-1">{conselheiro.observacoes}</p>
+              </div>
+            )}
+
+            <div className="text-xs text-muted-foreground pt-4 border-t">
+              <p>Cadastrado em: {format(new Date(conselheiro.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
+              <p>Última atualização: {format(new Date(conselheiro.updated_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
     </>
   );
-}
+};
+
+export default ConselheiroCard;

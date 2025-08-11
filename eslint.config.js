@@ -7,6 +7,9 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 export default [
   js.configs.recommended,
   {
+    ignores: ['dist/', 'dist-ssr/', 'build/', 'node_modules/', '*.config.js', '*.config.ts'],
+  },
+  {
     files: ['**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       parser: typescriptParser,
@@ -54,11 +57,22 @@ export default [
         HTMLUListElement: 'readonly',
         HTMLLIElement: 'readonly',
         HTMLAnchorElement: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLParagraphElement: 'readonly',
+        HTMLHeadingElement: 'readonly',
+        SVGSVGElement: 'readonly',
         KeyboardEvent: 'readonly',
         JSX: 'readonly',
         React: 'readonly',
         CustomEvent: 'readonly',
         MutationObserver: 'readonly',
+        ResizeObserver: 'readonly',
+        IntersectionObserver: 'readonly',
+        AbortController: 'readonly',
+        DocumentFragment: 'readonly',
+        requestAnimationFrame: 'readonly',
+        Blob: 'readonly',
+        FileList: 'readonly',
         NodeFilter: 'readonly',
         Event: 'readonly',
         // Node globals
