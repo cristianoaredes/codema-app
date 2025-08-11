@@ -1,7 +1,7 @@
 import React from "react"
 import { Search, X, Clock, User, FileText, Calendar, Hash } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -175,6 +175,9 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
       <DialogContent className="max-w-2xl p-0">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="sr-only">Busca Global</DialogTitle>
+          <DialogDescription className="sr-only">
+            Busque por conselheiros, reuniões, atas, resoluções e protocolos
+          </DialogDescription>
         </DialogHeader>
         
         <div className="relative">

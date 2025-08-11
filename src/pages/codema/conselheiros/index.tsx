@@ -1,38 +1,304 @@
-import { useState, useMemo } from 'react';
-import { Plus, Search, Filter, AlertTriangle, Users, LayoutGrid, List } from 'lucide-react';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useConselheiros } from '@/hooks/useConselheiros';
-// Remove incorrect import for useConselheirosComMandatoExpirando
-import { Conselheiro } from '@/types';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  Plus, 
+  Search, 
+  Users, 
+  AlertCircle,
+  Filter,
+  Download,
+  Upload
+} from 'lucide-react';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useConselheiros, useCreateConselheiro, useUpdateConselheiro, useDeleteConselheiro } from '@/hooks/useConselheiros';
+import ConselheiroCard from '@/components/codema/conselheiros/ConselheiroCard';
+import ConselheiroForm from '@/components/codema/conselheiros/ConselheiroForm';
+import { Conselheiro } from '@/types/conselheiro';
 import { Badge } from '@/components/ui/badge';
-import { BreadcrumbWithActions, SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LoadingSpinner } from '@/components/ui/loading';
+import { useToast } from '@/hooks/use-toast';
 
-// ...rest of file unchanged
+const ConselheirosPage: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [filterSegmento, setFilterSegmento] = useState<string>('todos');
+  const [showForm, setShowForm] = useState(false);
+  const [editingConselheiro, setEditingConselheiro] = useState<Conselheiro | undefined>();
+  
+  const { toast } = useToast();
+  const { data: conselheiros, isLoading, error } = useConselheiros();
+  const deleteConselheiro = useDeleteConselheiro();
+
+  // Filter conselheiros based on search and filters
+  const filteredConselheiros = conselheiros?.filter(conselheiro => {
+    const matchesSearch = conselheiro.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          conselheiro.entidade_representada?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'todos' || conselheiro.status === filterStatus;
+    const matchesSegmento = filterSegmento === 'todos' || conselheiro.segmento === filterSegmento;
+    
+    return matchesSearch && matchesStatus && matchesSegmento;
+  }) || [];
+
+  // Calculate statistics
+  const stats = {
+    total: conselheiros?.length || 0,
+    ativos: conselheiros?.filter(c => c.status === 'ativo').length || 0,
+    titulares: conselheiros?.filter(c => c.titular).length || 0,
+    suplentes: conselheiros?.filter(c => !c.titular).length || 0,
+    mandatosVencendo: conselheiros?.filter(c => {
+      const fim = new Date(c.mandato_fim);
+      const hoje = new Date();
+      const diff = fim.getTime() - hoje.getTime();
+      const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return dias <= 90 && dias > 0;
+    }).length || 0,
+  };
+
+  const handleEdit = (conselheiro: Conselheiro) => {
+    setEditingConselheiro(conselheiro);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja remover este conselheiro?')) {
+      try {
+        await deleteConselheiro.mutateAsync(id);
+      } catch (error) {
+        console.error('Erro ao remover conselheiro:', error);
+      }
+    }
+  };
+
+  const handleFormSuccess = () => {
+    setShowForm(false);
+    setEditingConselheiro(undefined);
+  };
+
+  const handleExport = () => {
+    // TODO: Implement export functionality
+    toast({
+      title: 'Exportação',
+      description: 'Funcionalidade em desenvolvimento',
+    });
+  };
+
+  const handleImport = () => {
+    // TODO: Implement import functionality
+    toast({
+      title: 'Importação',
+      description: 'Funcionalidade em desenvolvimento',
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Erro ao carregar conselheiros: {error.message}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Conselheiros CODEMA</h1>
+          <p className="text-muted-foreground">Gerencie os membros do conselho</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleImport}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
+          </Button>
+          <Button onClick={() => { setEditingConselheiro(undefined); setShowForm(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Conselheiro
+          </Button>
+        </div>
+      </div>
+
+      {/* Statistics */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">Total</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-green-600">{stats.ativos}</div>
+            <p className="text-xs text-muted-foreground">Ativos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{stats.titulares}</div>
+            <p className="text-xs text-muted-foreground">Titulares</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{stats.suplentes}</div>
+            <p className="text-xs text-muted-foreground">Suplentes</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-yellow-600">{stats.mandatosVencendo}</div>
+            <p className="text-xs text-muted-foreground">Mandatos Vencendo</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Buscar por nome ou entidade..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Status</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="inativo">Inativo</SelectItem>
+                <SelectItem value="licenciado">Licenciado</SelectItem>
+                <SelectItem value="afastado">Afastado</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterSegmento} onValueChange={setFilterSegmento}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Segmento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Segmentos</SelectItem>
+                <SelectItem value="governo">Governo</SelectItem>
+                <SelectItem value="sociedade_civil">Sociedade Civil</SelectItem>
+                <SelectItem value="setor_produtivo">Setor Produtivo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Conselheiros List */}
+      {filteredConselheiros.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              {searchTerm || filterStatus !== 'todos' || filterSegmento !== 'todos'
+                ? 'Nenhum conselheiro encontrado com os filtros aplicados'
+                : 'Nenhum conselheiro cadastrado'}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm || filterStatus !== 'todos' || filterSegmento !== 'todos'
+                ? 'Tente ajustar os filtros de busca.'
+                : 'Comece cadastrando o primeiro conselheiro do CODEMA.'}
+            </p>
+            {!searchTerm && filterStatus === 'todos' && filterSegmento === 'todos' && (
+              <Button onClick={() => setShowForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Cadastrar Conselheiro
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredConselheiros.map((conselheiro) => (
+            <ConselheiroCard
+              key={conselheiro.id}
+              conselheiro={conselheiro}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              canEdit={true}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Form Dialog */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingConselheiro ? 'Editar Conselheiro' : 'Novo Conselheiro'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingConselheiro 
+                ? 'Atualize as informações do conselheiro abaixo' 
+                : 'Preencha as informações para cadastrar um novo conselheiro'}
+            </DialogDescription>
+          </DialogHeader>
+          <ConselheiroForm
+            conselheiro={editingConselheiro}
+            onSuccess={handleFormSuccess}
+            onCancel={() => setShowForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ConselheirosPage;
