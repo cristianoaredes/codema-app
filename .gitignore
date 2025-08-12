@@ -24,6 +24,12 @@ dist-ssr
 *.sw?
 
 
+# Build artifacts
+dist
+dist-ssr
+build
+out
+
 # Temporary and development files
 *.tmp
 *.temp
@@ -36,6 +42,18 @@ dist-ssr
 MIGRATION_*.sql
 EXECUTE_*.sql
 execute-migrations.js
+
+# Documentation duplicates
+docs/CODEMA_PROJECT_OVERVIEW.md
+AGENTS.md
+
+# Development scripts
+scripts/seed-*.js
+scripts/demo-*.js
+
+# Docker (unused)
+Dockerfile
+docker-compose*.yml
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
