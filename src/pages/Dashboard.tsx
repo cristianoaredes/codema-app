@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useAtas } from "@/hooks/useAtas";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,10 @@ interface Report {
 
 const Dashboard = () => {
   const { user, profile, hasAdminAccess, hasCODEMAAccess } = useAuth();
+  
+  // Hooks de dados
+  const { data: atas = [], error: atasError } = useAtas();
+  
   // Estado para simulação de perfil
   const [simulatedRole, setSimulatedRole] = useState<UserRole | null>(null);
   const { toast } = useToast();
@@ -135,7 +140,6 @@ const Dashboard = () => {
       if (hasCODEMAAccess || ['conselheiro_titular', 'conselheiro_suplente', 'secretario', 'presidente', 'admin'].includes(currentProfileRole)) {
         queries.push(
           supabase.from("reunioes").select("*", { count: 'exact' }),
-          supabase.from("atas").select("*", { count: 'exact' }).eq("status", "pendente"),
           supabase.from("resolucoes").select("*", { count: 'exact' }).eq("status", "em_votacao")
         );
       }
@@ -177,10 +181,8 @@ const Dashboard = () => {
           newStats.reunioesAgendadas = results[reportIndex].count || 0;
           reportIndex++;
         }
-        if (results[reportIndex]) {
-          newStats.atasPendentes = results[reportIndex].count || 0;
-          reportIndex++;
-        }
+        // Atas pendentes - usar dados do hook useAtas
+        newStats.atasPendentes = atas.filter(ata => ata.status === 'pendente').length;
         if (results[reportIndex]) {
           newStats.resolucoesPendentes = results[reportIndex].count || 0;
           reportIndex++;

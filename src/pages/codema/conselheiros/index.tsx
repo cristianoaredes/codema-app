@@ -40,6 +40,9 @@ const ConselheirosPage: React.FC = () => {
   const [filterSegmento, setFilterSegmento] = useState<string>('todos');
   const [showForm, setShowForm] = useState(false);
   const [editingConselheiro, setEditingConselheiro] = useState<Conselheiro | undefined>();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [conselheiroToDelete, setConselheiroToDelete] = useState<Conselheiro | null>(null);
+  const [importInputRef, setImportInputRef] = useState<HTMLInputElement | null>(null);
   
   const { toast } = useToast();
   const { data: conselheiros, isLoading, error } = useConselheiros();
@@ -47,8 +50,11 @@ const ConselheirosPage: React.FC = () => {
 
   // Filter conselheiros based on search and filters
   const filteredConselheiros = conselheiros?.filter(conselheiro => {
-    const matchesSearch = conselheiro.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          conselheiro.entidade_representada?.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = conselheiro.nome_completo.toLowerCase().includes(searchLower) ||
+                          conselheiro.entidade_representada?.toLowerCase().includes(searchLower) ||
+                          (conselheiro.cpf && conselheiro.cpf.includes(searchTerm)) ||
+                          (conselheiro.email && conselheiro.email.toLowerCase().includes(searchLower));
     const matchesStatus = filterStatus === 'todos' || conselheiro.status === filterStatus;
     const matchesSegmento = filterSegmento === 'todos' || conselheiro.segmento === filterSegmento;
     
@@ -75,13 +81,25 @@ const ConselheirosPage: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja remover este conselheiro?')) {
-      try {
-        await deleteConselheiro.mutateAsync(id);
-      } catch (error) {
-        console.error('Erro ao remover conselheiro:', error);
-      }
+  const handleDeleteClick = (conselheiro: Conselheiro) => {
+    setConselheiroToDelete(conselheiro);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!conselheiroToDelete) return;
+    
+    try {
+      await deleteConselheiro.mutateAsync(conselheiroToDelete.id);
+      setDeleteConfirmOpen(false);
+      setConselheiroToDelete(null);
+    } catch (error) {
+      console.error('Erro ao remover conselheiro:', error);
+      toast({
+        title: 'Erro ao remover',
+        description: 'Ocorreu um erro ao remover o conselheiro. Tente novamente.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -91,19 +109,124 @@ const ConselheirosPage: React.FC = () => {
   };
 
   const handleExport = () => {
-    // TODO: Implement export functionality
-    toast({
-      title: 'Exportação',
-      description: 'Funcionalidade em desenvolvimento',
-    });
+    try {
+      if (!conselheiros || conselheiros.length === 0) {
+        toast({
+          title: 'Nada para exportar',
+          description: 'Não há conselheiros cadastrados para exportar.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Prepare data for export
+      const exportData = conselheiros.map(conselheiro => ({
+        nome_completo: conselheiro.nome_completo,
+        cpf: conselheiro.cpf || '',
+        email: conselheiro.email || '',
+        telefone: conselheiro.telefone || '',
+        endereco: conselheiro.endereco || '',
+        entidade_representada: conselheiro.entidade_representada,
+        segmento: conselheiro.segmento,
+        titular: conselheiro.titular ? 'Sim' : 'Não',
+        status: conselheiro.status,
+        mandato_inicio: new Date(conselheiro.mandato_inicio).toLocaleDateString('pt-BR'),
+        mandato_fim: new Date(conselheiro.mandato_fim).toLocaleDateString('pt-BR'),
+        mandato_numero: conselheiro.mandato_numero || '',
+        total_faltas: conselheiro.total_faltas,
+        faltas_consecutivas: conselheiro.faltas_consecutivas,
+        observacoes: conselheiro.observacoes || '',
+      }));
+
+      // Convert to CSV
+      const headers = [
+        'Nome Completo', 'CPF', 'Email', 'Telefone', 'Endereço',
+        'Entidade Representada', 'Segmento', 'Titular', 'Status',
+        'Mandato Início', 'Mandato Fim', 'Número Mandato',
+        'Total Faltas', 'Faltas Consecutivas', 'Observações'
+      ];
+
+      const csvContent = [
+        headers.join(','),
+        ...exportData.map(row => 
+          Object.values(row).map(value => 
+            `"${String(value).replace(/"/g, '""')}"` // Escape quotes
+          ).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `conselheiros_codema_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: 'Exportação realizada',
+        description: `${conselheiros.length} conselheiros exportados com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast({
+        title: 'Erro na exportação',
+        description: 'Ocorreu um erro ao exportar os dados.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleImport = () => {
-    // TODO: Implement import functionality
-    toast({
-      title: 'Importação',
-      description: 'Funcionalidade em desenvolvimento',
-    });
+    importInputRef?.click();
+  };
+
+  const processImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: 'Formato inválido',
+        description: 'Por favor, selecione um arquivo CSV.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const lines = content.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          throw new Error('Arquivo CSV deve ter pelo menos um cabeçalho e uma linha de dados');
+        }
+
+        // For now, show info about what would be imported
+        // Full implementation would require more complex validation and batch insert
+        toast({
+          title: 'Importação preparada',
+          description: `Arquivo processado com ${lines.length - 1} registros. Funcionalidade de importação será implementada em breve.`,
+        });
+
+        // Reset file input
+        event.target.value = '';
+      } catch (error) {
+        console.error('Erro ao processar arquivo:', error);
+        toast({
+          title: 'Erro no processamento',
+          description: 'Ocorreu um erro ao processar o arquivo CSV.',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    reader.readAsText(file, 'UTF-8');
   };
 
   if (isLoading) {
@@ -177,7 +300,7 @@ const ConselheirosPage: React.FC = () => {
         </Card>
         <Card className="hover:shadow-sm transition-shadow">
           <CardContent className="p-3 sm:p-4">
-            <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{stats.ativos}</div>
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-emerald-600">{stats.ativos}</div>
             <p className="text-[10px] sm:text-xs text-muted-foreground">Ativos</p>
           </CardContent>
         </Card>
@@ -195,7 +318,7 @@ const ConselheirosPage: React.FC = () => {
         </Card>
         <Card className="hover:shadow-sm transition-shadow col-span-2 sm:col-span-1">
           <CardContent className="p-3 sm:p-4">
-            <div className="text-lg sm:text-xl md:text-2xl font-bold text-yellow-600">{stats.mandatosVencendo}</div>
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-600">{stats.mandatosVencendo}</div>
             <p className="text-[10px] sm:text-xs text-muted-foreground">Mandatos Vencendo</p>
           </CardContent>
         </Card>
@@ -208,7 +331,7 @@ const ConselheirosPage: React.FC = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Buscar..."
+                placeholder="Buscar por nome, entidade, CPF ou email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 text-sm"
@@ -273,7 +396,7 @@ const ConselheirosPage: React.FC = () => {
               key={conselheiro.id}
               conselheiro={conselheiro}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onDelete={() => handleDeleteClick(conselheiro)}
               canEdit={true}
             />
           ))}
@@ -302,6 +425,43 @@ const ConselheirosPage: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remover Conselheiro</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover {conselheiroToDelete?.nome_completo}?
+              Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteConfirmOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              disabled={deleteConselheiro.isPending}
+            >
+              {deleteConselheiro.isPending ? 'Removendo...' : 'Remover'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hidden file input for import */}
+      <input
+        type="file"
+        ref={setImportInputRef}
+        onChange={processImportFile}
+        accept=".csv"
+        style={{ display: 'none' }}
+      />
     </div>
   );
 };

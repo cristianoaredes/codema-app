@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Agent Preferences
+
+- Always use this agent frontend-engineering-expert as default.
+
 ## Project Overview
 
 CODEMA - Sistema de Gestão Municipal for Itanhomi-MG
@@ -143,3 +147,4 @@ No formal test framework configured. Manual testing via:
 - `src/utils/generators/protocoloGenerator.ts` - Protocol generation
 - `docs/CODEMA_PROJECT_OVERVIEW.md` - Complete project documentation
 - `supabase/migrations/` - Database schema evolution
+```

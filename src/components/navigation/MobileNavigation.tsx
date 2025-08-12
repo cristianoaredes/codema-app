@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/utils/responsive';
@@ -147,7 +147,7 @@ export function MobileNavigation() {
       </nav>
 
       {/* Add padding to main content to account for bottom nav */}
-      <style jsx global>{`
+      <style>{`
         @media (max-width: 640px) {
           main {
             padding-bottom: calc(64px + env(safe-area-inset-bottom));

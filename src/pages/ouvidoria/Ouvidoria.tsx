@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { useOuvidoriaDenuncias, useCreateOuvidoriaDenuncia, useFiscais } from "@/hooks/useOuvidoriaDenuncias";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,42 +25,17 @@ import {
   Phone,
   Mail
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-interface Denuncia {
-  id: string;
-  protocolo: string;
-  tipo_denuncia: string;
-  descricao: string;
-  local_ocorrencia: string;
-  latitude: number | null;
-  longitude: number | null;
-  data_ocorrencia: string | null;
-  denunciante_nome: string | null;
-  denunciante_telefone: string | null;
-  denunciante_email: string | null;
-  anonima: boolean;
-  status: string;
-  prioridade: string;
-  fiscal_responsavel: {
-    full_name: string;
-  } | null;
-  relatorio_fiscalizacao: string | null;
-  data_fiscalizacao: string | null;
-  created_at: string;
-}
-
 const Ouvidoria = () => {
   const { user: _user, profile } = useAuth();
-  const { toast } = useToast();
-  const [denuncias, setDenuncias] = useState<Denuncia[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: denuncias = [], isLoading: loading } = useOuvidoriaDenuncias();
+  const { data: fiscais = [] } = useFiscais();
+  const createDenuncia = useCreateOuvidoriaDenuncia();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [showNewDenuncia, setShowNewDenuncia] = useState(false);
-  const [_fiscais, setFiscais] = useState<{ id: string; nome: string; email: string }[]>([]);
 
   const [newDenuncia, setNewDenuncia] = useState({
     tipo_denuncia: "",
@@ -79,91 +54,15 @@ const Ouvidoria = () => {
 
   const isFiscal = profile?.role && ['admin', 'secretario', 'presidente', 'fiscal'].includes(profile.role);
 
-  const fetchDenuncias = useCallback(async () => {
+  const handleCreateDenuncia = async () => {
     try {
-      const { data, error } = await supabase
-        .from("ouvidoria_denuncias")
-        .select(`
-          *,
-          fiscal_responsavel:profiles!ouvidoria_denuncias_fiscal_responsavel_id_fkey(full_name)
-        `)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setDenuncias(data || []);
-    } catch (error) {
-      console.error("Erro ao carregar denúncias:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar as denúncias.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  const fetchFiscais = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, role, email")
-        .in("role", ["admin", "fiscal"])
-        .order("full_name");
-
-      if (error) throw error;
-      
-      // Map the data to match the expected state shape
-      const mappedFiscais = (data || []).map(item => ({
-        id: item.id,
-        nome: item.full_name,
-        email: item.email || ''
-      }));
-      
-      setFiscais(mappedFiscais);
-    } catch (error) {
-      console.error("Erro ao carregar fiscais:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDenuncias();
-    fetchFiscais();
-  }, [fetchDenuncias, fetchFiscais]);
-
-  const createDenuncia = async () => {
-    try {
-      // Generate protocol number
-      const { data: protocolData, error: protocolError } = await supabase
-        .rpc('generate_document_number', { doc_type: 'ouvidoria' });
-
-      if (protocolError) throw protocolError;
-
       const denunciaData = {
-        protocolo: protocolData,
         ...newDenuncia,
         latitude: newDenuncia.latitude ? parseFloat(newDenuncia.latitude) : null,
         longitude: newDenuncia.longitude ? parseFloat(newDenuncia.longitude) : null
       };
 
-      // Remove empty fields for anonymous complaints
-      if (newDenuncia.anonima) {
-        denunciaData.denunciante_nome = null;
-        denunciaData.denunciante_cpf = null;
-        denunciaData.denunciante_telefone = null;
-        denunciaData.denunciante_email = null;
-      }
-
-      const { error } = await supabase
-        .from("ouvidoria_denuncias")
-        .insert(denunciaData);
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: `Denúncia registrada com protocolo ${protocolData}`,
-      });
+      await createDenuncia.mutateAsync(denunciaData);
 
       setShowNewDenuncia(false);
       setNewDenuncia({
@@ -180,14 +79,8 @@ const Ouvidoria = () => {
         anonima: false,
         prioridade: "normal"
       });
-      fetchDenuncias();
     } catch (error) {
       console.error("Erro ao registrar denúncia:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível registrar a denúncia.",
-        variant: "destructive"
-      });
     }
   };
 
@@ -422,10 +315,10 @@ const Ouvidoria = () => {
                   Cancelar
                 </Button>
                 <Button 
-                  onClick={createDenuncia}
-                  disabled={!newDenuncia.tipo_denuncia || !newDenuncia.descricao || !newDenuncia.local_ocorrencia}
+                  onClick={handleCreateDenuncia}
+                  disabled={!newDenuncia.tipo_denuncia || !newDenuncia.descricao || !newDenuncia.local_ocorrencia || createDenuncia.isPending}
                 >
-                  Registrar Denúncia
+                  {createDenuncia.isPending ? "Registrando..." : "Registrar Denúncia"}
                 </Button>
               </div>
             </div>

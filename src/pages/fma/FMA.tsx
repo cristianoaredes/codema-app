@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Plus, TrendingUp, TrendingDown, DollarSign, Briefcase, FileText, Download, Eye, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
@@ -422,6 +422,9 @@ const FMA = () => {
                   <DialogTitle>
                     {editingReceita ? "Editar Receita" : "Cadastrar Nova Receita"}
                   </DialogTitle>
+                  <DialogDescription>
+                    Preencha os dados abaixo para {editingReceita ? "atualizar a" : "registrar uma nova"} receita no Fundo Municipal do Meio Ambiente.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -594,6 +597,9 @@ const FMA = () => {
                   <DialogTitle>
                     {editingProjeto ? "Editar Projeto" : "Cadastrar Novo Projeto"}
                   </DialogTitle>
+                  <DialogDescription>
+                    Preencha as informações do projeto ambiental para análise e aprovação do CODEMA.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">

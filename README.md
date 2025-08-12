@@ -1,73 +1,126 @@
-# Welcome to your Lovable project
+# 🌿 CODEMA - Sistema de Gestão Ambiental Municipal
 
-## Project info
+Sistema completo de digitalização do Conselho Municipal de Defesa do Meio Ambiente de Itanhomi-MG.
 
-**URL**: https://lovable.dev/projects/c94ee34a-bc50-4e08-8274-e06440018a11
+## 🚀 Quick Start
 
-## How can I edit this code?
+```bash
+# Instalar dependências
+npm install
 
-There are several ways of editing your application.
+# Configurar variáveis de ambiente
+cp .env.example .env
+# Editar .env com suas credenciais do Supabase
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/c94ee34a-bc50-4e08-8274-e06440018a11) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Iniciar desenvolvimento
 npm run dev
+
+# Build para produção
+npm run build
+
+# Executar testes
+npm run test
 ```
 
-**Edit a file directly in GitHub**
+## 📚 Documentação
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Para documentação completa do projeto, consulte:
+- **[PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)** - Visão geral detalhada do sistema
+- **[CLAUDE.md](./CLAUDE.md)** - Guia para desenvolvimento com Claude Code
+- **[docs/](./docs/)** - Documentação técnica adicional
 
-**Use GitHub Codespaces**
+## 🛠️ Stack Tecnológica
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Components**: shadcn/ui + Tailwind CSS
+- **Backend**: Supabase (PostgreSQL + Auth + Storage)
+- **State Management**: TanStack Query
+- **Forms**: React Hook Form + Zod
+- **Deploy**: Lovable Platform
 
-## What technologies are used for this project?
+## 📁 Estrutura do Projeto
 
-This project is built with:
+```
+src/
+├── components/      # Componentes React
+│   ├── auth/       # Autenticação
+│   ├── codema/     # Módulos CODEMA
+│   └── ui/         # shadcn/ui
+├── hooks/          # Custom hooks
+├── pages/          # Páginas da aplicação
+├── integrations/   # Supabase client
+└── utils/          # Utilitários
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🔑 Variáveis de Ambiente
 
-## How can I deploy this project?
+```env
+VITE_SUPABASE_URL=https://aqvbhmpdzvdbhvxhnemi.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
+```
 
-Simply open [Lovable](https://lovable.dev/projects/c94ee34a-bc50-4e08-8274-e06440018a11) and click on Share -> Publish.
+## 📋 Scripts Disponíveis
 
-## Can I connect a custom domain to my Lovable project?
+| Comando | Descrição |
+|---------|-----------|
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção |
+| `npm run preview` | Preview do build |
+| `npm run lint` | Verificação de código |
+| `npm run test` | Executar testes |
+| `npm run test:watch` | Testes em modo watch |
+| `npm run test:coverage` | Coverage dos testes |
 
-Yes, you can!
+## 🔧 Configuração do Supabase
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+# Instalar CLI do Supabase
+npm install -g supabase
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+# Iniciar Supabase local
+npx supabase start
+
+# Executar migrations
+npx supabase db push
+
+# Gerar tipos TypeScript
+npx supabase gen types typescript --local > src/integrations/supabase/types.ts
+```
+
+## 🌐 Links Úteis
+
+- **Aplicação**: http://localhost:5173 (desenvolvimento)
+- **Supabase Studio**: https://supabase.com/dashboard/project/aqvbhmpdzvdbhvxhnemi
+- **Lovable Project**: https://lovable.dev/projects/c94ee34a-bc50-4e08-8274-e06440018a11
+
+## 👥 Módulos Principais
+
+- **🔐 Autenticação**: Magic link com múltiplos níveis de acesso
+- **👥 Conselheiros**: Gestão completa de membros do conselho
+- **📅 Reuniões**: Agendamento, convocação e controle de presença
+- **📝 Atas**: Elaboração, versionamento e aprovação
+- **📜 Resoluções**: Criação e publicação de resoluções
+- **🔢 Protocolos**: Sistema automático de numeração
+- **📢 Ouvidoria**: Denúncias e fiscalização ambiental
+- **💰 FMA**: Gestão do Fundo Municipal de Meio Ambiente
+
+## 🤝 Contribuindo
+
+1. Fork o projeto
+2. Crie sua feature branch (`git checkout -b feature/NovaFuncionalidade`)
+3. Commit suas mudanças (`git commit -m 'feat: adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/NovaFuncionalidade`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Projeto proprietário do Município de Itanhomi-MG.
+
+## 📞 Suporte
+
+- **E-mail**: codema@itanhomi.mg.gov.br
+- **Issues**: [GitHub Issues](https://github.com/seu-usuario/codema-app/issues)
+
+---
+
+*Versão 1.0.0 - Janeiro 2025*

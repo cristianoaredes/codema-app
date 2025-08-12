@@ -99,8 +99,7 @@ const AtasPage = () => {
         .from('atas')
         .select(`
           *,
-          reuniao:reunioes(*),
-          aprovador:profiles!atas_aprovada_por_fkey(full_name)
+          reuniao:reunioes(*)
         `)
         .order('created_at', { ascending: false });
 
@@ -114,7 +113,39 @@ const AtasPage = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as Ata[];
+      
+      // Buscar nomes dos aprovadores separadamente
+      const atasWithApprovers = data || [];
+      if (atasWithApprovers.length > 0) {
+        const aprovadorIds = [...new Set(atasWithApprovers
+          .filter(a => a.aprovada_por)
+          .map(a => a.aprovada_por))];
+        
+        if (aprovadorIds.length > 0) {
+          try {
+            const { data: aprovadores } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .in('id', aprovadorIds);
+            
+            if (aprovadores) {
+              const aprovadorMap = new Map(aprovadores.map(a => [a.id, a.full_name]));
+              atasWithApprovers.forEach(ata => {
+                if (ata.aprovada_por) {
+                  const aprovadorName = aprovadorMap.get(ata.aprovada_por);
+                  if (aprovadorName) {
+                    ata.aprovador = { full_name: aprovadorName };
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.warn('Não foi possível buscar nomes dos aprovadores:', error);
+          }
+        }
+      }
+      
+      return atasWithApprovers as Ata[];
     },
   });
 
@@ -126,15 +157,44 @@ const AtasPage = () => {
       
       const { data, error } = await supabase
         .from('atas_versoes')
-        .select(`
-          *,
-          editor:profiles!atas_versoes_alterado_por_fkey(full_name)
-        `)
+        .select('*')
         .eq('ata_id', selectedAtaId)
         .order('versao', { ascending: false });
 
       if (error) throw error;
-      return data as AtaVersion[];
+      
+      // Buscar nomes dos editores separadamente
+      const versionsWithEditors = data || [];
+      if (versionsWithEditors.length > 0) {
+        const editorIds = [...new Set(versionsWithEditors
+          .filter(v => v.alterado_por)
+          .map(v => v.alterado_por))];
+        
+        if (editorIds.length > 0) {
+          try {
+            const { data: editors } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .in('id', editorIds);
+            
+            if (editors) {
+              const editorMap = new Map(editors.map(e => [e.id, e.full_name]));
+              versionsWithEditors.forEach(version => {
+                if (version.alterado_por) {
+                  const editorName = editorMap.get(version.alterado_por);
+                  if (editorName) {
+                    version.editor = { full_name: editorName };
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.warn('Não foi possível buscar nomes dos editores:', error);
+          }
+        }
+      }
+      
+      return versionsWithEditors as AtaVersion[];
     },
     enabled: !!selectedAtaId,
   });

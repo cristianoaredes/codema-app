@@ -104,7 +104,7 @@ export function SmartBreadcrumb({
   );
 }
 
-// Breadcrumb container with background for sticky positioning
+// Breadcrumb container with background
 export function BreadcrumbContainer({ 
   children, 
   className 
@@ -114,7 +114,7 @@ export function BreadcrumbContainer({
 }) {
   return (
     <div className={cn(
-      "sticky top-16 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-3",
+      "border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-3",
       className
     )}>
       {children}

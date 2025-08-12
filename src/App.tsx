@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DemoModeProvider } from "@/components/demo/DemoModeProvider";
 import { AppSidebar } from "@/components/common/Navigation/AppSidebar";
@@ -40,16 +41,30 @@ const CreateReport = lazy(() => import("./pages/relatorios").then(m => ({ defaul
 // Lazy load para módulos CODEMA
 const ConselheirosPage = lazy(() => import("./pages/codema/conselheiros"));
 const AtasPage = lazy(() => import("./pages/codema/atas"));
+const NovaAta = lazy(() => import("./pages/codema/atas/NovaAta"));
 const ResolucoesPage = lazy(() => import("./pages/codema/resolucoes"));
 const AuditoriaPage = lazy(() => import("./pages/codema/auditoria"));
-const GestaoProtocolos = lazy(() => import("./pages/codema/protocolos"));
+const GestaoProtocolos = lazy(() => import("./pages/codema/protocolos/index"));
 
 // Lazy load para admin
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
 const DataSeeder = lazy(() => import("./pages/admin/DataSeeder"));
 const Documentation = lazy(() => import("./pages/admin/Documentation"));
 
-const queryClient = new QueryClient();
+// Lazy load para páginas utilitárias
+const Configuracoes = lazy(() => import("./pages/Configuracoes"));
+const Ajuda = lazy(() => import("./pages/Ajuda"));
+const Documentacao = lazy(() => import("./pages/Documentacao"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 0, // Dados sempre considerados obsoletos
+      refetchOnWindowFocus: true, // Refetch ao focar na janela
+      retry: 1, // Reduzir tentativas para evitar cache de erros
+    },
+  },
+});
 
 // Loading component para lazy loading
 const PageLoader = () => (
@@ -77,7 +92,7 @@ const AuthenticatedLayout = () => {
         <AppSidebar data-tour="sidebar" />
         <main className="flex-1 overflow-x-hidden relative">
           {/* Mobile-optimized header with better touch targets */}
-          <header className="h-14 sm:h-16 flex items-center border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 px-3 sm:px-4 md:px-6 sticky top-0 z-20">
+          <header className="h-14 sm:h-16 flex items-center border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 px-3 sm:px-4 md:px-6">
             <div className="flex items-center gap-2 sm:gap-4">
               <SidebarTrigger className="h-10 w-10 sm:h-10 sm:w-10 touch-manipulation" />
             </div>
@@ -107,12 +122,13 @@ const AuthenticatedLayout = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <DemoModeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+    <ThemeProvider defaultTheme="light" storageKey="codema-ui-theme">
+      <AuthProvider>
+        <DemoModeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
             <Routes>
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Index />} />
@@ -149,16 +165,21 @@ const App = () => (
                 <Route path="/ouvidoria" element={<Ouvidoria />} />
                 <Route path="/codema/conselheiros" element={<ConselheirosPage />} />
                 <Route path="/codema/atas" element={<AtasPage />} />
+                <Route path="/codema/atas/nova" element={<NovaAta />} />
                 <Route path="/codema/resolucoes" element={<ResolucoesPage />} />
                 <Route path="/codema/auditoria" element={<AuditoriaPage />} />
                 <Route path="/codema/protocolos" element={<GestaoProtocolos />} />
+                <Route path="/configuracoes" element={<Configuracoes />} />
+                <Route path="/ajuda" element={<Ajuda />} />
+                <Route path="/documentacao" element={<Documentacao />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </DemoModeProvider>
-    </AuthProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </DemoModeProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

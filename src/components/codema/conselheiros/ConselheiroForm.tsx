@@ -3,8 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCreateConselheiro, useUpdateConselheiro } from '@/hooks/useConselheiros';
 import {
   Form,
   FormControl,
@@ -38,13 +38,45 @@ const conselheiroSchema = z.object({
     .max(100, 'Nome deve ter no máximo 100 caracteres'),
   cpf: z.string()
     .optional()
-    .refine((val) => !val || /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(val), 'CPF deve estar no formato XXX.XXX.XXX-XX'),
+    .refine((val) => !val || val === '' || /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(val), 'CPF deve estar no formato XXX.XXX.XXX-XX')
+    .refine((val) => {
+      if (!val || val === '') return true;
+      // Validate CPF checksum
+      const cpf = val.replace(/[^\d]/g, '');
+      if (cpf.length !== 11) return false;
+      
+      // Check for same digits
+      if (/^(\d)\1{10}$/.test(cpf)) return false;
+      
+      // Validate checksum
+      let sum = 0;
+      let remainder;
+      
+      for (let i = 1; i <= 9; i++) {
+        sum += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+      }
+      
+      remainder = (sum * 10) % 11;
+      if (remainder === 10 || remainder === 11) remainder = 0;
+      if (remainder !== parseInt(cpf.substring(9, 10))) return false;
+      
+      sum = 0;
+      for (let i = 1; i <= 10; i++) {
+        sum += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+      }
+      
+      remainder = (sum * 10) % 11;
+      if (remainder === 10 || remainder === 11) remainder = 0;
+      if (remainder !== parseInt(cpf.substring(10, 11))) return false;
+      
+      return true;
+    }, 'CPF inválido'),
   email: z.string()
     .optional()
-    .refine((val) => !val || z.string().email().safeParse(val).success, 'Email deve ser válido'),
+    .refine((val) => !val || val === '' || z.string().email().safeParse(val).success, 'Email deve ser válido'),
   telefone: z.string()
     .optional()
-    .refine((val) => !val || /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(val), 'Telefone deve estar no formato (XX) XXXXX-XXXX'),
+    .refine((val) => !val || val === '' || /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(val), 'Telefone deve estar no formato (XX) XXXXX-XXXX'),
   endereco: z.string().optional(),
   mandato_inicio: z.date({
     required_error: 'Data de início do mandato é obrigatória',
@@ -64,6 +96,23 @@ const conselheiroSchema = z.object({
 }).refine((data) => data.mandato_fim > data.mandato_inicio, {
   message: 'Data de fim deve ser posterior à data de início',
   path: ['mandato_fim'],
+}).refine((data) => {
+  // Check if mandate is not too long (more than 6 years)
+  const diffTime = data.mandato_fim.getTime() - data.mandato_inicio.getTime();
+  const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365);
+  return diffYears <= 6;
+}, {
+  message: 'Mandato não pode ser superior a 6 anos',
+  path: ['mandato_fim'],
+}).refine((data) => {
+  // Check if mandate start is not in far future
+  const today = new Date();
+  const oneYearFromNow = new Date();
+  oneYearFromNow.setFullYear(today.getFullYear() + 1);
+  return data.mandato_inicio <= oneYearFromNow;
+}, {
+  message: 'Data de início não pode ser superior a 1 ano no futuro',
+  path: ['mandato_inicio'],
 });
 
 type ConselheiroFormData = z.infer<typeof conselheiroSchema>;
@@ -81,6 +130,9 @@ const ConselheiroForm: React.FC<ConselheiroFormProps> = ({
 }) => {
   const { toast } = useToast();
   const isEditing = Boolean(conselheiro);
+  
+  const createMutation = useCreateConselheiro();
+  const updateMutation = useUpdateConselheiro();
 
   const form = useForm<ConselheiroFormData>({
     resolver: zodResolver(conselheiroSchema),
@@ -123,41 +175,19 @@ const ConselheiroForm: React.FC<ConselheiroFormProps> = ({
         mandato_fim: data.mandato_fim.toISOString(),
       };
 
-      let error;
-      
-      if (isEditing) {
-        ({ error } = await supabase
-          .from('conselheiros')
-          .update(payload)
-          .eq('id', conselheiro!.id));
+      if (isEditing && conselheiro) {
+        await updateMutation.mutateAsync({
+          id: conselheiro.id,
+          updates: payload
+        });
       } else {
-        ({ error } = await supabase
-          .from('conselheiros')
-          .insert([{
-            ...payload,
-            status: 'ativo',
-            faltas_consecutivas: 0,
-            total_faltas: 0,
-          }]));
+        await createMutation.mutateAsync(payload);
       }
-
-      if (error) throw error;
-
-      toast({
-        title: isEditing ? 'Conselheiro atualizado' : 'Conselheiro cadastrado',
-        description: isEditing 
-          ? 'As informações foram atualizadas com sucesso.' 
-          : 'O conselheiro foi cadastrado com sucesso.',
-      });
 
       onSuccess?.();
     } catch (error) {
       console.error('Erro ao salvar conselheiro:', error);
-      toast({
-        title: 'Erro ao salvar',
-        description: 'Ocorreu um erro ao salvar as informações. Tente novamente.',
-        variant: 'destructive',
-      });
+      // Toast messages are handled by the mutation hooks
     }
   };
 
@@ -490,12 +520,12 @@ const ConselheiroForm: React.FC<ConselheiroFormProps> = ({
               
               <Button 
                 type="submit"
-                disabled={form.formState.isSubmitting}
+                disabled={createMutation.isPending || updateMutation.isPending}
                 className="flex items-center space-x-2"
               >
                 <Save className="h-4 w-4" />
                 <span>
-                  {form.formState.isSubmitting 
+                  {(createMutation.isPending || updateMutation.isPending)
                     ? 'Salvando...' 
                     : isEditing ? 'Atualizar' : 'Cadastrar'}
                 </span>

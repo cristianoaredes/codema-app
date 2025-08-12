@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BreadcrumbWithActions, SmartBreadcrumb } from "@/components/navigation/SmartBreadcrumb";
 
@@ -168,7 +168,12 @@ export default function ResolucoesPage() {
                   <Button><Plus className="w-4 h-4 mr-2" />Nova Resolução</Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader><DialogTitle>{selectedResolucao ? 'Editar Resolução' : 'Nova Resolução'}</DialogTitle></DialogHeader>
+                  <DialogHeader>
+                    <DialogTitle>{selectedResolucao ? 'Editar Resolução' : 'Nova Resolução'}</DialogTitle>
+                    <DialogDescription>
+                      {selectedResolucao ? 'Edite os dados da resolução selecionada.' : 'Preencha os dados para criar uma nova resolução do CODEMA.'}
+                    </DialogDescription>
+                  </DialogHeader>
                   <ResolucaoForm resolucao={selectedResolucao} onClose={() => { setShowResolucaoForm(false); setSelectedResolucao(null); }} />
                 </DialogContent>
               </Dialog>
@@ -181,7 +186,12 @@ export default function ResolucoesPage() {
         {/* Voting System Dialog */}
         <Dialog open={showVotingSystem} onOpenChange={setShowVotingSystem}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Sistema de Votação</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Sistema de Votação</DialogTitle>
+              <DialogDescription>
+                Registre os votos dos conselheiros para esta resolução.
+              </DialogDescription>
+            </DialogHeader>
             {votingResolucaoId && (
               <VotingSystem resolucaoId={votingResolucaoId} canVote={canVote} onClose={() => { setShowVotingSystem(false); setVotingResolucaoId(null); }} />
             )}

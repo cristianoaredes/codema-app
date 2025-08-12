@@ -24,5 +24,18 @@ dist-ssr
 *.sw?
 
 
+# Temporary and development files
+*.tmp
+*.temp
+*.backup
+*.old
+*debug*
+*test*.html
+*test*.js
+*temp*
+MIGRATION_*.sql
+EXECUTE_*.sql
+execute-migrations.js
+
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
