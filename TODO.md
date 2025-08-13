@@ -20,7 +20,7 @@
 - [ ] Dashboards avançados
 
 ## Infra/DevEx
-- [ ] CI: testes, lint, build
+- [x] CI: testes, lint, build
 - [x] Docker: compose dev e imagem prod enxuta
 - [x] Varredura de segurança da imagem
   - Removidos serviços opcionais do compose (adminer/pgadmin/mailhog)
@@ -28,5 +28,5 @@
   - Build e up concluídos com sucesso
 
 ## Documentação
-- [ ] Atualizar `README` com escopo 80/20
+- [x] Atualizar `README` com escopo 80/20
 - [ ] Manter `docs/ARCHITECTURE_OVERVIEW.md` alinhado a cada entrega
