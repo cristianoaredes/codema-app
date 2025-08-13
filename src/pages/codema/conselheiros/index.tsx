@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useConselheiros, useCreateConselheiro, useUpdateConselheiro, useDeleteConselheiro } from '@/hooks/useConselheiros';
+import { conselheiroSchema } from '@/schemas/conselheiro';
 import ConselheiroCard from '@/components/codema/conselheiros/ConselheiroCard';
 import ConselheiroForm from '@/components/codema/conselheiros/ConselheiroForm';
 import { Conselheiro } from '@/types/conselheiro';
@@ -47,6 +48,7 @@ const ConselheirosPage: React.FC = () => {
   const { toast } = useToast();
   const { data: conselheiros, isLoading, error } = useConselheiros();
   const deleteConselheiro = useDeleteConselheiro();
+  const createConselheiro = useCreateConselheiro();
 
   // Filter conselheiros based on search and filters
   const filteredConselheiros = conselheiros?.filter(conselheiro => {
@@ -184,7 +186,7 @@ const ConselheirosPage: React.FC = () => {
     importInputRef?.click();
   };
 
-  const processImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const processImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -198,7 +200,7 @@ const ConselheirosPage: React.FC = () => {
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const content = e.target?.result as string;
         const lines = content.split('\n').filter(line => line.trim());
@@ -207,12 +209,99 @@ const ConselheirosPage: React.FC = () => {
           throw new Error('Arquivo CSV deve ter pelo menos um cabeçalho e uma linha de dados');
         }
 
-        // For now, show info about what would be imported
-        // Full implementation would require more complex validation and batch insert
+        // Parse header to get column mapping
+        const header = lines[0].split(',').map(col => col.replace(/"/g, '').trim());
+        const expectedHeaders = [
+          'Nome Completo', 'CPF', 'Email', 'Telefone', 'Endereço',
+          'Entidade Representada', 'Segmento', 'Titular', 
+          'Mandato Início', 'Mandato Fim', 'Número Mandato', 'Observações'
+        ];
+
+        // Validate headers
+        const missingHeaders = expectedHeaders.filter(h => !header.includes(h));
+        if (missingHeaders.length > 0) {
+          toast({
+            title: 'Headers inválidos',
+            description: `Headers obrigatórios faltando: ${missingHeaders.join(', ')}`,
+            variant: 'destructive',
+          });
+          event.target.value = '';
+          return;
+        }
+
+        const dataLines = lines.slice(1);
+        let successCount = 0;
+        let errorCount = 0;
+        const errors: string[] = [];
+
+        // Show progress toast
         toast({
-          title: 'Importação preparada',
-          description: `Arquivo processado com ${lines.length - 1} registros. Funcionalidade de importação será implementada em breve.`,
+          title: 'Processando importação...',
+          description: `Processando ${dataLines.length} registros...`,
         });
+
+        // Process each line
+        for (let i = 0; i < dataLines.length; i++) {
+          try {
+            const values = dataLines[i].split(',').map(val => val.replace(/"/g, '').trim());
+            
+            // Skip empty rows
+            if (values.every(val => !val)) continue;
+            
+            // Map CSV values to conselheiro object
+            const mandatoInicioStr = values[header.indexOf('Mandato Início')];
+            const mandatoFimStr = values[header.indexOf('Mandato Fim')];
+            
+            const rowData = {
+              nome_completo: values[header.indexOf('Nome Completo')] || '',
+              cpf: values[header.indexOf('CPF')] || undefined,
+              email: values[header.indexOf('Email')] || undefined,
+              telefone: values[header.indexOf('Telefone')] || undefined,
+              endereco: values[header.indexOf('Endereço')] || undefined,
+              entidade_representada: values[header.indexOf('Entidade Representada')] || '',
+              segmento: values[header.indexOf('Segmento')] as 'governo' | 'sociedade_civil' | 'setor_produtivo',
+              titular: values[header.indexOf('Titular')]?.toLowerCase() === 'sim',
+              mandato_inicio: mandatoInicioStr ? 
+                new Date(mandatoInicioStr.split('/').reverse().join('-')) : new Date(),
+              mandato_fim: mandatoFimStr ? 
+                new Date(mandatoFimStr.split('/').reverse().join('-')) : new Date(),
+              mandato_numero: values[header.indexOf('Número Mandato')] ? 
+                parseInt(values[header.indexOf('Número Mandato')]) : undefined,
+              observacoes: values[header.indexOf('Observações')] || undefined,
+            };
+
+            // Validate using schema
+            const validated = conselheiroSchema.parse(rowData);
+
+            // Create conselheiro in database
+            await createConselheiro.mutateAsync(validated);
+            successCount++;
+
+          } catch (error: any) {
+            errorCount++;
+            const errorMsg = error?.issues ? 
+              error.issues.map((issue: any) => `${issue.path.join('.')}: ${issue.message}`).join('; ') :
+              error.message || 'Erro desconhecido';
+            errors.push(`Linha ${i + 2}: ${errorMsg}`);
+          }
+        }
+
+        // Show results
+        if (successCount > 0) {
+          toast({
+            title: 'Importação concluída',
+            description: `${successCount} conselheiros importados com sucesso${errorCount > 0 ? `, ${errorCount} falharam` : ''}`,
+          });
+        }
+
+        if (errorCount > 0) {
+          console.warn('Erros na importação:', errors);
+          toast({
+            title: 'Alguns registros falharam',
+            description: `${errorCount} registros não puderam ser importados. Verifique o console para detalhes.`,
+            variant: 'destructive',
+          });
+        }
 
         // Reset file input
         event.target.value = '';
@@ -223,6 +312,7 @@ const ConselheirosPage: React.FC = () => {
           description: 'Ocorreu um erro ao processar o arquivo CSV.',
           variant: 'destructive',
         });
+        event.target.value = '';
       }
     };
 

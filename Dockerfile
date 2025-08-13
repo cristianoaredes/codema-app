@@ -57,6 +57,11 @@ RUN --mount=type=cache,target=/root/.npm \
 # Copy source code (will be overridden by volume mount in development)
 COPY --chown=nodejs:nodejs . .
 
+# Create and set permissions for Vite cache directory
+RUN mkdir -p /app/node_modules/.vite && \
+    chown -R nodejs:nodejs /app/node_modules/.vite && \
+    chmod -R 755 /app/node_modules/.vite
+
 # Switch to non-root user
 USER nodejs
 

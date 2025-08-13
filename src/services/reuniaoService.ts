@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Reuniao, Presenca, Convocacao } from '@/types';
 import { ProtocoloGenerator } from '@/utils/generators/protocoloGenerator';
 
 export class ReuniaoService {
@@ -164,13 +163,149 @@ export class ReuniaoService {
         
         if (error) throw error;
         
-        // TODO: Integrate with actual email/whatsapp service
-        // For now, mark as sent
+        // Send convocation via email/WhatsApp
+        let envioSucesso = false;
+        
+        try {
+          // Buscar perfil do conselheiro para obter email
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('email, full_name, notification_preferences')
+            .eq('id', conselheiro.profile_id)
+            .single();
+          
+          if (!profileError && profile?.email) {
+            // Send email convocation
+            if (tipo === 'email' || tipo === 'ambos') {
+              const dataFormatada = new Date(reuniao.data_reuniao).toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              
+              await supabase
+                .from('email_queue')
+                .insert({
+                  to_email: profile.email,
+                  subject: `Convocação para Reunião ${reuniao.tipo === 'ordinaria' ? 'Ordinária' : 'Extraordinária'} - CODEMA`,
+                  html_content: `
+                    <div style="font-family: Arial, sans-serif; color: #333;">
+                      <h2>Convocação para Reunião - CODEMA</h2>
+                      <p>Prezado(a) ${profile.full_name},</p>
+                      <p>Você está sendo convocado(a) para a reunião ${reuniao.tipo} do CODEMA.</p>
+                      
+                      <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <h3>Detalhes da Reunião:</h3>
+                        <p><strong>Protocolo:</strong> ${protocolo}</p>
+                        <p><strong>Data/Hora:</strong> ${dataFormatada}</p>
+                        <p><strong>Local:</strong> ${reuniao.local}</p>
+                        <p><strong>Tipo:</strong> ${reuniao.tipo === 'ordinaria' ? 'Ordinária' : 'Extraordinária'}</p>
+                      </div>
+                      
+                      ${reuniao.pauta ? `
+                        <h3>Pauta:</h3>
+                        <div style="white-space: pre-line; background-color: #f9f9f9; padding: 10px; border-radius: 3px;">
+                          ${reuniao.pauta}
+                        </div>
+                      ` : ''}
+                      
+                      ${reuniao.observacoes ? `
+                        <h3>Observações:</h3>
+                        <p>${reuniao.observacoes}</p>
+                      ` : ''}
+                      
+                      <p>Sua presença é fundamental para o bom funcionamento do conselho.</p>
+                      <p>Atenciosamente,<br/>Secretaria do CODEMA</p>
+                    </div>
+                  `,
+                  text_content: `Convocação para reunião ${reuniao.tipo} em ${dataFormatada} - Local: ${reuniao.local}`,
+                  email_type: 'convocacao',
+                  scheduled_for: new Date().toISOString()
+                });
+              
+              envioSucesso = true;
+            }
+            
+            // WhatsApp integration
+            if (tipo === 'whatsapp' || tipo === 'ambos') {
+              // Check if profile has WhatsApp (phone number)
+              const { data: conselheiroData, error: conselheiroError } = await supabase
+                .from('conselheiros')
+                .select('telefone, whatsapp')
+                .eq('profile_id', conselheiro.profile_id)
+                .single();
+
+              const phoneNumber = conselheiroData?.whatsapp || conselheiroData?.telefone;
+              
+              if (!conselheiroError && phoneNumber) {
+                const dataFormatada = new Date(reuniao.data_reuniao).toLocaleDateString('pt-BR', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+
+                // Create WhatsApp message content
+                const whatsappMessage = `
+🏛️ *Convocação CODEMA*
+
+Prezado(a) ${profile.full_name},
+
+Você está sendo convocado(a) para a reunião ${reuniao.tipo} do CODEMA.
+
+📅 *Data/Hora:* ${dataFormatada}
+📍 *Local:* ${reuniao.local}
+📋 *Protocolo:* ${protocolo}
+
+${reuniao.pauta ? `
+*Pauta:*
+${reuniao.pauta.substring(0, 200)}${reuniao.pauta.length > 200 ? '...' : ''}
+` : ''}
+
+Sua presença é fundamental para o bom funcionamento do conselho.
+
+Atenciosamente,
+Secretaria do CODEMA
+                `.trim();
+
+                // Queue WhatsApp message for sending
+                await supabase
+                  .from('whatsapp_queue')
+                  .insert({
+                    to_phone: phoneNumber.replace(/\D/g, ''), // Remove non-digits
+                    message_content: whatsappMessage,
+                    message_type: 'convocacao',
+                    scheduled_for: new Date().toISOString(),
+                    status: 'pending',
+                    metadata: {
+                      reuniao_id: reuniaoId,
+                      conselheiro_id: conselheiro.id,
+                      protocolo: protocolo
+                    }
+                  });
+
+                console.log(`WhatsApp convocation queued for ${profile.full_name} at ${phoneNumber}`);
+                envioSucesso = true;
+              } else {
+                console.warn(`No WhatsApp/phone number found for ${profile.full_name}`);
+              }
+            }
+          }
+        } catch (emailError) {
+          console.error('Erro ao enviar convocação por email:', emailError);
+        }
+        
+        // Update convocation status
         await supabase
           .from('convocacoes')
           .update({
-            status: 'enviada',
-            enviada_em: new Date().toISOString()
+            status: envioSucesso ? 'enviada' : 'erro',
+            enviada_em: envioSucesso ? new Date().toISOString() : null
           })
           .eq('reuniao_id', reuniaoId)
           .eq('conselheiro_id', conselheiro.id);
@@ -276,8 +411,48 @@ export class ReuniaoService {
     
     // Enviar alerta se necessário
     if (faltasConsecutivas >= 3) {
-      // TODO: Send alert notification
-      console.warn(`Conselheiro ${conselheiroId} com ${faltasConsecutivas} faltas consecutivas`);
+      try {
+        // Get conselheiro data for notification
+        const { data: conselheiro } = await supabase
+          .from('conselheiros')
+          .select(`
+            id,
+            profiles:profile_id (
+              full_name,
+              email
+            )
+          `)
+          .eq('id', conselheiroId)
+          .single();
+
+        if (conselheiro?.profiles?.email) {
+          // Queue alert notification email
+          await supabase
+            .from('email_queue')
+            .insert({
+              to_email: conselheiro.profiles.email,
+              subject: 'Alerta: Muitas Faltas Consecutivas - CODEMA',
+              html_content: `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                  <h2>Alerta de Presença - CODEMA</h2>
+                  <p>Prezado(a) ${conselheiro.profiles.full_name},</p>
+                  <p>Registramos que você teve <strong>${faltasConsecutivas} faltas consecutivas</strong> em reuniões do CODEMA.</p>
+                  <p>Lembramos que a participação regular é fundamental para o bom funcionamento do conselho.</p>
+                  <p>Em caso de dificuldades para participar, entre em contato conosco.</p>
+                  <p>Atenciosamente,<br/>Secretaria do CODEMA</p>
+                </div>
+              `,
+              text_content: `Alerta: ${faltasConsecutivas} faltas consecutivas registradas para ${conselheiro.profiles.full_name}`,
+              email_type: 'alert',
+              scheduled_for: new Date().toISOString()
+            });
+
+          console.log(`Alerta de faltas enviado para: ${conselheiro.profiles.email}`);
+        }
+      } catch (error) {
+        console.error('Erro ao enviar alerta de faltas:', error);
+        // Log but don't fail the main operation
+      }
     }
   }
 
@@ -303,13 +478,37 @@ export class ReuniaoService {
     
     if (error) throw error;
     
-    // TODO: Implement decisions and referrals counting
-    // when these tables are available
+    // Count decisions and referrals from meeting minutes if available
+    let totalDecisoes = 0;
+    let totalEncaminhamentos = 0;
+    
+    if (reuniao?.ata) {
+      try {
+        // Parse ata content to count decisions and referrals
+        const ataContent = reuniao.ata.toLowerCase();
+        
+        // Count decisions (looking for common decision-related terms)
+        const decisaoTerms = ['aprovado', 'rejeitado', 'decidido', 'resolvido', 'deliberado'];
+        totalDecisoes = decisaoTerms.reduce((count, term) => {
+          const matches = ataContent.match(new RegExp(term, 'g'));
+          return count + (matches ? matches.length : 0);
+        }, 0);
+        
+        // Count referrals (looking for referral-related terms)
+        const encaminhamentoTerms = ['encaminhado', 'encaminha-se', 'solicita-se', 'recomenda-se'];
+        totalEncaminhamentos = encaminhamentoTerms.reduce((count, term) => {
+          const matches = ataContent.match(new RegExp(term, 'g'));
+          return count + (matches ? matches.length : 0);
+        }, 0);
+      } catch (error) {
+        console.warn('Erro ao analisar ata para contagem:', error);
+      }
+    }
     
     return {
       presencaPercentual: quorum.percentualPresenca,
-      totalDecisoes: 0, // TODO
-      totalEncaminhamentos: 0, // TODO
+      totalDecisoes,
+      totalEncaminhamentos,
       temAta: !!reuniao?.ata,
       temQuorum: quorum.hasQuorum
     };
@@ -318,7 +517,7 @@ export class ReuniaoService {
   /**
    * Valida dados da reunião antes de salvar
    */
-  static validateReuniaoData(data: any): {
+  static validateReuniaoData(data: Record<string, unknown>): {
     isValid: boolean;
     errors: string[];
   } {

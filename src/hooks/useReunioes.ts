@@ -13,6 +13,7 @@ import {
 import { logAction } from '@/utils';
 import { toast } from 'sonner';
 import { ProtocoloGenerator } from '@/utils';
+import { EmailService } from '@/services/emailService';
 
 /**
  * Checks if a table exists in the current database
@@ -388,8 +389,74 @@ export function useEnviarConvocacoes() {
           handleDatabaseError(error, 'CREATE', 'convocacoes');
         }
         
-        // TODO: Integrate with actual email/whatsapp sending service
-        // For now, just mark as sent immediately
+        // Get reunion data for email template
+        const { data: reuniao, error: reuniaoError } = await supabase
+          .from('reunioes')
+          .select('numero_reuniao, tipo, data_hora, local, pauta')
+          .eq('id', params.reuniao_id)
+          .single();
+        
+        if (reuniaoError) {
+          handleDatabaseError(reuniaoError, 'READ', 'reunioes');
+        }
+        
+        if (!reuniao) {
+          throw new Error('Reunião não encontrada');
+        }
+
+        // Get conselheiros with profiles for email sending
+        const { data: conselheirosComPerfis, error: perfilError } = await supabase
+          .from('conselheiros')
+          .select(`
+            id,
+            profile_id,
+            profiles:profile_id (
+              id,
+              full_name,
+              email
+            )
+          `)
+          .in('profile_id', params.conselheiros_ids);
+        
+        if (perfilError) {
+          handleDatabaseError(perfilError, 'READ', 'conselheiros');
+        }
+        
+        if (!conselheirosComPerfis || conselheirosComPerfis.length === 0) {
+          throw new Error('Nenhum conselheiro encontrado para os profiles selecionados');
+        }
+
+        // Send emails to conselheiros
+        const emailPromises = conselheirosComPerfis
+          .filter(c => c.profiles?.email) // Only send to those with email
+          .map(async (conselheiro) => {
+            try {
+              if (!conselheiro.profiles?.email) return;
+              
+              await EmailService.sendConvocacao(
+                conselheiro.profiles.email,
+                conselheiro.profiles.full_name || 'Conselheiro(a)',
+                {
+                  numero_reuniao: reuniao.numero_reuniao,
+                  tipo: reuniao.tipo,
+                  data_hora: reuniao.data_hora,
+                  local: reuniao.local,
+                  pauta: reuniao.pauta || undefined
+                },
+                params.envio_agendado ? new Date(params.envio_agendado) : undefined
+              );
+              
+              console.log(`Convocação enviada para: ${conselheiro.profiles.email}`);
+            } catch (emailError) {
+              console.error(`Erro ao enviar email para ${conselheiro.profiles?.email}:`, emailError);
+              // Don't throw - continue with other emails
+            }
+          });
+
+        // Wait for all emails to be processed
+        await Promise.allSettled(emailPromises);
+        
+        // Update convocation status to sent
         const conselheiroIds = conselheiros.map(c => c.id);
         const { error: updateError } = await supabase
           .from('convocacoes')

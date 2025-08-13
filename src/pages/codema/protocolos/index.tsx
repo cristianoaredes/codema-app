@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LoadingSpinner } from '@/components/ui/loading';
+import { Loading } from '@/components/ui';
 import { BreadcrumbWithActions, SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
 import { FileText, Search, Plus, Hash, Calendar, BarChart3, RefreshCw, Info, CheckCircle, Settings, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -61,13 +61,10 @@ async function gerarProtocolo(tipo: TipoProtocolo): Promise<string> {
   const prefixo = TIPOS_PROTOCOLO_INFO[tipo].prefixo;
   
   try {
-    // Try to get from database
+    // Tenta gerar via função do banco
     const { data, error } = await supabase
-      .rpc('generate_protocol_number', { p_tipo: tipo, p_ano: ano });
-    
-    if (!error && data) {
-      return data;
-    }
+      .rpc('gerar_proximo_protocolo', { tipo_protocolo: tipo });
+    if (!error && data) return data as string;
   } catch (error) {
     console.warn('Database unavailable, generating locally:', error);
   }
@@ -104,11 +101,8 @@ async function consultarProximoProtocolo(tipo: TipoProtocolo): Promise<string> {
   
   try {
     const { data, error } = await supabase
-      .rpc('get_next_protocol_number', { p_tipo: tipo, p_ano: ano });
-    
-    if (!error && data) {
-      return `${prefixo}-${String(data).padStart(3, '0')}/${ano}`;
-    }
+      .rpc('consultar_proximo_protocolo', { tipo_protocolo: tipo });
+    if (!error && data) return data as string;
   } catch (error) {
     console.warn('Database unavailable:', error);
   }
@@ -121,12 +115,15 @@ async function consultarProximoProtocolo(tipo: TipoProtocolo): Promise<string> {
 async function obterEstatisticasProtocolos(ano?: number): Promise<EstatisticaProtocolo[]> {
   try {
     const { data, error } = await supabase
-      .from('protocolo_estatisticas')
-      .select('*')
-      .eq(ano ? 'ano' : '', ano || '');
-    
-    if (!error && data) {
-      return data;
+      .rpc('obter_estatisticas_protocolos', { ano_filtro: ano });
+    if (!error && Array.isArray(data)) {
+      return data.map((d: any) => ({
+        tipo: d.tipo as TipoProtocolo,
+        ano: d.ano as number,
+        total: (d.total_gerados ?? 0) as number,
+        ultimo_numero: (d.ultimo_numero ?? 0) as number,
+        ultima_atualizacao: d.ultima_atualizacao as string,
+      }));
     }
   } catch (error) {
     console.warn('Statistics unavailable:', error);
@@ -354,7 +351,7 @@ export default function GestaoProtocolos() {
             </CardContent>
             <CardFooter>
               <Button onClick={handleGerarProtocolo} disabled={loading} className="w-full">
-                {loading ? <LoadingSpinner /> : (
+                {loading ? <Loading type="spinner" /> : (
                   <>
                     <Plus className="h-4 w-4 mr-2" />
                     Gerar Protocolo
@@ -414,9 +411,7 @@ export default function GestaoProtocolos() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="flex justify-center py-8">
-                  <LoadingSpinner />
-                </div>
+                <Loading type="spinner" className="py-8" />
               ) : (
                 <Table>
                   <TableHeader>

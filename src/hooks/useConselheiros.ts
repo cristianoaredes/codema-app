@@ -3,11 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Conselheiro, ConselheiroCreateInput, ConselheiroUpdateInput } from '@/types/conselheiro';
 import { toast } from 'sonner';
 import { logAction } from '@/utils';
+import { ConselheiroService } from '@/services/conselheiroService';
+import type { Database } from '@/integrations/supabase/generated-types';
 
 /**
  * Checks if a table exists in the current database
  */
-async function checkTableExists(tableName: string): Promise<boolean> {
+type TableName = keyof Database['public']['Tables'];
+
+async function checkTableExists(tableName: TableName): Promise<boolean> {
   try {
     const { error } = await supabase
       .from(tableName)
@@ -97,7 +101,13 @@ export function useConselheiros() {
       }
       
       if (conselheirosError) throw conselheirosError;
-      return conselheiros || [];
+      const normalized = (conselheiros || []).map((c: any) => ({
+        ...c,
+        segmento: (c.segmento === 'governo' || c.segmento === 'setor_produtivo' || c.segmento === 'sociedade_civil')
+          ? c.segmento
+          : 'sociedade_civil'
+      })) as Conselheiro[];
+      return normalized;
     }
   });
 }
@@ -152,7 +162,13 @@ export function useConselheiro(id: string) {
       }
       
       if (conselheirosError) throw conselheirosError;
-      return conselheiro;
+      const normalized = {
+        ...conselheiro,
+        segmento: (conselheiro as any).segmento === 'governo' || (conselheiro as any).segmento === 'setor_produtivo' || (conselheiro as any).segmento === 'sociedade_civil'
+          ? (conselheiro as any).segmento
+          : 'sociedade_civil'
+      } as Conselheiro;
+      return normalized;
     },
     enabled: !!id
   });
@@ -163,6 +179,11 @@ export function useCreateConselheiro() {
   
   return useMutation({
     mutationFn: async (conselheiro: ConselheiroCreateInput): Promise<Conselheiro> => {
+      // Validar dados antes
+      const validation = ConselheiroService.validateConselheiroData(conselheiro);
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join('\n'));
+      }
       // First, check if conselheiros table exists
       const conselheirosTableExists = await checkTableExists('conselheiros');
       
@@ -186,8 +207,13 @@ export function useCreateConselheiro() {
         if (error) {
           handleDatabaseError(error, 'CREATE', 'conselheiros');
         }
-        
-        return data;
+        const normalized = {
+          ...data,
+          segmento: (data as any).segmento === 'governo' || (data as any).segmento === 'setor_produtivo' || (data as any).segmento === 'sociedade_civil'
+            ? (data as any).segmento
+            : 'sociedade_civil'
+        } as Conselheiro;
+        return normalized;
       } catch (error: any) {
         if (error?.code === '42P01') {
           throw new Error('A tabela "conselheiros" não foi encontrada. Verifique a estrutura do banco de dados.');
@@ -213,6 +239,10 @@ export function useCreateConselheiro() {
       // Show user-friendly error message
       if (error.message.includes('tabela')) {
         toast.error(error.message);
+      } else if (error.message.includes('Data de fim') || error.message.includes('Mandato')) {
+        toast.error(error.message);
+      } else if (error.message.includes('CPF') || error.message.includes('Email') || error.message.includes('Telefone')) {
+        toast.error(error.message);
       } else if (error.message.includes('já existe')) {
         toast.error('Já existe um conselheiro com essas informações');
       } else {
@@ -227,6 +257,11 @@ export function useUpdateConselheiro() {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: ConselheiroUpdateInput }): Promise<Conselheiro> => {
+      // Validar dados antes
+      const validation = ConselheiroService.validateConselheiroData(updates);
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join('\n'));
+      }
       // First, check if conselheiros table exists
       const conselheirosTableExists = await checkTableExists('conselheiros');
       
@@ -246,8 +281,13 @@ export function useUpdateConselheiro() {
         if (error) {
           handleDatabaseError(error, 'UPDATE', 'conselheiros');
         }
-        
-        return data;
+        const normalized = {
+          ...data,
+          segmento: (data as any).segmento === 'governo' || (data as any).segmento === 'setor_produtivo' || (data as any).segmento === 'sociedade_civil'
+            ? (data as any).segmento
+            : 'sociedade_civil'
+        } as Conselheiro;
+        return normalized;
       } catch (error: any) {
         if (error?.code === '42P01') {
           throw new Error('A tabela "conselheiros" não foi encontrada. Verifique a estrutura do banco de dados.');
@@ -275,6 +315,10 @@ export function useUpdateConselheiro() {
       
       // Show user-friendly error message
       if (error.message.includes('tabela')) {
+        toast.error(error.message);
+      } else if (error.message.includes('Data de fim') || error.message.includes('Mandato')) {
+        toast.error(error.message);
+      } else if (error.message.includes('CPF') || error.message.includes('Email') || error.message.includes('Telefone')) {
         toast.error(error.message);
       } else if (error.message.includes('não encontrado')) {
         toast.error('Conselheiro não encontrado');
@@ -346,4 +390,53 @@ export function useDeleteConselheiro() {
   });
 }
 
-// ...rest of file unchanged
+/**
+ * Hook to resolve multiple conselheiro names from IDs
+ * Useful for displaying names in tables with foreign keys
+ */
+export function useConselheirosNames(ids: string[]) {
+  return useQuery({
+    queryKey: ['conselheiros-names', ids],
+    queryFn: async (): Promise<Record<string, string>> => {
+      if (ids.length === 0) return {};
+
+      try {
+        // First try conselheiros table
+        const conselheirosTableExists = await checkTableExists('conselheiros');
+        
+        if (conselheirosTableExists) {
+          const { data: conselheiros, error: conselheirosError } = await supabase
+            .from('conselheiros')
+            .select('id, nome_completo')
+            .in('id', ids);
+
+          if (!conselheirosError && conselheiros) {
+            return conselheiros.reduce((acc, c) => ({ ...acc, [c.id]: c.nome_completo }), {});
+          }
+        }
+
+        // Fallback to profiles table
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', ids);
+
+        if (profilesError) {
+          console.warn('Error fetching profiles for names:', profilesError);
+          return {};
+        }
+
+        return profiles?.reduce((acc, p) => ({ 
+          ...acc, 
+          [p.id]: p.full_name || 'Nome não disponível' 
+        }), {}) || {};
+
+      } catch (error) {
+        console.warn('Error resolving conselheiro names:', error);
+        return {};
+      }
+    },
+    enabled: ids.length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}

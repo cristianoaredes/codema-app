@@ -2,6 +2,7 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Card, 
   CardContent, 
@@ -29,6 +30,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { logAction } from "@/utils/monitoring";
+import { useToast } from "@/hooks/use-toast";
 
 interface Resolucao {
   id: string;
@@ -106,6 +109,7 @@ export default function ResolucaoDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { toast } = useToast();
 
   const { data: resolucao, isLoading, error } = useQuery({
     queryKey: ['resolucao', id],
@@ -365,10 +369,7 @@ export default function ResolucaoDetails() {
                 <>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      // TODO: Implementar edição
-                      console.log('Editar resolução:', resolucao.id);
-                    }}
+                    onClick={() => navigate(`/resolucoes/editar/${resolucao.id}`)}
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Editar
@@ -376,9 +377,25 @@ export default function ResolucaoDetails() {
                   
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      // TODO: Implementar envio para votação
-                      console.log('Enviar para votação:', resolucao.id);
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('resolucoes')
+                          .update({ 
+                            status: 'em_votacao',
+                            data_envio_votacao: new Date().toISOString()
+                          })
+                          .eq('id', resolucao.id);
+                        
+                        if (error) throw error;
+                        
+                        toast.success('Resolução enviada para votação!');
+                        // Refresh data
+                        window.location.reload();
+                      } catch (error) {
+                        console.error('Erro ao enviar para votação:', error);
+                        toast.error('Erro ao enviar resolução para votação');
+                      }
                     }}
                   >
                     <Vote className="h-4 w-4 mr-2" />
@@ -390,10 +407,7 @@ export default function ResolucaoDetails() {
               {resolucao.status === 'em_votacao' && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // TODO: Implementar registrar votação
-                    console.log('Registrar votação:', resolucao.id);
-                  }}
+                  onClick={() => navigate(`/resolucoes/votacao/${resolucao.id}`)}
                 >
                   <Scale className="h-4 w-4 mr-2" />
                   Registrar Votação
@@ -403,9 +417,18 @@ export default function ResolucaoDetails() {
               {resolucao.status === 'aprovada' && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // TODO: Implementar publicação
-                    console.log('Publicar resolução:', resolucao.id);
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase
+                        .from('resolucoes')
+                        .update({ status: 'publicada', data_publicacao: new Date().toISOString(), updated_by: profile?.id })
+                        .eq('id', resolucao.id);
+                      if (error) throw error;
+                      await logAction('publicar_resolucao', 'resolucoes', resolucao.id, { numero: resolucao.numero });
+                      toast({ title: 'Resolução publicada', description: 'A resolução foi publicada com sucesso.' });
+                    } catch (err: any) {
+                      toast({ title: 'Erro ao publicar', description: err?.message || 'Tente novamente.', variant: 'destructive' });
+                    }
                   }}
                 >
                   <Gavel className="h-4 w-4 mr-2" />

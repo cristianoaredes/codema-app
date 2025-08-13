@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@/test-utils/render'
+import { render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { SmartForm, SmartInput } from '@/components/forms/SmartForm'
@@ -21,7 +21,7 @@ describe('SmartForm', () => {
     // garantir online
     Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true })
 
-    render(
+    const { container } = rtlRender(
       <SmartForm 
         schema={schema} 
         defaultValues={{ name: '' }} 
@@ -34,7 +34,9 @@ describe('SmartForm', () => {
       </SmartForm>
     )
 
-    await userEvent.type(screen.getByPlaceholderText('Seu nome'), 'Jo')
+    const nameInput = container.querySelector('input[name="name"]') as HTMLInputElement
+    // Use fireEvent instead of userEvent to avoid pointer-events issues
+    fireEvent.change(nameInput, { target: { value: 'Jo' } })
     await userEvent.click(screen.getByRole('button', { name: /salvar/i }))
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
@@ -44,7 +46,7 @@ describe('SmartForm', () => {
     const onSubmit = vi.fn(async () => {})
 
     vi.useFakeTimers()
-    render(
+    const { container } = rtlRender(
       <SmartForm
         schema={schema}
         defaultValues={{ name: '' }}
@@ -57,7 +59,8 @@ describe('SmartForm', () => {
       </SmartForm>
     )
 
-    fireEvent.change(screen.getByPlaceholderText('Seu nome'), { target: { value: 'John' } })
+    const nameInput = container.querySelector('input[name="name"]') as HTMLInputElement
+    fireEvent.change(nameInput, { target: { value: 'John' } })
 
     // aguardar o intervalo de autosave
     await act(async () => {

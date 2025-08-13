@@ -1,5 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   useReuniao, 
   useConvocacoes, 
@@ -9,6 +10,7 @@ import {
   useGerarProtocoloAta,
   useGerarProtocoloConvocacao
 } from "@/hooks/useReunioes";
+import { useConselheirosNames } from "@/hooks/useConselheiros";
 import { 
   Card, 
   CardContent, 
@@ -43,6 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface PautaItem {
   numero: number;
@@ -106,10 +109,22 @@ export default function ReuniaoDetalhes() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { toast } = useToast();
   
   const { data: reuniao, isLoading, error } = useReuniao(id!);
   const { data: convocacoes } = useConvocacoes(id);
   const { data: presencas } = usePresencas(id!);
+  
+  // Collect all conselheiro IDs from convocacoes and presencas
+  const conselheiroIds = React.useMemo(() => {
+    const ids = new Set<string>();
+    convocacoes?.forEach(c => c.conselheiro_id && ids.add(c.conselheiro_id));
+    presencas?.forEach(p => p.conselheiro_id && ids.add(p.conselheiro_id));
+    return Array.from(ids);
+  }, [convocacoes, presencas]);
+
+  // Get conselheiro names for displaying in tables
+  const { data: conselheirosNames = {} } = useConselheirosNames(conselheiroIds);
   
   const marcarPresencaMutation = useMarcarPresenca();
   const enviarConvocacoesMutation = useEnviarConvocacoes();
@@ -117,7 +132,7 @@ export default function ReuniaoDetalhes() {
   const gerarProtocoloConvocacaoMutation = useGerarProtocoloConvocacao();
 
   // Compute values before early returns
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'president' || profile?.role === 'secretary';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'presidente' || profile?.role === 'secretario';
 
   // Parse da pauta JSON
   const pautaData: PautaData | null = React.useMemo(() => {
@@ -129,6 +144,69 @@ export default function ReuniaoDetalhes() {
       return null;
     }
   }, [reuniao?.pauta]);
+
+  // Handlers (definidos antes de usar no useMemo abaixo)
+  const handleMarcarPresenca = (conselheiro_id: string, presente: boolean) => {
+    marcarPresencaMutation.mutate({
+      reuniao_id: id!,
+      conselheiro_id,
+      presente,
+      horario_chegada: presente ? new Date().toISOString() : undefined
+    });
+  };
+
+  const handleGerarProtocoloAta = () => {
+    gerarProtocoloAtaMutation.mutate(id!);
+  };
+
+  const handleGerarProtocoloConvocacao = () => {
+    gerarProtocoloConvocacaoMutation.mutate(id!);
+  };
+
+  const handleEnviarConvocacoes = async () => {
+    if (!reuniao) return;
+    
+    try {
+      // Get all active conselheiros
+      const { data: conselheiros, error } = await supabase
+        .from('conselheiros')
+        .select('profile_id')
+        .eq('status', 'ativo');
+      
+      if (error) {
+        throw new Error('Erro ao buscar conselheiros');
+      }
+      
+      if (!conselheiros || conselheiros.length === 0) {
+        toast({
+          title: 'Nenhum conselheiro encontrado',
+          description: 'Não há conselheiros ativos para enviar convocações',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      const conselheiroIds = conselheiros.map(c => c.profile_id);
+      
+      await enviarConvocacoesMutation.mutateAsync({
+        reuniao_id: id!,
+        conselheiros_ids: conselheiroIds,
+        tipo_envio: 'email'
+      });
+      
+      toast({
+        title: 'Convocações enviadas com sucesso',
+        description: `${conselheiroIds.length} convocações foram enviadas por email`,
+      });
+    } catch (err: unknown) {
+      console.error('Erro ao enviar convocações:', err);
+      toast({
+        title: 'Erro ao enviar convocações',
+        description: (err as Error)?.message || 'Tente novamente mais tarde',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Definir ações disponíveis
   const headerActions = React.useMemo(() => {
@@ -155,7 +233,7 @@ export default function ReuniaoDetalhes() {
         actions.push({
           label: 'Enviar Convocações',
           icon: <Mail className="h-4 w-4" />,
-          onClick: () => enviarConvocacoesMutation.mutate(id!),
+          onClick: handleEnviarConvocacoes,
           disabled: enviarConvocacoesMutation.isPending
         });
       }
@@ -225,23 +303,6 @@ export default function ReuniaoDetalhes() {
       </div>
     );
   }
-
-  const handleMarcarPresenca = (conselheiro_id: string, presente: boolean) => {
-    marcarPresencaMutation.mutate({
-      reuniao_id: id!,
-      conselheiro_id,
-      presente,
-      horario_chegada: presente ? new Date().toISOString() : undefined
-    });
-  };
-
-  const handleGerarProtocoloAta = () => {
-    gerarProtocoloAtaMutation.mutate(id!);
-  };
-
-  const handleGerarProtocoloConvocacao = () => {
-    gerarProtocoloConvocacaoMutation.mutate(id!);
-  };
 
   return (
     <div className="space-y-6">
@@ -374,7 +435,7 @@ export default function ReuniaoDetalhes() {
             {isAdmin && (
               <Button 
                 size="sm" 
-                onClick={() => {/* TODO: Implementar modal de envio */}}
+                onClick={handleEnviarConvocacoes}
                 disabled={enviarConvocacoesMutation.isPending}
               >
                 Enviar Convocações
@@ -400,8 +461,7 @@ export default function ReuniaoDetalhes() {
                 {convocacoes.map((convocacao) => (
                   <TableRow key={convocacao.id}>
                     <TableCell>
-                      {/* TODO: Resolver nome do conselheiro via profiles */}
-                      {convocacao.conselheiro_id}
+                      {conselheirosNames[convocacao.conselheiro_id] || 'Carregando...'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={convocacao.status === 'enviada' ? 'default' : 'secondary'}>
@@ -431,8 +491,11 @@ export default function ReuniaoDetalhes() {
                 Envie convocações para os conselheiros participarem da reunião.
               </p>
               {isAdmin && (
-                <Button onClick={() => {/* TODO: Implementar modal de envio */}}>
-                  Enviar Convocações
+                <Button 
+                  onClick={handleEnviarConvocacoes}
+                  disabled={enviarConvocacoesMutation.isPending}
+                >
+                  {enviarConvocacoesMutation.isPending ? 'Enviando...' : 'Enviar Convocações'}
                 </Button>
               )}
             </div>
@@ -466,8 +529,7 @@ export default function ReuniaoDetalhes() {
                 {presencas.map((presenca) => (
                   <TableRow key={presenca.id}>
                     <TableCell>
-                      {/* TODO: Resolver nome do conselheiro via profiles */}
-                      {presenca.conselheiro_id}
+                      {conselheirosNames[presenca.conselheiro_id] || 'Carregando...'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={presenca.presente ? 'default' : 'destructive'}>

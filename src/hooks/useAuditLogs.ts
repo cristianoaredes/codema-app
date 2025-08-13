@@ -34,7 +34,7 @@ export function useAuditLogs(filters: AuditLogsFilters = {}) {
   return useQuery({
     queryKey: ['audit-logs', filters],
     queryFn: async (): Promise<AuditLog[]> => {
-      let query = supabase
+      const query = supabase
         .from('audit_logs')
         .select(`
           *,

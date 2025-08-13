@@ -27,6 +27,7 @@ import { DetailPageHeader } from "@/components/common/DetailPageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface Report {
   id: string;
@@ -104,6 +105,7 @@ export default function ReportDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { toast } = useToast();
 
   const { data: report, isLoading, error } = useQuery({
     queryKey: ['report', id],
@@ -147,9 +149,21 @@ export default function ReportDetails() {
         actions.push({
           label: 'Excluir',
           icon: <Trash2 className="h-4 w-4" />,
-          onClick: () => {
-            // TODO: Implementar confirmação e exclusão
-            console.log('Excluir relatório', id);
+          onClick: async () => {
+            if (window.confirm('Tem certeza que deseja excluir este relatório?')) {
+              try {
+                const { error } = await supabase
+                  .from('relatorios')
+                  .delete()
+                  .eq('id', id);
+                
+                if (error) throw error;
+                
+                navigate('/relatorios');
+              } catch (error) {
+                console.error('Erro ao excluir relatório:', error);
+              }
+            }
           },
           variant: 'destructive' as const
         });
@@ -326,19 +340,29 @@ export default function ReportDetails() {
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
-                onClick={() => {
-                  // TODO: Implementar edição de relatório
-                  console.log('Editar relatório:', report.id);
-                }}
+                onClick={() => navigate(`/relatorios/editar/${report.id}`)}
               >
                 Editar Relatório
               </Button>
               {isAdmin && report.status === 'open' && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // TODO: Implementar mudança de status
-                    console.log('Marcar como em andamento:', report.id);
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase
+                        .from('reports')
+                        .update({ status: 'in_progress' })
+                        .eq('id', report.id);
+                      
+                      if (error) throw error;
+                      
+                      toast.success('Status atualizado para "Em Andamento"');
+                      // Refresh page to show updated status
+                      window.location.reload();
+                    } catch (error) {
+                      console.error('Erro ao atualizar status:', error);
+                      toast.error('Erro ao atualizar status do relatório');
+                    }
                   }}
                 >
                   Marcar como Em Andamento
@@ -347,9 +371,22 @@ export default function ReportDetails() {
               {isAdmin && report.status === 'in_progress' && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // TODO: Implementar resolução
-                    console.log('Resolver relatório:', report.id);
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase
+                        .from('reports')
+                        .update({ status: 'resolved' })
+                        .eq('id', report.id);
+                      
+                      if (error) throw error;
+                      
+                      toast.success('Relatório marcado como resolvido');
+                      // Refresh page to show updated status
+                      window.location.reload();
+                    } catch (error) {
+                      console.error('Erro ao atualizar status:', error);
+                      toast.error('Erro ao marcar relatório como resolvido');
+                    }
                   }}
                 >
                   Marcar como Resolvido

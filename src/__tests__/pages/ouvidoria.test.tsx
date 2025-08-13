@@ -23,6 +23,7 @@ vi.mock('@/integrations/supabase/client', () => {
     order: () => buildThenable(data),
     in: () => buildThenable(data),
     eq: () => buildThenable(data),
+    limit: () => buildThenable(data),
     insert: () => Promise.resolve({ error: null }),
     rpc: () => Promise.resolve({ data: 'OUV-0002', error: null }),
     then: (resolve: (result: { data: unknown; error: null }) => unknown) => Promise.resolve(resolve({ data, error: null })),
@@ -42,6 +43,7 @@ vi.mock('@/integrations/supabase/client', () => {
 describe('Página de Ouvidoria', () => {
   it('renderiza cabeçalho e total de denúncias', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    client.setQueryData(['ouvidoria_denuncias'], mockDenuncias)
     rtlRender(
       <QueryClientProvider client={client}>
         <BrowserRouter>
@@ -52,8 +54,8 @@ describe('Página de Ouvidoria', () => {
     await waitFor(() => expect(screen.getByText(/Ouvidoria Ambiental/i)).toBeInTheDocument())
     // Botão de nova denúncia disponível
     expect(screen.getByRole('button', { name: /Nova Denúncia/i })).toBeInTheDocument()
-    // Total cards renderizados (pode aparecer em mais de um card)
-    expect(screen.getAllByText('1').length).toBeGreaterThan(0)
+    // Lista apresenta a denúncia mockada
+    await waitFor(() => expect(screen.getByText(/OUV-0001/i)).toBeInTheDocument())
   })
 
   it('abre o diálogo de Nova Denúncia ao clicar no botão', async () => {
@@ -70,7 +72,8 @@ describe('Página de Ouvidoria', () => {
     await btn.click()
     await waitFor(() => expect(screen.getByText(/Registrar Nova Denúncia/i)).toBeInTheDocument())
     // Campos-chave do formulário devem estar presentes
-    expect(screen.getByLabelText(/Tipo de Denúncia/i)).toBeInTheDocument()
+    // O seletor usa Label + Trigger; validamos pelo placeholder do Select
+    expect(screen.getByText(/Selecione o tipo/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Descrição da Denúncia/i)).toBeInTheDocument()
   })
 })

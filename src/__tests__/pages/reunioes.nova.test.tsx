@@ -20,14 +20,14 @@ vi.mock('react-router-dom', async (orig) => {
 })
 
 // Mock supabase insert
-const insertSpy = vi.fn().mockResolvedValue({ error: null })
+const insertSpy = vi.fn(() => Promise.resolve({ error: null }))
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     from: (table: string) => {
       if (table === 'reunioes') {
         return { insert: insertSpy }
       }
-      return { insert: vi.fn() }
+      return { insert: vi.fn(() => Promise.resolve({ error: null })) }
     },
   },
 }))

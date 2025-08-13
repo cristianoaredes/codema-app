@@ -223,6 +223,7 @@ export default function ConselheiroDetails() {
   }
 
   const canEdit = profile?.role && ['admin', 'secretario', 'presidente'].includes(profile.role);
+  const isAdmin = profile?.role === 'admin';
   const diasParaFimMandato = differenceInDays(new Date(conselheiro.data_fim_mandato), new Date());
   const mandatoProximoVencimento = diasParaFimMandato <= 30 && diasParaFimMandato > 0;
   const mandatoVencido = diasParaFimMandato <= 0;
@@ -234,29 +235,25 @@ export default function ConselheiroDetails() {
   const percentualPresenca = totalReunioes > 0 ? (presencasCount / totalReunioes) * 100 : 0;
 
   // Definir ações disponíveis
-  const headerActions = React.useMemo(() => {
-    const actions = [];
+  const headerActions = [];
+  
+  if (isAdmin) {
+    headerActions.push({
+      label: 'Editar',
+      icon: <Edit className="h-4 w-4" />,
+      onClick: () => navigate(`/codema/conselheiros/${id}/editar`),
+      variant: 'outline' as const
+    });
     
-    if (isAdmin) {
-      actions.push({
-        label: 'Editar',
-        icon: <Edit className="h-4 w-4" />,
-        onClick: () => navigate(`/codema/conselheiros/${id}/editar`),
-        variant: 'outline' as const
+    if (conselheiro.situacao === 'ativo') {
+      headerActions.push({
+        label: 'Criar Impedimento',
+        icon: <Ban className="h-4 w-4" />,
+        onClick: () => navigate(`/codema/conselheiros/${id}/impedimento`),
+        variant: 'destructive' as const
       });
-      
-      if (conselheiro.situacao === 'ativo') {
-        actions.push({
-          label: 'Criar Impedimento',
-          icon: <Ban className="h-4 w-4" />,
-          onClick: () => navigate(`/codema/conselheiros/${id}/impedimento`),
-          variant: 'destructive' as const
-        });
-      }
     }
-    
-    return actions;
-  }, [isAdmin, id, navigate, conselheiro.situacao]);
+  }
 
   return (
     <div className="space-y-6">
@@ -500,32 +497,23 @@ export default function ConselheiroDetails() {
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
-                onClick={() => {
-                  // TODO: Implementar edição
-                  console.log('Editar conselheiro:', conselheiro.id);
-                }}
+                onClick={() => navigate(`/conselheiros/editar/${conselheiro.id}`)}
               >
-                <User className="h-4 w-4 mr-2" />
+                <Edit className="h-4 w-4 mr-2" />
                 Editar Dados
               </Button>
 
               <Button
                 variant="outline"
-                onClick={() => {
-                  // TODO: Implementar registrar impedimento
-                  console.log('Registrar impedimento:', conselheiro.id);
-                }}
+                onClick={() => navigate(`/impedimentos/novo?conselheiro=${conselheiro.id}`)}
               >
-                <AlertTriangle className="h-4 w-4 mr-2" />
+                <Ban className="h-4 w-4 mr-2" />
                 Registrar Impedimento
               </Button>
 
               <Button
                 variant="outline"
-                onClick={() => {
-                  // TODO: Implementar renovar mandato
-                  console.log('Renovar mandato:', conselheiro.id);
-                }}
+                onClick={() => navigate(`/conselheiros/renovar/${conselheiro.id}`)}
               >
                 <Shield className="h-4 w-4 mr-2" />
                 Renovar Mandato
@@ -533,10 +521,7 @@ export default function ConselheiroDetails() {
 
               <Button
                 variant="outline"
-                onClick={() => {
-                  // TODO: Implementar relatório
-                  console.log('Gerar relatório:', conselheiro.id);
-                }}
+                onClick={() => navigate(`/relatorios/conselheiro/${conselheiro.id}`)}
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Relatório

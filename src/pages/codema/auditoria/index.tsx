@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BreadcrumbWithActions, SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
-import { LoadingSpinner } from '@/components/ui/loading';
+import { Loading } from '@/components/ui';
 import { useAuditLogs } from '@/hooks';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -87,7 +87,7 @@ export default function AuditoriaPage() {
     return labels[entity] || entity;
   };
 
-  if (isLoading) return <div className="flex h-[50vh] items-center justify-center"><LoadingSpinner /></div>;
+  if (isLoading) return <Loading type="spinner" message="Carregando logs..." className="py-24" />;
 
   return (
     <TooltipProvider>

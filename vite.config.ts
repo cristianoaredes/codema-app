@@ -6,7 +6,7 @@ import dyadComponentTagger from '@dyad-sh/react-vite-component-tagger';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0", // Changed from "::" to "0.0.0.0" for better Docker compatibility
     port: 8080,
     // HMR configuration for Docker
     hmr: {

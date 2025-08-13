@@ -12,7 +12,6 @@ import { AppSidebar } from "@/components/common/Navigation/AppSidebar";
 import { Header } from "@/components/common";
 import { SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
 import { MobileNavigation } from '@/components/navigation/MobileNavigation';
-import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 
@@ -90,8 +89,6 @@ const PublicLayout = () => (
 );
 
 const AuthenticatedLayout = () => {
-  const commandPalette = useCommandPalette();
-  
   // Enable keyboard navigation
   useKeyboardNavigation();
   
@@ -122,7 +119,6 @@ const AuthenticatedLayout = () => {
             </Suspense>
           </div>
         </main>
-        <CommandPalette open={commandPalette.open} onOpenChange={commandPalette.setOpen} />
         <MobileNavigation />
       </div>
     </SidebarProvider>
@@ -160,29 +156,89 @@ const App = () => (
                 </ProtectedRoute>
               }>
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/admin/users" element={<UserManagement />} />
-                <Route path="/admin/data-seeder" element={<DataSeeder />} />
-                <Route path="/admin/documentation" element={<Documentation />} />
+                <Route path="/admin/users" element={
+                  <ProtectedRoute requireAdminAccess>
+                    <UserManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/data-seeder" element={
+                  <ProtectedRoute requireAdminAccess>
+                    <DataSeeder />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/documentation" element={
+                  <ProtectedRoute requireAdminAccess>
+                    <Documentation />
+                  </ProtectedRoute>
+                } />
                 <Route path="/criar-relatorio" element={<CreateReport />} />
                 <Route path="/relatorios/:id" element={<ReportDetails />} />
                 <Route path="/perfil" element={<Profile />} />
-                <Route path="/reunioes" element={<Reunioes />} />
-                <Route path="/reunioes/nova" element={<NovaReuniao />} />
-                <Route path="/reunioes/:id" element={<ReuniaoDetalhes />} />
+                <Route path="/reunioes" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <Reunioes />
+                  </ProtectedRoute>
+                } />
+                <Route path="/reunioes/nova" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <NovaReuniao />
+                  </ProtectedRoute>
+                } />
+                <Route path="/reunioes/:id" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <ReuniaoDetalhes />
+                  </ProtectedRoute>
+                } />
                 <Route path="/documentos" element={<Documentos />} />
                 <Route path="/documentos/novo" element={<NovoDocumento />} />
                 <Route path="/processos" element={<Processos />} />
                 <Route path="/fma" element={<FMA />} />
                 <Route path="/ouvidoria" element={<Ouvidoria />} />
-                <Route path="/codema/conselheiros" element={<ConselheirosPage />} />
-                <Route path="/codema/conselheiros/:id" element={<ConselheiroDetails />} />
-                <Route path="/codema/atas" element={<AtasPage />} />
-                <Route path="/codema/atas/:id" element={<AtaDetails />} />
-                <Route path="/codema/atas/nova" element={<NovaAta />} />
-                <Route path="/codema/resolucoes" element={<ResolucoesPage />} />
-                <Route path="/codema/resolucoes/:id" element={<ResolucaoDetails />} />
-                <Route path="/codema/auditoria" element={<AuditoriaPage />} />
-                <Route path="/codema/protocolos" element={<GestaoProtocolos />} />
+                <Route path="/codema/conselheiros" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <ConselheirosPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/codema/conselheiros/:id" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <ConselheiroDetails />
+                  </ProtectedRoute>
+                } />
+                <Route path="/codema/atas" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <AtasPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/codema/atas/:id" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <AtaDetails />
+                  </ProtectedRoute>
+                } />
+                <Route path="/codema/atas/nova" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <NovaAta />
+                  </ProtectedRoute>
+                } />
+                <Route path="/codema/resolucoes" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <ResolucoesPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/codema/resolucoes/:id" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <ResolucaoDetails />
+                  </ProtectedRoute>
+                } />
+                <Route path="/codema/auditoria" element={
+                  <ProtectedRoute requireAdminAccess>
+                    <AuditoriaPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/codema/protocolos" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <GestaoProtocolos />
+                  </ProtectedRoute>
+                } />
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/ajuda" element={<Ajuda />} />
                 <Route path="/documentacao" element={<Documentacao />} />

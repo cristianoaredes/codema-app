@@ -2,6 +2,7 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Card, 
   CardContent, 
@@ -28,8 +29,12 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useAproveAta } from "@/hooks/useAtas";
+import { logAction } from "@/utils/monitoring";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { generateAtaPDF } from "@/utils/pdfGenerator";
 
 interface Ata {
   id: string;
@@ -100,6 +105,8 @@ export default function AtaDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { toast } = useToast();
+  const approveMutation = useAproveAta();
 
   const { data: ata, isLoading, error } = useQuery({
     queryKey: ['ata', id],
@@ -322,10 +329,7 @@ export default function AtaDetails() {
               {canEdit && ata.status === 'rascunho' && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // TODO: Implementar edição de ata
-                    console.log('Editar ata:', ata.id);
-                  }}
+                  onClick={() => navigate(`/atas/editar/${ata.id}`)}
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Editar Ata
@@ -334,10 +338,7 @@ export default function AtaDetails() {
               
               <Button
                 variant="outline"
-                onClick={() => {
-                  // TODO: Implementar histórico de versões
-                  console.log('Ver histórico:', ata.id);
-                }}
+                onClick={() => navigate(`/atas/historico/${ata.id}`)}
               >
                 <History className="h-4 w-4 mr-2" />
                 Histórico
@@ -346,9 +347,17 @@ export default function AtaDetails() {
               {canApprove && ata.status === 'em_revisao' && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // TODO: Implementar aprovação
-                    console.log('Aprovar ata:', ata.id);
+                  onClick={async () => {
+                    try {
+                      await approveMutation.mutateAsync({ id: ata.id, aprovada_por: profile!.id });
+                      await logAction('APPROVE', 'ata', ata.id, { numero: ata.numero_ata });
+                    } catch (err: any) {
+                      toast({
+                        title: 'Erro ao aprovar',
+                        description: err?.message || 'Tente novamente mais tarde',
+                        variant: 'destructive',
+                      });
+                    }
                   }}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -360,9 +369,25 @@ export default function AtaDetails() {
                 <>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      // TODO: Implementar geração de PDF
-                      console.log('Gerar PDF:', ata.id);
+                    onClick={async () => {
+                      try {
+                        await generateAtaPDF(ata);
+                        toast({
+                          title: 'PDF gerado com sucesso',
+                          description: 'O arquivo foi baixado para seu computador',
+                        });
+                        await logAction('EXPORT', 'ata', ata.id, { 
+                          tipo: 'pdf',
+                          numero: ata.numero_ata 
+                        });
+                      } catch (error: any) {
+                        console.error('Erro ao gerar PDF:', error);
+                        toast({
+                          title: 'Erro ao gerar PDF',
+                          description: error?.message || 'Tente novamente mais tarde',
+                          variant: 'destructive',
+                        });
+                      }
                     }}
                   >
                     <Download className="h-4 w-4 mr-2" />
@@ -371,9 +396,54 @@ export default function AtaDetails() {
                   
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      // TODO: Implementar envio por email
-                      console.log('Enviar por email:', ata.id);
+                    onClick={async () => {
+                      try {
+                        // Get all active conselheiros for email distribution
+                        const { data: conselheiros } = await supabase
+                          .from('conselheiros')
+                          .select(`
+                            profiles:profile_id (
+                              email,
+                              full_name
+                            )
+                          `)
+                          .eq('status', 'ativo');
+
+                        if (conselheiros && conselheiros.length > 0) {
+                          // Send email to all conselheiros
+                          for (const conselheiro of conselheiros) {
+                            if (conselheiro.profiles?.email) {
+                              await supabase
+                                .from('email_queue')
+                                .insert({
+                                  to_email: conselheiro.profiles.email,
+                                  subject: `Ata ${ata.numero_ata} - CODEMA Itanhomi`,
+                                  html_content: `
+                                    <div style="font-family: Arial, sans-serif;">
+                                      <h2>Ata de Reunião - CODEMA</h2>
+                                      <p>Prezado(a) ${conselheiro.profiles.full_name},</p>
+                                      <p>Segue em anexo a ata da reunião ${ata.numero_ata}.</p>
+                                      <p><strong>Reunião:</strong> ${ata.reuniao_titulo || 'N/A'}</p>
+                                      <p><strong>Status:</strong> ${ata.status}</p>
+                                      <div style="margin-top: 20px; padding: 15px; background-color: #f5f5f5;">
+                                        <h3>Conteúdo da Ata:</h3>
+                                        <div>${ata.conteudo}</div>
+                                      </div>
+                                      <p>Atenciosamente,<br/>Secretaria do CODEMA</p>
+                                    </div>
+                                  `,
+                                  text_content: `Ata ${ata.numero_ata} - ${ata.reuniao_titulo}`,
+                                  email_type: 'ata_distribution',
+                                  scheduled_for: new Date().toISOString()
+                                });
+                            }
+                          }
+                          toast.success(`Ata enviada para ${conselheiros.length} conselheiros`);
+                        }
+                      } catch (error) {
+                        console.error('Erro ao enviar ata:', error);
+                        toast.error('Erro ao enviar ata por email');
+                      }
                     }}
                   >
                     <Mail className="h-4 w-4 mr-2" />
@@ -385,9 +455,25 @@ export default function AtaDetails() {
               {canEdit && ata.status === 'aprovada' && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // TODO: Implementar publicação
-                    console.log('Publicar ata:', ata.id);
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase
+                        .from('atas')
+                        .update({ 
+                          status: 'publicada',
+                          data_publicacao: new Date().toISOString()
+                        })
+                        .eq('id', ata.id);
+                      
+                      if (error) throw error;
+                      
+                      toast.success('Ata publicada com sucesso!');
+                      // Refresh data
+                      window.location.reload();
+                    } catch (error) {
+                      console.error('Erro ao publicar ata:', error);
+                      toast.error('Erro ao publicar ata');
+                    }
                   }}
                 >
                   <FileSignature className="h-4 w-4 mr-2" />

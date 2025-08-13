@@ -227,9 +227,38 @@ export const useAuthState = () => {
       return [];
     }
 
-    // Por enquanto, retorna array vazio pois estamos usando versão simplificada
-    // TODO: Implementar busca real quando resolver problemas de tipagem
-    return [];
+    try {
+      // Buscar sessões persistentes do usuário no banco
+      const { data, error } = await supabase
+        .from('persistent_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('last_used', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar sessões persistentes:', error);
+        return [];
+      }
+
+      // Mapear dados do banco para o formato PersistentSession
+      return (data || []).map((session: any) => ({
+        userId: session.user_id,
+        deviceId: session.device_id,
+        refreshToken: session.refresh_token,
+        expiresAt: session.expires_at,
+        createdAt: session.created_at,
+        lastUsed: session.last_used,
+        deviceInfo: {
+          userAgent: session.device_info?.userAgent || '',
+          platform: session.device_info?.platform || '',
+          browser: session.device_info?.browser || ''
+        }
+      }));
+    } catch (error) {
+      console.error('Erro inesperado ao buscar sessões persistentes:', error);
+      return [];
+    }
   }, [user]);
 
   /**

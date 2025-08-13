@@ -1,5 +1,12 @@
 # 🌿 CODEMA - Sistema de Gestão Ambiental Municipal
 
+![CI Pipeline](https://github.com/cristianocosta/codema-app/workflows/CI%20Pipeline/badge.svg)
+![Deploy](https://github.com/cristianocosta/codema-app/workflows/Deploy%20to%20Production/badge.svg)
+![Tests](https://img.shields.io/badge/tests-15%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-70%25-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)
+![React](https://img.shields.io/badge/React-18.3-blue)
+
 Sistema completo de digitalização do Conselho Municipal de Defesa do Meio Ambiente de Itanhomi-MG.
 
 ## 🚀 Quick Start

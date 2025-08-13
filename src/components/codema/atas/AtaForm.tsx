@@ -3,8 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { useCreateAta, useUpdateAta } from '@/hooks/useAtas';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import {
   Form,
   FormControl,
@@ -27,28 +29,11 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Save, X, FileText, Clock, Eye } from 'lucide-react';
+import { CalendarIcon, Save, X, FileText, Clock, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Ata, AtaStatus } from '@/types/ata';
 
-const ataSchema = z.object({
-  numero: z.string()
-    .min(3, 'Número deve ter pelo menos 3 caracteres')
-    .max(50, 'Número deve ter no máximo 50 caracteres'),
-  titulo: z.string()
-    .min(5, 'Título deve ter pelo menos 5 caracteres')
-    .max(200, 'Título deve ter no máximo 200 caracteres'),
-  conteudo: z.string()
-    .min(10, 'Conteúdo deve ter pelo menos 10 caracteres')
-    .max(50000, 'Conteúdo deve ter no máximo 50.000 caracteres'),
-  data_reuniao: z.date({
-    required_error: 'Data da reunião é obrigatória',
-  }),
-  status: z.enum(['rascunho', 'em_revisao', 'aprovada', 'publicada'], {
-    required_error: 'Status é obrigatório',
-  }),
-  reuniao_id: z.string().optional(),
-});
+import { ataSchema } from '@/schemas/ata';
 
 type AtaFormData = z.infer<typeof ataSchema>;
 
@@ -65,8 +50,10 @@ const AtaForm: React.FC<AtaFormProps> = ({
   onCancel,
   initialReuniaoId,
 }) => {
-  const { toast } = useToast();
   const isEditing = Boolean(ata);
+  
+  const createMutation = useCreateAta();
+  const updateMutation = useUpdateAta();
 
   const form = useForm<AtaFormData>({
     resolver: zodResolver(ataSchema),
@@ -80,6 +67,21 @@ const AtaForm: React.FC<AtaFormProps> = ({
     },
   });
 
+  // Buscar reuniões disponíveis para seleção
+  const { data: reunioes, isLoading: isLoadingReunioes } = useQuery({
+    queryKey: ['reunioes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reunioes')
+        .select('id, data, tipo, status')
+        .order('data', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const getStatusIcon = (status: AtaStatus) => {
     switch (status) {
       case 'rascunho':
@@ -88,53 +90,41 @@ const AtaForm: React.FC<AtaFormProps> = ({
         return <Clock className="h-4 w-4" />;
       case 'aprovada':
       case 'publicada':
-        return <Eye className="h-4 w-4" />;
+        return <CheckCircle className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
   };
 
-
   const onSubmit = async (data: AtaFormData) => {
     try {
       const payload = {
-        ...data,
+        numero: data.numero,
+        titulo: data.titulo,
+        conteudo: data.conteudo,
         data_reuniao: data.data_reuniao.toISOString(),
+        reuniao_id: data.reuniao_id || null,
       };
 
-      let error;
-      
-      if (isEditing) {
-        ({ error } = await supabase
-          .from('atas')
-          .update(payload)
-          .eq('id', ata!.id));
-      } else {
-        ({ error } = await supabase
-          .from('atas')
-          .insert([{
+      if (isEditing && ata) {
+        await updateMutation.mutateAsync({
+          id: ata.id,
+          updates: {
             ...payload,
-            created_by: 'current-user-id', // TODO: Get from auth context
-          }]));
+            status: data.status as 'pendente' | 'aprovada' | 'rejeitada'
+          }
+        });
+      } else {
+        await createMutation.mutateAsync({
+          ...payload,
+          reuniao_id: payload.reuniao_id || '',
+        });
       }
-
-      if (error) throw error;
-
-      toast({
-        title: isEditing ? 'Ata atualizada' : 'Ata criada',
-        description: isEditing 
-          ? 'A ata foi atualizada com sucesso.' 
-          : 'A ata foi criada com sucesso.',
-      });
 
       onSuccess?.();
     } catch (error) {
       console.error('Erro ao salvar ata:', error);
-      toast({
-        title: 'Erro ao salvar',
-        description: 'Ocorreu um erro ao salvar a ata. Tente novamente.',
-        variant: 'destructive',
-      });
+      // Error handling is done by the mutation hooks
     }
   };
 
@@ -229,6 +219,40 @@ const AtaForm: React.FC<AtaFormProps> = ({
                         {...field} 
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="reuniao_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reunião Associada</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma reunião (opcional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {isLoadingReunioes ? (
+                          <div className="p-2 text-sm text-muted-foreground">Carregando reuniões...</div>
+                        ) : reunioes && reunioes.length > 0 ? (
+                          reunioes.map((reuniao) => (
+                            <SelectItem key={reuniao.id} value={reuniao.id}>
+                              {format(new Date(reuniao.data), 'dd/MM/yyyy', { locale: ptBR })} - {reuniao.tipo}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-sm text-muted-foreground">Nenhuma reunião encontrada</div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Selecione a reunião à qual esta ata se refere
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -336,12 +360,12 @@ const AtaForm: React.FC<AtaFormProps> = ({
               
               <Button 
                 type="submit"
-                disabled={form.formState.isSubmitting}
+                disabled={createMutation.isPending || updateMutation.isPending}
                 className="flex items-center space-x-2"
               >
                 <Save className="h-4 w-4" />
                 <span>
-                  {form.formState.isSubmitting 
+                  {(createMutation.isPending || updateMutation.isPending)
                     ? 'Salvando...' 
                     : isEditing ? 'Atualizar' : 'Criar Ata'}
                 </span>
