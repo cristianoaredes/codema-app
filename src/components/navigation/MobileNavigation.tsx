@@ -62,9 +62,25 @@ const navItems: NavItem[] = [
   },
 ];
 
+// Improved active state detection for mobile nav
+const isActiveRoute = (itemPath: string, currentPath: string): boolean => {
+  if (itemPath === currentPath) return true;
+  
+  // For nested routes
+  if (currentPath.startsWith(itemPath + '/')) {
+    return true;
+  }
+  
+  // Special cases for main sections
+  if (itemPath === '/dashboard' && currentPath === '/') return true;
+  if (itemPath === '/relatorios' && currentPath.startsWith('/criar-relatorio')) return false;
+  
+  return false;
+};
+
 export function MobileNavigation() {
   const location = useLocation();
-  const { profile, hasAdminAccess, hasCODEMAAccess } = useAuth();
+  const { profile, hasCODEMAAccess } = useAuth();
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = React.useState(false);
 
@@ -91,7 +107,7 @@ export function MobileNavigation() {
         <div className="grid grid-cols-5 h-16">
           {visibleItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = isActiveRoute(item.path, location.pathname);
             const isCreateButton = item.path === '/criar-relatorio';
 
             if (item.path === '#menu') {
@@ -160,7 +176,7 @@ export function MobileNavigation() {
 
 // Mobile Menu Content (Sheet)
 function MobileMenuContent({ onClose }: { onClose: () => void }) {
-  const { profile, hasAdminAccess, hasCODEMAAccess } = useAuth();
+  const { profile, hasCODEMAAccess } = useAuth();
   const navigate = useNavigate();
 
   const menuItems = [
@@ -177,16 +193,33 @@ function MobileMenuContent({ onClose }: { onClose: () => void }) {
       requireCODEMA: true,
     },
     {
+      label: 'Atas',
+      icon: FileText,
+      path: '/codema/atas',
+      requireCODEMA: true,
+    },
+    {
+      label: 'Resoluções',
+      icon: FileText,
+      path: '/codema/resolucoes',
+      requireCODEMA: true,
+    },
+    {
       label: 'Documentos',
       icon: FileText,
       path: '/documentos',
       requireCODEMA: true,
     },
     {
-      label: 'Processos',
-      icon: FileText,
-      path: '/processos',
+      label: 'FMA',
+      icon: BarChart3,
+      path: '/fma',
       requireCODEMA: true,
+    },
+    {
+      label: 'Ouvidoria',
+      icon: FileText,
+      path: '/ouvidoria',
     },
     {
       label: 'Perfil',

@@ -15,8 +15,7 @@ import {
   UserCog,
   Database,
   Settings,
-  LogOut,
-  Shield
+  LogOut
 } from "lucide-react";
 import { useLocation, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -120,9 +119,24 @@ export function AppSidebar() {
     });
   };
 
-  // Check if route is active
+  // Check if route is active with improved nested route detection
   const isActive = (url: string) => {
-    return location.pathname === url || location.pathname.startsWith(url + '/');
+    // Exact match
+    if (location.pathname === url) return true;
+    
+    // Nested route match with special handling
+    if (url === '/dashboard' && location.pathname === '/') return false;
+    if (url === '/' && location.pathname === '/dashboard') return false;
+    
+    // For nested routes, ensure we don't match partial segments
+    if (location.pathname.startsWith(url + '/')) {
+      // Additional check to prevent false positives
+      // e.g., /admin should not match /admin-panel
+      const nextChar = location.pathname[url.length];
+      return nextChar === '/' || nextChar === undefined;
+    }
+    
+    return false;
   };
 
   return (

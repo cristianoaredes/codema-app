@@ -4,6 +4,7 @@ Sistema completo de digitalização do Conselho Municipal de Defesa do Meio Ambi
 
 ## 🚀 Quick Start
 
+### Desenvolvimento Local
 ```bash
 # Instalar dependências
 npm install
@@ -22,6 +23,18 @@ npm run build
 npm run test
 ```
 
+### Desenvolvimento com Docker
+```bash
+# Iniciar ambiente de desenvolvimento
+./scripts/docker/docker-dev.sh
+
+# Build de produção
+./scripts/docker/docker-prod.sh
+
+# Parar containers
+docker compose down
+```
+
 ## 📚 Documentação
 
 Para documentação completa do projeto, consulte:
@@ -36,7 +49,9 @@ Para documentação completa do projeto, consulte:
 - **Backend**: Supabase (PostgreSQL + Auth + Storage)
 - **State Management**: TanStack Query
 - **Forms**: React Hook Form + Zod
-- **Deploy**: Lovable Platform
+- **Containerização**: Docker + Docker Compose
+- **Web Server**: Nginx (produção)
+- **Deploy**: Docker / Netlify / Vercel
 
 ## 📁 Estrutura do Projeto
 

@@ -1,0 +1,188 @@
+# Docker Compose for Production
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  # Production application
+  app:
+    image: codema-app:latest
+    container_name: codema-app-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - NODE_ENV=production
+    ports:
+      - "80:8080"      # Map port 80 to nginx on 8080
+      - "443:8443"     # HTTPS port (if SSL configured)
+    environment:
+      - NODE_ENV=production
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    networks:
+      - codema-prod-network
+    restart: always
+    # Resource limits for production
+    deploy:
+      mode: replicated
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 60s
+        max_failure_ratio: 0.3
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    # Health check for production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=codema-app,env=production"
+
+  # Optional: Production database (if not using Supabase)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: codema-postgres-prod
+  #   environment:
+  #     - POSTGRES_USER=${DB_USER}
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD}
+  #     - POSTGRES_DB=${DB_NAME}
+  #     # Production optimizations
+  #     - POSTGRES_MAX_CONNECTIONS=200
+  #     - POSTGRES_SHARED_BUFFERS=512MB
+  #     - POSTGRES_EFFECTIVE_CACHE_SIZE=2GB
+  #     - POSTGRES_MAINTENANCE_WORK_MEM=128MB
+  #     - POSTGRES_CHECKPOINT_COMPLETION_TARGET=0.9
+  #     - POSTGRES_WAL_BUFFERS=16MB
+  #     - POSTGRES_DEFAULT_STATISTICS_TARGET=100
+  #     - POSTGRES_RANDOM_PAGE_COST=1.1
+  #   volumes:
+  #     - postgres_prod_data:/var/lib/postgresql/data
+  #     - ./backups:/backups
+  #   networks:
+  #     - codema-prod-network
+  #   restart: always
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '2'
+  #         memory: 2G
+  #       reservations:
+  #         cpus: '0.5'
+  #         memory: 512M
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "5"
+
+  # Optional: Redis for caching and sessions
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: codema-redis-prod
+  #   command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+  #   volumes:
+  #     - redis_prod_data:/data
+  #   networks:
+  #     - codema-prod-network
+  #   restart: always
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 256M
+  #       reservations:
+  #         cpus: '0.1'
+  #         memory: 64M
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+
+  # Optional: Nginx as reverse proxy/load balancer
+  # nginx-proxy:
+  #   image: nginx:alpine
+  #   container_name: codema-nginx-proxy
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./docker/nginx/proxy.conf:/etc/nginx/nginx.conf:ro
+  #     - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+  #     - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - codema-prod-network
+  #   restart: always
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 128M
+  #       reservations:
+  #         cpus: '0.1'
+  #         memory: 32M
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+
+volumes:
+  # postgres_prod_data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: /var/lib/codema/postgres
+  # redis_prod_data:
+  #   driver: local
+
+networks:
+  codema-prod-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

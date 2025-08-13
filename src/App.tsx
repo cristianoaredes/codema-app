@@ -14,6 +14,7 @@ import { SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
 import { MobileNavigation } from '@/components/navigation/MobileNavigation';
 import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 
 // Eager load para páginas críticas
 import Index from "./pages/Index";
@@ -26,6 +27,7 @@ import NotFound from "./pages/NotFound";
 const Profile = lazy(() => import("./pages/Profile"));
 const Reunioes = lazy(() => import("./pages/Reunioes"));
 const NovaReuniao = lazy(() => import("./pages/reunioes/NovaReuniao"));
+const ReuniaoDetalhes = lazy(() => import("./pages/reunioes/ReuniaoDetalhes"));
 
 // Lazy load para módulos
 const FMA = lazy(() => import("./pages/fma/FMA"));
@@ -37,12 +39,16 @@ const Processos = lazy(() => import("./pages/processos").then(m => ({ default: m
 // Lazy load para relatórios
 const Reports = lazy(() => import("./pages/relatorios").then(m => ({ default: m.Reports })));
 const CreateReport = lazy(() => import("./pages/relatorios").then(m => ({ default: m.CreateReport })));
+const ReportDetails = lazy(() => import("./pages/relatorios/ReportDetails"));
 
 // Lazy load para módulos CODEMA
 const ConselheirosPage = lazy(() => import("./pages/codema/conselheiros"));
+const ConselheiroDetails = lazy(() => import("./pages/codema/conselheiros/ConselheiroDetails"));
 const AtasPage = lazy(() => import("./pages/codema/atas"));
+const AtaDetails = lazy(() => import("./pages/codema/atas/AtaDetails"));
 const NovaAta = lazy(() => import("./pages/codema/atas/NovaAta"));
 const ResolucoesPage = lazy(() => import("./pages/codema/resolucoes"));
+const ResolucaoDetails = lazy(() => import("./pages/codema/resolucoes/ResolucaoDetails"));
 const AuditoriaPage = lazy(() => import("./pages/codema/auditoria"));
 const GestaoProtocolos = lazy(() => import("./pages/codema/protocolos/index"));
 
@@ -85,6 +91,9 @@ const PublicLayout = () => (
 
 const AuthenticatedLayout = () => {
   const commandPalette = useCommandPalette();
+  
+  // Enable keyboard navigation
+  useKeyboardNavigation();
   
   return (
     <SidebarProvider>
@@ -155,18 +164,23 @@ const App = () => (
                 <Route path="/admin/data-seeder" element={<DataSeeder />} />
                 <Route path="/admin/documentation" element={<Documentation />} />
                 <Route path="/criar-relatorio" element={<CreateReport />} />
+                <Route path="/relatorios/:id" element={<ReportDetails />} />
                 <Route path="/perfil" element={<Profile />} />
                 <Route path="/reunioes" element={<Reunioes />} />
                 <Route path="/reunioes/nova" element={<NovaReuniao />} />
+                <Route path="/reunioes/:id" element={<ReuniaoDetalhes />} />
                 <Route path="/documentos" element={<Documentos />} />
                 <Route path="/documentos/novo" element={<NovoDocumento />} />
                 <Route path="/processos" element={<Processos />} />
                 <Route path="/fma" element={<FMA />} />
                 <Route path="/ouvidoria" element={<Ouvidoria />} />
                 <Route path="/codema/conselheiros" element={<ConselheirosPage />} />
+                <Route path="/codema/conselheiros/:id" element={<ConselheiroDetails />} />
                 <Route path="/codema/atas" element={<AtasPage />} />
+                <Route path="/codema/atas/:id" element={<AtaDetails />} />
                 <Route path="/codema/atas/nova" element={<NovaAta />} />
                 <Route path="/codema/resolucoes" element={<ResolucoesPage />} />
+                <Route path="/codema/resolucoes/:id" element={<ResolucaoDetails />} />
                 <Route path="/codema/auditoria" element={<AuditoriaPage />} />
                 <Route path="/codema/protocolos" element={<GestaoProtocolos />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />

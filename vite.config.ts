@@ -8,6 +8,18 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    // HMR configuration for Docker
+    hmr: {
+      protocol: process.env.VITE_HMR_PROTOCOL || 'ws',
+      host: process.env.VITE_HMR_HOST || 'localhost',
+      port: parseInt(process.env.VITE_HMR_PORT || '24678'),
+      clientPort: parseInt(process.env.VITE_HMR_CLIENT_PORT || '24678'),
+    },
+    // Watch configuration for Docker
+    watch: {
+      usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
+      interval: 100,
+    },
   },
   plugins: [dyadComponentTagger(), 
     react(),

@@ -337,9 +337,13 @@ export const useAuthState = () => {
 
         // Verifica se existe sessão persistente válida
         if (rememberMeState) {
-          const persistentLoginValid = await checkPersistentLogin();
-          if (persistentLoginValid) {
-            console.log('✅ Sessão persistente válida encontrada');
+          try {
+            const result = await checkPersistentSession();
+            if (result.isValid) {
+              console.log('✅ Sessão persistente válida encontrada');
+            }
+          } catch (error) {
+            console.error('Erro ao verificar sessão persistente:', error);
           }
         }
 
@@ -349,19 +353,42 @@ export const useAuthState = () => {
         if (session?.user) {
           setUser(session.user);
           setSession(session);
-          await fetchProfile(session.user.id);
+          
+          // Buscar perfil do usuário
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (!profileError && profileData) {
+              setProfile(profileData as Profile);
+            }
+          } catch (error) {
+            console.error('Erro ao buscar perfil:', error);
+          }
+        } else {
+          // Importante: definir explicitamente como null quando não há sessão
+          setUser(null);
+          setSession(null);
+          setProfile(null);
         }
       } catch (error) {
         console.error('Erro na inicialização da autenticação:', error);
         setError('Erro ao inicializar autenticação');
       } finally {
+        // SEMPRE definir loading como false, independente do resultado
         setLoading(false);
         setInitialized(true);
       }
     };
 
-    initializeAuth();
-  }, [fetchProfile, checkPersistentLogin]);
+    // Chamar initializeAuth apenas uma vez
+    if (!initialized) {
+      initializeAuth();
+    }
+  }, [initialized]); // Dependência mínima apenas para controle
 
   // Escutar mudanças de autenticação
   useEffect(() => {

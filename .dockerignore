@@ -66,10 +66,12 @@ logs/
 Dockerfile
 docker-compose*.yml
 .dockerignore
+docker/
 
 # Scripts that shouldn't be in production
 scripts/seed-*.js
 scripts/test-*.js
+scripts/docker-*.sh
 
 # Archive and backup files
 archive/

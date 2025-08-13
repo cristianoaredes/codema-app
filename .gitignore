@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
 
 # Editor directories and files
 .vscode/*
@@ -44,16 +45,16 @@ EXECUTE_*.sql
 execute-migrations.js
 
 # Documentation duplicates
-docs/CODEMA_PROJECT_OVERVIEW.md
 AGENTS.md
 
 # Development scripts
 scripts/seed-*.js
 scripts/demo-*.js
 
-# Docker (unused)
-Dockerfile
-docker-compose*.yml
+# Docker configuration files are now used in the project
 
-#Ignore cursor AI rules
+# Ignore cursor AI rules
 .cursor/rules/codacy.mdc
+
+# Codacy analysis tools (removed from project)
+.codacy/

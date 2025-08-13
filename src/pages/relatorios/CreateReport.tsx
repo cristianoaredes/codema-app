@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth, useToast } from "@/hooks";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, RadioGroup, RadioGroupItem } from "@/components/ui";
-import { MapPin, FileText, Send, ArrowLeft } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import { MapPin, FileText, Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ServiceCategory {
   id: string;
@@ -143,21 +143,13 @@ const CreateReport = () => {
   return (
     <div className="container mx-auto px-6 py-8">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link to="/dashboard">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Criar Novo Relatório
-          </h1>
-          <p className="text-muted-foreground">
-            Relate um problema ou solicite um serviço municipal
-          </p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          Criar Novo Relatório
+        </h1>
+        <p className="text-muted-foreground">
+          Relate um problema ou solicite um serviço municipal
+        </p>
       </div>
 
       <div className="max-w-2xl mx-auto">
