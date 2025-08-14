@@ -6,23 +6,21 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DemoModeProvider } from "@/components/demo/DemoModeProvider";
-import { AppSidebar } from "@/components/common/Navigation/AppSidebar";
 import { Header } from "@/components/common";
-import { SmartBreadcrumb } from '@/components/navigation/SmartBreadcrumb';
-import { MobileNavigation } from '@/components/navigation/MobileNavigation';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 
-// Eager load para páginas críticas
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
+// Eager load apenas para páginas de autenticação críticas
 import AuthCallback from "./pages/AuthCallback";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
-// Lazy load para páginas secundárias
+// Lazy load para páginas principais com preloading estratégico
+const Index = lazy(() => import("./pages/Index"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+
+// Lazy load para páginas de reuniões (módulo pesado)
 const Profile = lazy(() => import("./pages/Profile"));
 const Reunioes = lazy(() => import("./pages/Reunioes"));
 const NovaReuniao = lazy(() => import("./pages/reunioes/NovaReuniao"));
@@ -30,7 +28,9 @@ const ReuniaoDetalhes = lazy(() => import("./pages/reunioes/ReuniaoDetalhes"));
 
 // Lazy load para módulos
 const FMA = lazy(() => import("./pages/fma/FMA"));
+const ProjetoDetails = lazy(() => import("./pages/fma/ProjetoDetails"));
 const Ouvidoria = lazy(() => import("./pages/ouvidoria").then(m => ({ default: m.Ouvidoria })));
+const DenunciaDetails = lazy(() => import("./pages/ouvidoria/DenunciaDetails"));
 const Documentos = lazy(() => import("./pages/documentos").then(m => ({ default: m.Documentos })));
 const NovoDocumento = lazy(() => import("./pages/documentos/NovoDocumento"));
 const Processos = lazy(() => import("./pages/processos").then(m => ({ default: m.Processos })));
@@ -39,8 +39,9 @@ const Processos = lazy(() => import("./pages/processos").then(m => ({ default: m
 const Reports = lazy(() => import("./pages/relatorios").then(m => ({ default: m.Reports })));
 const CreateReport = lazy(() => import("./pages/relatorios").then(m => ({ default: m.CreateReport })));
 const ReportDetails = lazy(() => import("./pages/relatorios/ReportDetails"));
+const DashboardExecutivo = lazy(() => import("./pages/relatorios/DashboardExecutivo"));
 
-// Lazy load para módulos CODEMA
+// Lazy load para módulos CODEMA com preload estratégico
 const ConselheirosPage = lazy(() => import("./pages/codema/conselheiros"));
 const ConselheiroDetails = lazy(() => import("./pages/codema/conselheiros/ConselheiroDetails"));
 const AtasPage = lazy(() => import("./pages/codema/atas"));
@@ -55,6 +56,12 @@ const GestaoProtocolos = lazy(() => import("./pages/codema/protocolos/index"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
 const DataSeeder = lazy(() => import("./pages/admin/DataSeeder"));
 const Documentation = lazy(() => import("./pages/admin/Documentation"));
+
+// Lazy load para arquivo digital
+const ArquivoDigital = lazy(() => import("./pages/arquivo/ArquivoDigital"));
+
+// Lazy load para mobile
+const MobileSettings = lazy(() => import("./pages/mobile/MobileSettings"));
 
 // Lazy load para páginas utilitárias
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
@@ -93,35 +100,18 @@ const AuthenticatedLayout = () => {
   useKeyboardNavigation();
   
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar data-tour="sidebar" />
-        <main className="flex-1 overflow-x-hidden relative">
-          {/* Mobile-optimized header with better touch targets */}
-          <header className="h-14 sm:h-16 flex items-center border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 px-3 sm:px-4 md:px-6">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <SidebarTrigger className="h-10 w-10 sm:h-10 sm:w-10 touch-manipulation" />
-            </div>
-            {/* Show breadcrumb on tablets and up */}
-            <div className="hidden sm:flex items-center flex-1 ml-4">
-              <SmartBreadcrumb />
-            </div>
-            {/* Mobile-optimized header actions */}
-            <div className="flex items-center gap-2 sm:gap-4 ml-auto">
-              <Header />
-            </div>
-          </header>
-
-          {/* Content area with better mobile padding and safe areas for iOS */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 pb-safe">
-            <Suspense fallback={<PageLoader />}>
-              <Outlet />
-            </Suspense>
-          </div>
-        </main>
-        <MobileNavigation />
-      </div>
-    </SidebarProvider>
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      {/* Content area with clean, modern layout */}
+      <main className="relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </div>
+      </main>
+    </div>
   );
 };
 
@@ -136,7 +126,11 @@ const App = () => (
             <BrowserRouter>
             <Routes>
               <Route element={<PublicLayout />}>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Index />
+                  </Suspense>
+                } />
                 <Route path="/relatorios" element={
                   <Suspense fallback={<PageLoader />}>
                     <Reports />
@@ -173,6 +167,11 @@ const App = () => (
                 } />
                 <Route path="/criar-relatorio" element={<CreateReport />} />
                 <Route path="/relatorios/:id" element={<ReportDetails />} />
+                <Route path="/dashboard-executivo" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <DashboardExecutivo />
+                  </ProtectedRoute>
+                } />
                 <Route path="/perfil" element={<Profile />} />
                 <Route path="/reunioes" element={
                   <ProtectedRoute requireCODEMAAccess>
@@ -193,7 +192,9 @@ const App = () => (
                 <Route path="/documentos/novo" element={<NovoDocumento />} />
                 <Route path="/processos" element={<Processos />} />
                 <Route path="/fma" element={<FMA />} />
+                <Route path="/fma/projeto/:id" element={<ProjetoDetails />} />
                 <Route path="/ouvidoria" element={<Ouvidoria />} />
+                <Route path="/ouvidoria/:id" element={<DenunciaDetails />} />
                 <Route path="/codema/conselheiros" element={
                   <ProtectedRoute requireCODEMAAccess>
                     <ConselheirosPage />
@@ -237,6 +238,16 @@ const App = () => (
                 <Route path="/codema/protocolos" element={
                   <ProtectedRoute requireCODEMAAccess>
                     <GestaoProtocolos />
+                  </ProtectedRoute>
+                } />
+                <Route path="/arquivo-digital" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <ArquivoDigital />
+                  </ProtectedRoute>
+                } />
+                <Route path="/mobile" element={
+                  <ProtectedRoute requireCODEMAAccess>
+                    <MobileSettings />
                   </ProtectedRoute>
                 } />
                 <Route path="/configuracoes" element={<Configuracoes />} />

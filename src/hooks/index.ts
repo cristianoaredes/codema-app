@@ -27,3 +27,4 @@ export { useGlobalSearch } from './useGlobalSearch';
 export { useKeyboardNavigation } from './useKeyboardNavigation';
 export { useErrorHandler } from './useErrorHandler';
 export { useMediaQuery, useIsMobile } from './use-media-query';
+export { useOuvidoriaReunioes } from './useOuvidoriaReunioes';

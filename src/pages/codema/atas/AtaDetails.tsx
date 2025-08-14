@@ -34,7 +34,7 @@ import { useAproveAta } from "@/hooks/useAtas";
 import { logAction } from "@/utils/monitoring";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { generateAtaPDF } from "@/utils/pdfGenerator";
+// generateAtaPDF will be imported dynamically for better code splitting
 
 interface Ata {
   id: string;
@@ -371,6 +371,7 @@ export default function AtaDetails() {
                     variant="outline"
                     onClick={async () => {
                       try {
+                        const { generateAtaPDF } = await import('@/utils/pdfGenerator');
                         await generateAtaPDF(ata);
                         toast({
                           title: 'PDF gerado com sucesso',

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -31,7 +31,9 @@ import {
   X,
   Check,
   Mail,
-  UserCheck
+  UserCheck,
+  Download,
+  Eye
 } from "lucide-react";
 import { DetailPageHeader } from "@/components/common/DetailPageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -46,6 +48,30 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useDownloadAttendanceList, usePreviewAttendanceList } from "@/hooks/useAttendanceList";
+import { useQuorumControl } from "@/hooks/useQuorumControl";
+import QuorumIndicator from "@/components/reunioes/QuorumIndicator";
+import AgendaManager from "@/components/reunioes/AgendaManager";
+import AgendaControl from "@/components/reunioes/AgendaControl";
+import { useAgendaManager } from "@/hooks/useAgendaManager";
+import { useVotingNotifications } from "@/hooks/useVotingNotifications";
+import { MeetingDetailsSkeleton, AgendaManagerSkeleton, QuorumIndicatorSkeleton } from '@/components/ui/loading-skeleton';
+
+// Lazy load components pesados para melhor performance
+const RoleBasedMeetingView = lazy(() => 
+  import("@/components/reunioes/RoleBasedMeetingView").catch(() => ({ default: () => null }))
+);
+
+// Lazy load components de votação
+const VotingPanel = lazy(() => 
+  import("@/components/voting/VotingPanel").then(m => ({ default: m.VotingPanel }))
+);
+const VotingResultsPanel = lazy(() => 
+  import("@/components/voting/VotingResultsPanel").then(m => ({ default: m.VotingResultsPanel }))
+);
+
+// Import type separadamente para TypeScript
+import type { MeetingStatus } from "@/components/reunioes/RoleBasedMeetingView";
 
 interface PautaItem {
   numero: number;
@@ -130,6 +156,38 @@ export default function ReuniaoDetalhes() {
   const enviarConvocacoesMutation = useEnviarConvocacoes();
   const gerarProtocoloAtaMutation = useGerarProtocoloAta();
   const gerarProtocoloConvocacaoMutation = useGerarProtocoloConvocacao();
+  
+  // Configurar notificações de votação para a reunião
+  const { isMonitoring: votingNotificationsActive } = useVotingNotifications(id);
+  const downloadAttendanceListMutation = useDownloadAttendanceList();
+  const previewAttendanceListMutation = usePreviewAttendanceList();
+  
+  // Controle de quórum em tempo real
+  const { 
+    quorumData, 
+    isConnected, 
+    refreshQuorum,
+    markAttendance: markQuorumAttendance 
+  } = useQuorumControl({ 
+    meetingId: id!, 
+    enableRealTime: true 
+  });
+
+  // Gerenciamento de agenda
+  const {
+    items: agendaItems,
+    currentItemIndex,
+    isLoading: agendaLoading,
+    hasChanges: agendaHasChanges,
+    saveAgenda,
+    setItemsWithChanges,
+    setCurrentItem,
+    nextItem,
+    previousItem,
+    recordDecision,
+    getAgendaStats,
+    currentItem
+  } = useAgendaManager(id!);
 
   // Compute values before early returns
   const isAdmin = profile?.role === 'admin' || profile?.role === 'presidente' || profile?.role === 'secretario';
@@ -146,13 +204,23 @@ export default function ReuniaoDetalhes() {
   }, [reuniao?.pauta]);
 
   // Handlers (definidos antes de usar no useMemo abaixo)
-  const handleMarcarPresenca = (conselheiro_id: string, presente: boolean) => {
-    marcarPresencaMutation.mutate({
-      reuniao_id: id!,
-      conselheiro_id,
-      presente,
-      horario_chegada: presente ? new Date().toISOString() : undefined
-    });
+  const handleMarcarPresenca = async (conselheiro_id: string, presente: boolean) => {
+    try {
+      // Marcar presença usando a mutação existente
+      await marcarPresencaMutation.mutateAsync({
+        reuniao_id: id!,
+        conselheiro_id,
+        presente,
+        horario_chegada: presente ? new Date().toISOString() : undefined
+      });
+      
+      // Atualizar quórum em tempo real
+      if (markQuorumAttendance) {
+        await markQuorumAttendance(conselheiro_id, presente);
+      }
+    } catch (error) {
+      console.error('Erro ao marcar presença:', error);
+    }
   };
 
   const handleGerarProtocoloAta = () => {
@@ -161,6 +229,14 @@ export default function ReuniaoDetalhes() {
 
   const handleGerarProtocoloConvocacao = () => {
     gerarProtocoloConvocacaoMutation.mutate(id!);
+  };
+
+  const handleDownloadAttendanceList = () => {
+    downloadAttendanceListMutation.mutate(id!);
+  };
+
+  const handlePreviewAttendanceList = () => {
+    previewAttendanceListMutation.mutate(id!);
   };
 
   const handleEnviarConvocacoes = async () => {
@@ -208,6 +284,18 @@ export default function ReuniaoDetalhes() {
     }
   };
 
+  // Converter status da reunião para o tipo MeetingStatus
+  const getMeetingStatus = (status: string): MeetingStatus => {
+    switch (status) {
+      case 'agendada': return 'scheduled';
+      case 'em_andamento': return 'in_progress';
+      case 'pausada': return 'paused';
+      case 'realizada': return 'completed';
+      case 'cancelada': return 'cancelled';
+      default: return 'scheduled';
+    }
+  };
+
   // Definir ações disponíveis
   const headerActions = React.useMemo(() => {
     if (!reuniao) return [];
@@ -237,37 +325,43 @@ export default function ReuniaoDetalhes() {
           disabled: enviarConvocacoesMutation.isPending
         });
       }
+      
+      // Botões para lista de presença (disponível para qualquer status)
+      actions.push({
+        label: 'Baixar Lista de Presença',
+        icon: <Download className="h-4 w-4" />,
+        onClick: handleDownloadAttendanceList,
+        disabled: downloadAttendanceListMutation.isPending
+      });
+      
+      actions.push({
+        label: 'Visualizar Lista de Presença',
+        icon: <Eye className="h-4 w-4" />,
+        onClick: handlePreviewAttendanceList,
+        disabled: previewAttendanceListMutation.isPending
+      });
     }
     
     return actions;
-  }, [reuniao, isAdmin, gerarProtocoloAtaMutation.isPending, gerarProtocoloConvocacaoMutation.isPending, enviarConvocacoesMutation.isPending, handleGerarProtocoloAta, handleGerarProtocoloConvocacao, enviarConvocacoesMutation, id]);
+  }, [
+    reuniao, 
+    isAdmin, 
+    gerarProtocoloAtaMutation.isPending, 
+    gerarProtocoloConvocacaoMutation.isPending, 
+    enviarConvocacoesMutation.isPending,
+    downloadAttendanceListMutation.isPending,
+    previewAttendanceListMutation.isPending,
+    handleGerarProtocoloAta, 
+    handleGerarProtocoloConvocacao, 
+    handleDownloadAttendanceList,
+    handlePreviewAttendanceList,
+    enviarConvocacoesMutation, 
+    id
+  ]);
 
   // States para loading
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-10" />
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-        </div>
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-3/4" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
+    return <MeetingDetailsSkeleton />;
   }
 
   if (error) {
@@ -358,6 +452,104 @@ export default function ReuniaoDetalhes() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Controle de Quórum em Tempo Real */}
+      {quorumData ? (
+        <QuorumIndicator 
+          quorumData={quorumData}
+          isRealTime={isConnected}
+          showDetails={true}
+          size="lg"
+        />
+      ) : (
+        <QuorumIndicatorSkeleton />
+      )}
+
+      {/* Interface Baseada no Papel do Usuário */}
+      <Suspense fallback={
+        <Card>
+          <CardHeader>
+            <CardTitle>Carregando Interface...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Skeleton className="h-24 w-full" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      }>
+        <RoleBasedMeetingView
+          meeting={{
+            id: reuniao.id,
+            titulo: reuniao.titulo,
+            status: getMeetingStatus(reuniao.status),
+            data_reuniao: reuniao.data_reuniao,
+            local: reuniao.local,
+            pauta: reuniao.pauta,
+            startTime: reuniao.status === 'em_andamento' ? new Date() : undefined
+          }}
+          quorumData={quorumData}
+          isRealTimeConnected={isConnected}
+          onStatusChange={async (newStatus) => {
+            // TODO: Implementar atualização de status da reunião
+            console.log('Mudança de status para:', newStatus);
+          }}
+          onRefreshQuorum={refreshQuorum}
+          onMarkAttendance={handleMarcarPresenca}
+          onGenerateMinutes={handleGerarProtocoloAta}
+          onSendNotification={async () => {
+            // TODO: Implementar notificação para ausentes
+            console.log('Enviando notificação para ausentes');
+          }}
+          onDownloadAttendanceList={handleDownloadAttendanceList}
+          onPreviewAttendanceList={handlePreviewAttendanceList}
+        />
+      </Suspense>
+
+      {/* Gestão Interativa da Pauta */}
+      {(reuniao.status === 'em_andamento' || reuniao.status === 'pausada') && (
+        <AgendaControl
+          currentItem={currentItem}
+          currentIndex={currentItemIndex}
+          totalItems={agendaItems.length}
+          progress={getAgendaStats().progress}
+          isInProgress={reuniao.status === 'em_andamento'}
+          canControl={isAdmin}
+          onPreviousItem={previousItem}
+          onNextItem={nextItem}
+          onStatusChange={async (index, status) => {
+            const updatedItems = [...agendaItems];
+            updatedItems[index] = {
+              ...updatedItems[index],
+              status,
+              inicioDiscussao: status === 'em_discussao' ? new Date() : updatedItems[index].inicioDiscussao
+            };
+            await saveAgenda(updatedItems);
+          }}
+          onRecordDecision={recordDecision}
+        />
+      )}
+
+      {/* Gerenciador de Pauta */}
+      {agendaLoading ? (
+        <AgendaManagerSkeleton />
+      ) : (
+        <AgendaManager
+          meetingId={id!}
+          items={agendaItems}
+          currentItemIndex={currentItemIndex}
+          canEdit={isAdmin}
+          isInProgress={reuniao.status === 'em_andamento'}
+          onItemsChange={setItemsWithChanges}
+          onCurrentItemChange={setCurrentItem}
+          onSaveAgenda={saveAgenda}
+        />
+      )}
 
       {/* Pauta da Reunião */}
       {pautaData && (
@@ -506,13 +698,36 @@ export default function ReuniaoDetalhes() {
       {/* Controle de Presença */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 h-5" />
-            Controle de Presença
-          </CardTitle>
-          <CardDescription>
-            Registre a presença dos conselheiros na reunião
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <UserCheck className="h-5 h-5" />
+                Controle de Presença
+              </CardTitle>
+              <CardDescription>
+                Registre a presença dos conselheiros na reunião
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handlePreviewAttendanceList}
+                disabled={previewAttendanceListMutation.isPending}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Visualizar Lista
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDownloadAttendanceList}
+                disabled={downloadAttendanceListMutation.isPending}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Baixar Lista PDF
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {presencas && presencas.length > 0 ? (
@@ -579,6 +794,16 @@ export default function ReuniaoDetalhes() {
           )}
         </CardContent>
       </Card>
+
+      {/* Sistema de Votação Eletrônica */}
+      <Suspense fallback={<MeetingDetailsSkeleton />}>
+        <VotingPanel reuniaoId={id!} className="space-y-6" />
+      </Suspense>
+
+      {/* Resultados de Votação */}
+      <Suspense fallback={<MeetingDetailsSkeleton />}>
+        <VotingResultsPanel showStatistics={false} className="space-y-6" />
+      </Suspense>
 
       {/* Ações Administrativas */}
       {isAdmin && (

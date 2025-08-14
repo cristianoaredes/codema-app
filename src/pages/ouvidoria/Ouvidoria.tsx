@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useOuvidoriaDenuncias, useCreateOuvidoriaDenuncia, useFiscais } from "@/hooks/useOuvidoriaDenuncias";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   MessageSquare, 
   Plus, 
@@ -23,12 +25,16 @@ import {
   CheckCircle,
   Clock,
   Phone,
-  Mail
+  Mail,
+  BarChart3,
+  TrendingUp
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import DenunciaAnalytics from "@/components/ouvidoria/DenunciaAnalytics";
 
 const Ouvidoria = () => {
+  const navigate = useNavigate();
   const { user: _user, profile } = useAuth();
   const { data: denuncias = [], isLoading: loading } = useOuvidoriaDenuncias();
   const { data: fiscais = [] } = useFiscais();
@@ -36,6 +42,7 @@ const Ouvidoria = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [showNewDenuncia, setShowNewDenuncia] = useState(false);
+  const [activeTab, setActiveTab] = useState("denuncias");
 
   const [newDenuncia, setNewDenuncia] = useState({
     tipo_denuncia: "",
@@ -326,91 +333,105 @@ const Ouvidoria = () => {
         </Dialog>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Denúncias</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{denuncias.length}</div>
-            <p className="text-xs text-muted-foreground">Este ano</p>
-          </CardContent>
-        </Card>
+      {/* Main Content with Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="denuncias">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Denúncias
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Em Apuração</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {denuncias.filter(d => ['recebida', 'em_apuracao', 'fiscalizacao_agendada'].includes(d.status)).length}
-            </div>
-            <p className="text-xs text-muted-foreground">Aguardando fiscalização</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="denuncias" className="space-y-6">
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Denúncias</CardTitle>
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{denuncias.length}</div>
+                <p className="text-xs text-muted-foreground">Este ano</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Procedentes</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {denuncias.filter(d => d.status === 'procedente').length}
-            </div>
-            <p className="text-xs text-muted-foreground">Confirmadas</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Em Apuração</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {denuncias.filter(d => ['recebida', 'em_apuracao', 'fiscalizacao_agendada'].includes(d.status)).length}
+                </div>
+                <p className="text-xs text-muted-foreground">Aguardando fiscalização</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolvidas</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">
-              {denuncias.filter(d => ['procedente', 'improcedente', 'arquivada'].includes(d.status)).length}
-            </div>
-            <p className="text-xs text-muted-foreground">Finalizadas</p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Procedentes</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-destructive">
+                  {denuncias.filter(d => d.status === 'procedente').length}
+                </div>
+                <p className="text-xs text-muted-foreground">Confirmadas</p>
+              </CardContent>
+            </Card>
 
-      {/* Filters */}
-      <div className="flex gap-4 items-center">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Buscar por protocolo, local ou descrição..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Resolvidas</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-success">
+                  {denuncias.filter(d => ['procedente', 'improcedente', 'arquivada'].includes(d.status)).length}
+                </div>
+                <p className="text-xs text-muted-foreground">Finalizadas</p>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os Status</SelectItem>
-            <SelectItem value="recebida">Recebida</SelectItem>
-            <SelectItem value="em_apuracao">Em Apuração</SelectItem>
-            <SelectItem value="fiscalizacao_agendada">Fiscalização Agendada</SelectItem>
-            <SelectItem value="fiscalizacao_realizada">Fiscalização Realizada</SelectItem>
-            <SelectItem value="procedente">Procedente</SelectItem>
-            <SelectItem value="improcedente">Improcedente</SelectItem>
-            <SelectItem value="arquivada">Arquivada</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
-      {/* Complaints List */}
-      <div className="grid gap-4">
+          {/* Filters */}
+          <div className="flex gap-4 items-center">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Buscar por protocolo, local ou descrição..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Status</SelectItem>
+                <SelectItem value="recebida">Recebida</SelectItem>
+                <SelectItem value="em_apuracao">Em Apuração</SelectItem>
+                <SelectItem value="fiscalizacao_agendada">Fiscalização Agendada</SelectItem>
+                <SelectItem value="fiscalizacao_realizada">Fiscalização Realizada</SelectItem>
+                <SelectItem value="procedente">Procedente</SelectItem>
+                <SelectItem value="improcedente">Improcedente</SelectItem>
+                <SelectItem value="arquivada">Arquivada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Complaints List */}
+          <div className="grid gap-4">
         {filteredDenuncias.map((denuncia) => {
           const statusBadge = getStatusBadge(denuncia.status);
           const priorityBadge = getPriorityBadge(denuncia.prioridade);
@@ -481,12 +502,20 @@ const Ouvidoria = () => {
                     <span>Registrada em {format(new Date(denuncia.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
                     
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/ouvidoria/${denuncia.id}`)}
+                      >
                         <Eye className="h-4 w-4 mr-1" />
                         Ver Detalhes
                       </Button>
                       {isFiscal && (
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate(`/ouvidoria/${denuncia.id}`)}
+                        >
                           <Shield className="h-4 w-4 mr-1" />
                           Gerenciar
                         </Button>
@@ -528,6 +557,12 @@ const Ouvidoria = () => {
           </Card>
         )}
       </div>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <DenunciaAnalytics denuncias={denuncias} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -84,7 +84,7 @@ export function useIsTouchDevice() {
     setIsTouch(
       'ontouchstart' in window ||
       navigator.maxTouchPoints > 0 ||
-      // @ts-ignore - legacy property
+      // @ts-expect-error - legacy property
       navigator.msMaxTouchPoints > 0
     );
   }, []);

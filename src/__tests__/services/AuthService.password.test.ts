@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { AuthService } from '@/services/auth/AuthService'
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
-      resetPasswordForEmail: vi.fn((email, options) => Promise.resolve({ error: null })),
-      updateUser: vi.fn((data) => Promise.resolve({ error: null })),
+      resetPasswordForEmail: vi.fn((_email, _options) => Promise.resolve({ error: null })),
+      updateUser: vi.fn((_data) => Promise.resolve({ error: null })),
       getUser: vi.fn(() => Promise.resolve({ data: { user: { id: 'u1' } }, error: null })),
     },
     from: vi.fn(() => ({ insert: vi.fn().mockResolvedValue({ error: null }) })),
@@ -30,14 +30,14 @@ vi.mock('@/utils/system/metricsCollector', () => ({
 
 describe('AuthService reset/update password', () => {
   const service = AuthService.getInstance()
-  let supabase: any
-  let rateLimitUtils: any
+  let supabase: { auth: { resetPasswordForEmail: ReturnType<typeof vi.fn>; updateUser: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn> } }
+  let rateLimitUtils: { canSendEmail: ReturnType<typeof vi.fn>; recordEmailAttempt: ReturnType<typeof vi.fn>; formatTimeRemaining: ReturnType<typeof vi.fn> }
 
   beforeAll(async () => {
     const supabaseModule = await import('@/integrations/supabase/client')
     const rateLimitModule = await import('@/utils/email/emailRateLimit')
-    supabase = (supabaseModule as any).supabase
-    rateLimitUtils = rateLimitModule as any
+    supabase = (supabaseModule as typeof supabaseModule).supabase
+    rateLimitUtils = rateLimitModule as typeof rateLimitModule
   })
 
   beforeEach(() => vi.clearAllMocks())

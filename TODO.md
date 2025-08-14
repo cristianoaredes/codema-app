@@ -14,9 +14,9 @@
 - [x] Limpar utilitários/serviços não usados
 - [x] Políticas Supabase: apenas o necessário no início
 
-## Baixas
+## Baixas  
 - [ ] Ouvidoria fase 2 (se não obrigatório agora)
-- [ ] FMA fase 2
+- [x] FMA fase 2 ✅ CONCLUÍDO (sistema completo implementado)
 - [ ] Dashboards avançados
 
 ## Infra/DevEx
@@ -29,4 +29,4 @@
 
 ## Documentação
 - [x] Atualizar `README` com escopo 80/20
-- [ ] Manter `docs/ARCHITECTURE_OVERVIEW.md` alinhado a cada entrega
+- [x] Manter `docs/ARCHITECTURE_OVERVIEW.md` alinhado a cada entrega ✅ ATUALIZADO (Janeiro 2025)

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as z from "zod";
 import { SmartForm, SmartInput, SmartTextarea, AutoSaveConfig } from "@/components/forms/SmartForm";
@@ -24,6 +24,9 @@ import { ArrowLeft, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { NotificationConfigPanel, NotificationConfig } from "@/components/notifications/NotificationConfigPanel";
+import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
+import { NotificationService } from "@/services/notificationService";
 
 const reuniaoSchema = z.object({
   titulo: z.string().min(3, "Título deve ter pelo menos 3 caracteres"),
@@ -41,6 +44,23 @@ export default function NovaReuniao() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { scheduleConvocacao, isScheduling } = useNotificationScheduler();
+
+  // Estado para configurações de notificação
+  const [notificationConfig, setNotificationConfig] = useState<NotificationConfig>({
+    enabled: true,
+    antecedencia_dias: 3,
+    lembrete_24h: true,
+    lembrete_2h: true,
+    incluir_pauta: true,
+    incluir_documentos: false,
+    canais: {
+      email: true,
+      sms: true,
+      whatsapp: false
+    },
+    destinatarios: []
+  });
 
   const defaultValues: ReuniaoFormData = {
     titulo: "",
@@ -81,13 +101,74 @@ export default function NovaReuniao() {
       protocolo_convocacao: null,
     };
 
-    const { error } = await supabase.from("reunioes").insert(reuniaoData);
+    const { data: reuniaoCriada, error } = await supabase.from("reunioes").insert(reuniaoData).select().single();
 
     if (error) throw error;
 
+    // Agendar notificações se configurado
+    if (notificationConfig.enabled && reuniaoCriada) {
+      try {
+        // Buscar conselheiros ativos para notificação
+        const { data: conselheiros } = await supabase
+          .from('conselheiros')
+          .select('id, nome, email, telefone, cargo')
+          .eq('status', 'ativo');
+
+        if (conselheiros && conselheiros.length > 0) {
+          const convocacaoData = {
+            reuniao: {
+              id: reuniaoCriada.id,
+              titulo: reuniaoCriada.titulo,
+              data_reuniao: reuniaoCriada.data_reuniao,
+              local: reuniaoCriada.local,
+              tipo: reuniaoCriada.tipo,
+              protocolo: reuniaoCriada.protocolo || 'Pendente',
+              observacoes: data.descricao,
+              pauta: data.pauta ? [{ 
+                id: '1', 
+                titulo: 'Pauta da Reunião', 
+                descricao: data.pauta,
+                ordem: 1 
+              }] : []
+            },
+            conselheiros: conselheiros.map(c => ({
+              id: c.id,
+              name: c.nome,
+              email: c.email,
+              phone: c.telefone,
+              role: c.cargo,
+              preferences: {
+                email: notificationConfig.canais.email,
+                sms: notificationConfig.canais.sms,
+                whatsapp: notificationConfig.canais.whatsapp
+              }
+            })),
+            configuracao: {
+              antecedencia_dias: notificationConfig.antecedencia_dias,
+              lembrete_24h: notificationConfig.lembrete_24h,
+              lembrete_2h: notificationConfig.lembrete_2h,
+              incluir_pauta: notificationConfig.incluir_pauta,
+              incluir_documentos: notificationConfig.incluir_documentos
+            }
+          };
+
+          scheduleConvocacao(convocacaoData);
+        }
+      } catch (notificationError) {
+        console.error('Erro ao agendar notificações:', notificationError);
+        toast({
+          title: "Reunião criada",
+          description: "Reunião criada com sucesso, mas houve erro ao agendar notificações.",
+          variant: "destructive",
+        });
+      }
+    }
+
     toast({
       title: "Sucesso",
-      description: "Reunião criada com sucesso!",
+      description: notificationConfig.enabled 
+        ? "Reunião criada e notificações agendadas com sucesso!" 
+        : "Reunião criada com sucesso!",
     });
 
     navigate("/reunioes");
@@ -203,6 +284,16 @@ export default function NovaReuniao() {
           </SmartForm>
         </CardContent>
       </Card>
+
+      {/* Painel de Configuração de Notificações */}
+      <NotificationConfigPanel
+        config={notificationConfig}
+        onChange={setNotificationConfig}
+        reunionData={{
+          data_reuniao: '', // Será preenchido dinamicamente pelo formulário
+          tipo: 'ordinaria'
+        }}
+      />
     </div>
   );
 }

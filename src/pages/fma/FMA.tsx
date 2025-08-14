@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, TrendingUp, TrendingDown, DollarSign, Briefcase, FileText, Download, Eye, Edit, Trash2 } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, DollarSign, Briefcase, FileText, Download, Eye, Edit, Trash2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -69,6 +70,7 @@ interface DashboardData {
 
 const FMA = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [receitas, setReceitas] = useState<FMAReceita[]>([]);
   const [projetos, setProjetos] = useState<FMAProjeto[]>([]);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -738,6 +740,14 @@ const FMA = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(projeto.status)}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/fma/projeto/${projeto.id}`)}
+                        title="Ver detalhes do projeto"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
