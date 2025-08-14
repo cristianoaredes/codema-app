@@ -24,7 +24,8 @@ import {
   Hash,
   ChevronRight,
   BarChart3,
-  Archive
+  Archive,
+  Smartphone
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useLocation } from "react-router-dom";

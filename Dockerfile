@@ -39,8 +39,8 @@ RUN npm run build
 FROM node:20-alpine AS development
 WORKDIR /app
 
-# Install git for development tools
-RUN apk add --no-cache git
+# Install development tools and curl for healthchecks
+RUN apk add --no-cache git curl
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -49,9 +49,9 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (use npm install for development flexibility)
+# Install all dependencies without running lifecycle scripts (avoid prepare before src exists)
 RUN --mount=type=cache,target=/root/.npm \
-    npm install && \
+    npm install --ignore-scripts && \
     npm cache clean --force
 
 # Copy source code (will be overridden by volume mount in development)
