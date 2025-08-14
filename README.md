@@ -30,23 +30,46 @@ O projeto segue a filosofia 80/20, priorizando os recursos essenciais que atende
 
 ## 🚀 Quick Start
 
-### Desenvolvimento Local
+### 🔧 Setup Automatizado (Recomendado)
 ```bash
-# Instalar dependências
+# Setup completo automatizado
+./scripts/setup-production.sh
+```
+
+### 📖 Setup Manual
+```bash
+# 1. Instalar dependências
 npm install
 
-# Configurar variáveis de ambiente
+# 2. Configurar ambiente
 cp .env.example .env
 # Editar .env com suas credenciais do Supabase
 
-# Iniciar desenvolvimento
-npm run dev
+# 3. Configurar banco de dados
+npx supabase login
+npx supabase link --project-ref seu-project-id
+npx supabase db push
 
-# Build para produção
+# 4. Iniciar desenvolvimento
+npm run dev
+```
+
+### 🌐 Deploy em Produção
+
+#### Opção 1: Vercel (1-click)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/codema-app)
+
+#### Opção 2: Setup Manual
+```bash
+# Build de produção
 npm run build
 
-# Executar testes
-npm run test
+# Verificação final
+./scripts/verify-production-ready.sh
+
+# Deploy via Vercel CLI
+npm install -g vercel
+vercel --prod
 ```
 
 ### Desenvolvimento com Docker
