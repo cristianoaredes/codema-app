@@ -376,6 +376,176 @@ Utilizamos **shadcn/ui** com customizações para:
 
 ---
 
+## 🧭 Mapa de Telas e Componentes
+
+- **Autenticação**
+  - Páginas: `src/pages/ResetPassword.tsx`, `src/pages/AuthCallback.tsx`
+  - Componentes: `src/components/auth/*`
+
+- **Conselheiros**
+  - Páginas: `src/pages/codema/conselheiros/index.tsx`, `src/pages/codema/conselheiros/ConselheiroDetails.tsx`
+
+- **Reuniões**
+  - Páginas: `src/pages/Reunioes.tsx`, `src/pages/reunioes/NovaReuniao.tsx`, `src/pages/reunioes/ReuniaoDetalhes.tsx`
+  - Componentes: `src/components/reunioes/AgendaManager.tsx`, `src/components/reunioes/QuorumIndicator.tsx`, `src/components/voting/VotingPanel.tsx`, `src/components/voting/VotingResultsPanel.tsx`, `src/components/voting/VotingAuditPanel.tsx`
+
+- **Atas**
+  - Páginas: `src/pages/codema/atas/index.tsx`, `src/pages/codema/atas/NovaAta.tsx`, `src/pages/codema/atas/AtaDetails.tsx`
+
+- **Resoluções**
+  - Páginas: `src/pages/codema/resolucoes/index.tsx`, `src/pages/codema/resolucoes/ResolucaoDetails.tsx`
+
+- **Protocolos**
+  - Páginas: `src/pages/codema/protocolos/index.tsx`
+
+- **Ouvidoria**
+  - Páginas: `src/pages/ouvidoria/Ouvidoria.tsx`, `src/pages/ouvidoria/DenunciaDetails.tsx`
+
+- **FMA**
+  - Páginas: `src/pages/fma/FMA.tsx`, `src/pages/fma/ProjetoDetails.tsx`
+
+- **Processos**
+  - Páginas: `src/pages/processos/Processos.tsx`
+
+- **Documentos**
+  - Páginas: `src/pages/documentos/Documentos.tsx`, `src/pages/documentos/NovoDocumento.tsx`
+
+- **Relatórios**
+  - Páginas: `src/pages/relatorios/Reports.tsx`, `src/pages/relatorios/CreateReport.tsx`, `src/pages/relatorios/ReportDetails.tsx`, `src/pages/relatorios/DashboardExecutivo.tsx`
+
+- **Arquivo Digital**
+  - Página: `src/pages/arquivo/ArquivoDigital.tsx`
+
+- **Dashboard e Perfil**
+  - Páginas: `src/pages/Dashboard.tsx`, `src/pages/Profile.tsx`, `src/pages/Configuracoes.tsx`
+
+- **Ajuda e Documentação**
+  - Páginas: `src/pages/Ajuda.tsx`, `src/pages/Documentacao.tsx`
+
+- **Página Inicial**
+  - Página: `src/pages/Index.tsx`
+
+---
+
+## 🗺️ Mapa de Rotas
+
+- **Públicas**
+  - `/` → `src/pages/Index.tsx`
+  - `/relatorios` → `src/pages/relatorios/index.ts` (Reports)
+  - `/auth` → `AuthPage` (componente de `src/components/auth`)
+  - `/auth/callback` → `src/pages/AuthCallback.tsx`
+  - `/auth/reset-password` → `src/pages/ResetPassword.tsx`
+
+- **Protegidas (Requer Login)**
+  - `/dashboard` → `src/pages/Dashboard.tsx`
+  - `/admin/users` → `src/pages/admin/UserManagement.tsx` [Admin]
+  - `/admin/data-seeder` → `src/pages/admin/DataSeeder.tsx` [Admin]
+  - `/admin/documentation` → `src/pages/admin/Documentation.tsx` [Admin]
+  - `/criar-relatorio` → `src/pages/relatorios/index.ts` (CreateReport)
+  - `/relatorios/:id` → `src/pages/relatorios/ReportDetails.tsx`
+  - `/dashboard-executivo` → `src/pages/relatorios/DashboardExecutivo.tsx` [CODEMA]
+  - `/perfil` → `src/pages/Profile.tsx`
+
+  - `/reunioes` → `src/pages/Reunioes.tsx` [CODEMA]
+  - `/reunioes/nova` → `src/pages/reunioes/NovaReuniao.tsx` [CODEMA]
+  - `/reunioes/:id` → `src/pages/reunioes/ReuniaoDetalhes.tsx` [CODEMA]
+
+  - `/documentos` → `src/pages/documentos/index.ts` (Documentos)
+  - `/documentos/novo` → `src/pages/documentos/NovoDocumento.tsx`
+  - `/processos` → `src/pages/processos/index.ts` (Processos)
+
+  - `/fma` → `src/pages/fma/FMA.tsx`
+  - `/fma/projeto/:id` → `src/pages/fma/ProjetoDetails.tsx`
+
+  - `/ouvidoria` → `src/pages/ouvidoria/index.ts` (Ouvidoria)
+  - `/ouvidoria/:id` → `src/pages/ouvidoria/DenunciaDetails.tsx`
+
+  - `/codema/conselheiros` → `src/pages/codema/conselheiros/index.tsx` [CODEMA]
+  - `/codema/conselheiros/:id` → `src/pages/codema/conselheiros/ConselheiroDetails.tsx` [CODEMA]
+  - `/codema/atas` → `src/pages/codema/atas/index.tsx` [CODEMA]
+  - `/codema/atas/:id` → `src/pages/codema/atas/AtaDetails.tsx` [CODEMA]
+  - `/codema/atas/nova` → `src/pages/codema/atas/NovaAta.tsx` [CODEMA]
+  - `/codema/resolucoes` → `src/pages/codema/resolucoes/index.tsx` [CODEMA]
+  - `/codema/resolucoes/:id` → `src/pages/codema/resolucoes/ResolucaoDetails.tsx` [CODEMA]
+  - `/codema/auditoria` → `src/pages/codema/auditoria/index.tsx` [Admin]
+  - `/codema/protocolos` → `src/pages/codema/protocolos/index.tsx` [CODEMA]
+
+  - `/arquivo-digital` → `src/pages/arquivo/ArquivoDigital.tsx` [CODEMA]
+  - `/mobile` → `src/pages/mobile/MobileSettings.tsx` [CODEMA]
+  - `/configuracoes` → `src/pages/Configuracoes.tsx`
+  - `/ajuda` → `src/pages/Ajuda.tsx`
+  - `/documentacao` → `src/pages/Documentacao.tsx`
+
+- **Fallback**
+  - `*` → `src/pages/NotFound.tsx`
+
+### Matriz de Permissões por Rota
+
+- **Públicas (sem login)**
+  - `/`, `/relatorios`, `/auth`, `/auth/callback`, `/auth/reset-password`, `*`
+
+- **Protegidas (requer login)**
+  - Gerais (apenas login): `/dashboard`, `/criar-relatorio`, `/relatorios/:id`, `/perfil`, `/documentos`, `/documentos/novo`, `/processos`, `/fma`, `/fma/projeto/:id`, `/ouvidoria`, `/ouvidoria/:id`, `/configuracoes`, `/ajuda`, `/documentacao`
+  - Requer CODEMA (`requireCODEMAAccess`): `/dashboard-executivo`, `/reunioes`, `/reunioes/nova`, `/reunioes/:id`, `/codema/conselheiros`, `/codema/conselheiros/:id`, `/codema/atas`, `/codema/atas/:id`, `/codema/atas/nova`, `/codema/resolucoes`, `/codema/resolucoes/:id`, `/codema/protocolos`, `/arquivo-digital`, `/mobile`
+  - Requer Admin (`requireAdminAccess`): `/admin/users`, `/admin/data-seeder`, `/admin/documentation`, `/codema/auditoria`
+
+Observação: `ProtectedRoute` também suporta `requiredRoles` (ex.: `presidente`, `secretario`, `conselheiro_*`), embora atualmente nenhuma rota use essa opção explicitamente.
+
+### Lazy Loading e Fallback
+
+- A maioria das páginas usa `React.lazy` com `Suspense`.
+- Fallback global: `PageLoader` em `AuthenticatedLayout` envolvendo `<Outlet />`.
+- Fallback por rota pública: `Suspense` com `PageLoader` em `/` e `/relatorios`.
+- Eager load: `AuthCallback`, `ResetPassword`, `NotFound`.
+
+### Layouts e Providers
+
+- Layouts em `src/App.tsx`:
+  - `PublicLayout`: `Header` + `<Outlet />`.
+  - `AuthenticatedLayout`: `Header` + `<Suspense fallback={<PageLoader />}> <Outlet /> </Suspense>` + `useKeyboardNavigation()`.
+- Providers (ordem):
+  - `QueryClientProvider` (staleTime: 0, refetchOnWindowFocus: true, retry: 1)
+  - `ThemeProvider` (defaultTheme: "light", storageKey: "codema-ui-theme")
+  - `AuthProvider`
+  - `DemoModeProvider`
+  - `TooltipProvider`
+  - `Toaster` e `Sonner`
+
+### Uso de Barrel Exports
+
+- Components: `src/components/**/index.ts` e `src/components/index.ts`.
+- Hooks: `src/hooks/index.ts`.
+- Utils: `src/utils/**/index.ts` e `src/utils/index.ts`.
+- Types: `src/types/index.ts`.
+- Páginas (por módulo): `src/pages/relatorios/index.ts`, `src/pages/ouvidoria/index.ts`, `src/pages/documentos/index.ts`, `src/pages/processos/index.ts`.
+
+### Acessibilidade e Atalhos de Teclado
+
+Implementados via `useKeyboardNavigation()` (`src/hooks/useKeyboardNavigation.ts`) e habilitados no `AuthenticatedLayout`:
+
+- Alt+H → `/dashboard` (login)
+- Alt+R → `/relatorios` (pública)
+- Alt+N → `/criar-relatorio` (login)
+- Alt+M → `/reunioes` (CODEMA)
+- Alt+C → `/codema/conselheiros` (CODEMA)
+- Alt+A → `/codema/atas` (CODEMA)
+- Alt+D → `/documentos` (CODEMA)
+- Alt+P → `/perfil` (login)
+- Alt+U → `/admin/users` (Admin)
+- Alt+← / Alt+→ → voltar/avançar do navegador
+
+Notas: atalhos respeitam permissões e são ignorados quando o foco está em inputs/editores.
+
+### Observações sobre a Estrutura de Reuniões
+
+- Páginas:
+  - `src/pages/Reunioes.tsx` (listagem)
+  - `src/pages/reunioes/NovaReuniao.tsx` (criação)
+  - `src/pages/reunioes/ReuniaoDetalhes.tsx` (detalhes)
+- Não há `src/pages/codema/reunioes/` no estado atual; não existe duplicidade de pastas para este módulo.
+
+---
+
 ## 🛠️ Desenvolvimento
 
 ### Comandos Essenciais
