@@ -30,7 +30,19 @@ vi.mock('@/utils/system/metricsCollector', () => ({
 
 describe('AuthService reset/update password', () => {
   const service = AuthService.getInstance()
-  let supabase: { auth: { resetPasswordForEmail: ReturnType<typeof vi.fn>; updateUser: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn> } }
+
+type SupabaseMock = {
+  auth: {
+    resetPasswordForEmail: ReturnType<typeof vi.fn>;
+    updateUser: ReturnType<typeof vi.fn>;
+    getUser: ReturnType<typeof vi.fn>;
+  };
+  from: ReturnType<typeof vi.fn>;
+};
+
+describe('AuthService reset/update password', () => {
+  const service = AuthService.getInstance()
+  let supabase: SupabaseMock
   let rateLimitUtils: { canSendEmail: ReturnType<typeof vi.fn>; recordEmailAttempt: ReturnType<typeof vi.fn>; formatTimeRemaining: ReturnType<typeof vi.fn> }
 
   beforeAll(async () => {
