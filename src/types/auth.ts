@@ -51,6 +51,15 @@ export interface Profile {
   delegation_granted_by?: string | null;
   delegation_granted_at?: string | null;
   delegation_expires_at?: string | null;
+  // Notification preferences
+  notification_preferences?: {
+    mandato_alerts?: boolean;
+    reuniao_notifications?: boolean;
+    email_convocacoes?: boolean;
+    whatsapp_notifications?: boolean;
+    system_updates?: boolean;
+    weekly_digest?: boolean;
+  } | null;
 }
 
 export interface AuthContextType {

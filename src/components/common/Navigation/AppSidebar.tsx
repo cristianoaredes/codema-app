@@ -1,28 +1,37 @@
 import { LucideIcon } from "lucide-react";
 import { 
-  Home, 
-  FileText, 
-  PlusCircle, 
-  User, 
   BarChart3,
-  Users,
+  PlusCircle,
   Calendar,
+  FileText,
+  Gavel,
+  Hash,
+  ClipboardCheck,
   FolderOpen,
   DollarSign,
-  Gavel,
+  MessageSquare,
+  Users,
   Eye,
   UserCog,
-  ClipboardCheck,
-  MessageSquare,
-  LogOut,
   Database,
-  Book,
-  Hash
+  Settings,
+  LogOut
 } from "lucide-react";
-import { useLocation, NavLink } from "react-router-dom";
+import { useLocation, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/logo_municonnect.png";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 interface MenuItem {
   title: string;
@@ -30,39 +39,29 @@ interface MenuItem {
   icon: LucideIcon;
   requireAdmin?: boolean;
   requireCODEMA?: boolean;
-  items?: MenuItem[];
 }
 
-import { useToast } from "@/hooks/use-toast";
-
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
+interface MenuSection {
+  title: string;
+  items: MenuItem[];
+}
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
   const { profile, hasAdminAccess, hasCODEMAAccess, signOut } = useAuth();
   const { toast } = useToast();
-  const _currentPath = location.pathname;
   const collapsed = state === "collapsed";
 
   const handleSignOut = async () => {
     try {
       await signOut();
       toast({
-        title: "Logout realizado com sucesso",
-        description: "Você foi desconectado da sua conta.",
+        title: "Logout realizado",
+        description: "Você foi desconectado com segurança.",
       });
+      navigate('/auth');
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
       toast({
@@ -73,53 +72,42 @@ export function AppSidebar() {
     }
   };
 
-  // Função corrigida para determinar classes CSS baseadas no estado ativo
-  const getNavLinkClass = ({ isActive }: { isActive: boolean }) => {
-    return isActive 
-      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm" 
-      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
-  };
-
-  // Public navigation items
-  const publicItems = [
-    { title: "Início", url: "/", icon: Home },
-    { title: "Relatórios Públicos", url: "/relatorios", icon: FileText },
-  ];
-
-  // Main CODEMA navigation items
-  const mainItems = [
-    { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
-    { title: "Criar Relatório", url: "/criar-relatorio", icon: PlusCircle },
-  ];
-
-  // Core CODEMA functions - requires CODEMA access
-  const codemaItems = [
-    { title: "Reuniões", url: "/reunioes", icon: Calendar, requireCODEMA: true },
-    { title: "Atas", url: "/codema/atas", icon: FileText, requireCODEMA: true },
-    { title: "Resoluções", url: "/codema/resolucoes", icon: Gavel, requireCODEMA: true },
-    { title: "Protocolos", url: "/codema/protocolos", icon: Hash, requireCODEMA: true },
-    { title: "Processos", url: "/processos", icon: ClipboardCheck, requireCODEMA: true },
-    { title: "Documentos", url: "/documentos", icon: FolderOpen, requireCODEMA: true },
-    { title: "FMA", url: "/fma", icon: DollarSign, requireCODEMA: true },
-  ];
-
-  // General access items
-  const generalItems = [
-    { title: "Ouvidoria", url: "/ouvidoria", icon: MessageSquare },
-  ];
-
-  // Administrative functions - requires admin access
-  const adminItems = [
-    { title: "Conselheiros", url: "/codema/conselheiros", icon: Users, requireAdmin: true },
-    { title: "Auditoria", url: "/codema/auditoria", icon: Eye, requireAdmin: true },
-    { title: "Usuários", url: "/admin/users", icon: UserCog, requireAdmin: true },
-    { title: "Dados de Exemplo", url: "/admin/data-seeder", icon: Database, requireAdmin: true },
-    { title: "Documentação", url: "/admin/documentation", icon: Book, requireAdmin: true },
-  ];
-
-  // User profile
-  const profileItems = [
-    { title: "Meu Perfil", url: "/perfil", icon: User },
+  // Simplified menu structure
+  const menuSections: MenuSection[] = [
+    {
+      title: "Principal",
+      items: [
+        { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
+        { title: "Criar Relatório", url: "/criar-relatorio", icon: PlusCircle },
+      ]
+    },
+    {
+      title: "CODEMA",
+      items: [
+        { title: "Reuniões", url: "/reunioes", icon: Calendar, requireCODEMA: true },
+        { title: "Atas", url: "/codema/atas", icon: FileText, requireCODEMA: true },
+        { title: "Resoluções", url: "/codema/resolucoes", icon: Gavel, requireCODEMA: true },
+        { title: "Protocolos", url: "/codema/protocolos", icon: Hash, requireCODEMA: true },
+        { title: "Processos", url: "/processos", icon: ClipboardCheck, requireCODEMA: true },
+        { title: "Documentos", url: "/documentos", icon: FolderOpen, requireCODEMA: true },
+        { title: "FMA", url: "/fma", icon: DollarSign, requireCODEMA: true },
+      ]
+    },
+    {
+      title: "Serviços",
+      items: [
+        { title: "Ouvidoria", url: "/ouvidoria", icon: MessageSquare },
+      ]
+    },
+    {
+      title: "Administração",
+      items: [
+        { title: "Conselheiros", url: "/codema/conselheiros", icon: Users, requireAdmin: true },
+        { title: "Auditoria", url: "/codema/auditoria", icon: Eye, requireAdmin: true },
+        { title: "Usuários", url: "/admin/users", icon: UserCog, requireAdmin: true },
+        { title: "Dados de Teste", url: "/admin/data-seeder", icon: Database, requireAdmin: true },
+      ]
+    }
   ];
 
   // Filter items based on access permissions
@@ -131,230 +119,160 @@ export function AppSidebar() {
     });
   };
 
-  // Get human-readable role name
-  const getRoleDisplayName = (role: string | null) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrador';
-      case 'secretario':
-        return 'Secretário';
-      case 'presidente':
-        return 'Presidente';
-      case 'conselheiro_titular':
-        return 'Conselheiro Titular';
-      case 'conselheiro_suplente':
-        return 'Conselheiro Suplente';
-      case 'moderator':
-        return 'Moderador';
-      case 'citizen':
-        return 'Cidadão';
-      default:
-        return 'Cidadão';
+  // Check if route is active with improved nested route detection
+  const isActive = (url: string) => {
+    // Exact match
+    if (location.pathname === url) return true;
+    
+    // Nested route match with special handling
+    if (url === '/dashboard' && location.pathname === '/') return false;
+    if (url === '/' && location.pathname === '/dashboard') return false;
+    
+    // For nested routes, ensure we don't match partial segments
+    if (location.pathname.startsWith(url + '/')) {
+      // Additional check to prevent false positives
+      // e.g., /admin should not match /admin-panel
+      const nextChar = location.pathname[url.length];
+      return nextChar === '/' || nextChar === undefined;
     }
+    
+    return false;
   };
-
-  // Determine which items to show based on user status and role
-  const getNavigationItems = () => {
-    if (!profile) {
-      return { 
-        public: publicItems,
-        main: [],
-        codema: [],
-        general: [],
-        admin: [],
-        profile: []
-      };
-    }
-
-    return {
-      public: [],
-      main: mainItems,
-      codema: filterItemsByAccess(codemaItems),
-      general: generalItems,
-      admin: filterItemsByAccess(adminItems),
-      profile: profileItems
-    };
-  };
-
-  const navigationGroups = getNavigationItems();
-
-  // Função corrigida para renderizar itens do menu
-  const renderMenuItems = (items: MenuItem[]) => (
-    <SidebarMenu>
-      {items.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton asChild>
-            <NavLink 
-              to={item.url} 
-              end 
-              className={getNavLinkClass}
-            >
-              <item.icon className="mr-2 h-4 w-4" />
-              <span>{item.title}</span>
-            </NavLink>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
-  );
 
   return (
-    <Sidebar
-      className={cn("transition-all duration-300", collapsed ? "w-14" : "w-64")}
-      collapsible="icon"
-    >
-      <div className={cn(
-        "flex items-center justify-between p-4 border-b border-sidebar-border",
-        collapsed && "justify-center"
-      )}>
-        {!collapsed && (
-          <div className="flex items-center justify-center">
-            <img 
-              src={logo} 
-              alt="MuniConnect Logo" 
-              className="h-12 w-auto"
-            />
+    <Sidebar className="border-r bg-white" collapsible="icon">
+      {/* Header with Logo */}
+      <SidebarHeader className="border-b">
+        <div className="flex items-center gap-3 p-6">
+          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center font-bold text-primary-foreground">
+            C
           </div>
-        )}
-        {collapsed && (
-          <div className="flex items-center justify-center">
-            <img 
-              src={logo} 
-              alt="MuniConnect Logo" 
-              className="h-12 w-auto"
-            />
-          </div>
-        )}
-        <SidebarTrigger className="shrink-0" />
-      </div>
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span className="text-lg font-semibold text-foreground">CODEMA</span>
+              <span className="text-sm text-muted-foreground">Itanhomi-MG</span>
+            </div>
+          )}
+        </div>
+      </SidebarHeader>
 
-      <SidebarContent>
-        {/* Public Items (when not logged in) */}
-        {!profile && navigationGroups.public && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Portal Municipal</SidebarGroupLabel>
-            <SidebarGroupContent>
-              {renderMenuItems(navigationGroups.public)}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+      {/* Navigation Content */}
+      <SidebarContent className="flex-1">
+        <ScrollArea className="h-full px-4 py-6">
+          <nav className="space-y-8">
+            {menuSections.map((section) => {
+              const filteredItems = filterItemsByAccess(section.items);
+              
+              if (filteredItems.length === 0) return null;
 
-        {/* Main Dashboard (when logged in) */}
-        {profile && navigationGroups.main && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Principal</SidebarGroupLabel>
-            <SidebarGroupContent>
-              {renderMenuItems(navigationGroups.main)}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* CODEMA Core Functions */}
-        {profile && navigationGroups.codema && navigationGroups.codema.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">CODEMA</SidebarGroupLabel>
-            <SidebarGroupContent>
-              {renderMenuItems(navigationGroups.codema)}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* General Functions */}
-        {profile && navigationGroups.general && navigationGroups.general.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Serviços</SidebarGroupLabel>
-            <SidebarGroupContent>
-              {renderMenuItems(navigationGroups.general)}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* Administrative Functions */}
-        {profile && navigationGroups.admin && navigationGroups.admin.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Administração</SidebarGroupLabel>
-            <SidebarGroupContent>
-              {renderMenuItems(navigationGroups.admin)}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* User Profile */}
-        {profile && navigationGroups.profile && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold">Conta</SidebarGroupLabel>
-            <SidebarGroupContent>
-              {renderMenuItems(navigationGroups.profile)}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* User Info and Logout at Bottom */}
-        {profile && (
-          <SidebarGroup className="mt-auto border-t border-sidebar-border pt-2" data-tour="profile">
-            <SidebarGroupContent>
-              {!collapsed ? (
-                <div className="space-y-3">
-                  {/* User Info */}
-                  <div className="px-3 py-3 text-sm bg-sidebar-accent/50 rounded-lg mx-2">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center text-sidebar-primary-foreground text-sm font-medium">
-                        {(profile.full_name || profile.email || "U")[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sidebar-foreground truncate text-sm">
-                          {profile.full_name || "Usuário"}
-                        </div>
-                        <div className="text-xs text-sidebar-foreground/60 truncate">
-                          {profile.email}
-                        </div>
-                      </div>
+              return (
+                <div key={section.title}>
+                  {/* Section Title */}
+                  {!collapsed && (
+                    <div className="px-3 mb-3">
+                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {section.title}
+                      </h2>
                     </div>
-                    <div className="text-xs text-sidebar-foreground/80 capitalize px-2 py-1 bg-sidebar-primary/10 rounded-md text-center">
-                      {getRoleDisplayName(profile.role)}
-                    </div>
+                  )}
+
+                  {/* Section Items */}
+                  <div className="space-y-1">
+                    {filteredItems.map((item) => {
+                      const active = isActive(item.url);
+                      
+                      return (
+                        <NavLink
+                          key={item.title}
+                          to={item.url}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                            "hover:bg-accent",
+                            active 
+                              ? "bg-primary/10 text-primary border-r-2 border-primary" 
+                              : "text-foreground hover:text-primary"
+                          )}
+                        >
+                          <item.icon className="h-5 w-5 flex-shrink-0" />
+                          {!collapsed && <span>{item.title}</span>}
+                        </NavLink>
+                      );
+                    })}
                   </div>
-                  
-                  {/* Logout Button */}
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        onClick={handleSignOut}
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive hover-lift transition-smooth w-full justify-start mx-2 font-medium"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Sair da Conta</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
+
+                  {/* Separator between sections */}
+                  {!collapsed && <Separator className="my-6" />}
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {/* User Avatar */}
-                  <div className="px-2 py-2 flex justify-center">
-                    <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center text-sidebar-primary-foreground text-sm font-medium">
-                      {(profile.full_name || profile.email || "U")[0].toUpperCase()}
-                    </div>
-                  </div>
-                  
-                  {/* Logout Icon */}
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        onClick={handleSignOut}
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive hover-lift transition-smooth w-full justify-center"
-                        title="Sair da Conta"
-                      >
-                        <LogOut className="h-4 w-4" />
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </div>
-              )}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+              );
+            })}
+          </nav>
+        </ScrollArea>
       </SidebarContent>
+
+      {/* Footer with User Info */}
+      <SidebarFooter className="border-t">
+        {profile && (
+          <div className="p-4">
+            {!collapsed ? (
+              <div className="space-y-4">
+                {/* User Info */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-accent">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+                      {(profile.full_name || profile.email || "U")[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {profile.full_name || "Usuário"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {profile.email}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 justify-start text-muted-foreground hover:text-foreground"
+                    onClick={() => navigate('/perfil')}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Configurações
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+                    {(profile.full_name || profile.email || "U")[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }

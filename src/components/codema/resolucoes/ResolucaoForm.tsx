@@ -25,17 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { logAction } from "@/utils/monitoring";
 import { gerarProtocolo as _gerarProtocolo } from "@/utils/generators";
 
-const resolucaoSchema = z.object({
-  template_id: z.string().optional(),
-  reuniao_id: z.string().optional(),
-  titulo: z.string().min(10, "Título deve ter pelo menos 10 caracteres"),
-  ementa: z.string().min(20, "Ementa deve ter pelo menos 20 caracteres"),
-  tipo: z.enum(["normativa", "deliberativa", "administrativa"], {
-    required_error: "Selecione o tipo de resolução"
-  }),
-  base_legal: z.string().min(10, "Base legal é obrigatória"),
-  disposicoes_finais: z.string().optional(),
-});
+import { resolucaoSchema } from '@/schemas/resolucao';
 
 type ResolucaoFormData = z.infer<typeof resolucaoSchema>;
 
@@ -174,8 +164,8 @@ export function ResolucaoForm({ resolucao, onClose }: ResolucaoFormProps) {
 
         return updatedResolucao;
       } else {
-        // Gerar número da resolução
-        const { data: numero } = await supabase.rpc('generate_document_number', { doc_type: 'resolucao' });
+        // Gerar número da resolução (função tipada no schema)
+        const { data: numero } = await supabase.rpc('gerar_proximo_numero_resolucao');
         const protocoloResolucao = `RES-${new Date().getFullYear()}-${numero}`;
 
         const { data: newResolucao, error } = await (supabase as any)

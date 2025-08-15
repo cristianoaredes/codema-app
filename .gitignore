@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
 
 # Editor directories and files
 .vscode/*
@@ -24,5 +25,36 @@ dist-ssr
 *.sw?
 
 
-#Ignore cursor AI rules
+# Build artifacts
+dist
+dist-ssr
+build
+out
+
+# Temporary and development files
+*.tmp
+*.temp
+*.backup
+*.old
+*debug*
+*test*.html
+*test*.js
+*temp*
+MIGRATION_*.sql
+EXECUTE_*.sql
+execute-migrations.js
+
+# Documentation duplicates
+AGENTS.md
+
+# Development scripts
+scripts/seed-*.js
+scripts/demo-*.js
+
+# Docker configuration files are now used in the project
+
+# Ignore cursor AI rules
 .cursor/rules/codacy.mdc
+
+# Codacy analysis tools (removed from project)
+.codacy/

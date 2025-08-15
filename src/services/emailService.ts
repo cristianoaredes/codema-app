@@ -18,6 +18,71 @@ const emailTemplates = {
       </div>
     `,
   }),
+  convocacao: (fullName: string, reuniaoData: {
+    numero_reuniao: string;
+    tipo: string;
+    data_hora: string;
+    local: string;
+    pauta?: string;
+  }) => ({
+    subject: `Convocação - Reunião ${reuniaoData.tipo} ${reuniaoData.numero_reuniao} - CODEMA Itanhomi`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #1a5634; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">CONSELHO MUNICIPAL DE DEFESA DO MEIO AMBIENTE</h1>
+          <h2 style="margin: 10px 0 0 0; font-size: 18px;">CODEMA - Itanhomi/MG</h2>
+        </div>
+        
+        <div style="padding: 30px 20px;">
+          <h2 style="color: #1a5634; margin-bottom: 20px;">CONVOCAÇÃO</h2>
+          
+          <p>Prezado(a) <strong>${fullName}</strong>,</p>
+          
+          <p>Você está sendo convocado(a) para participar da <strong>Reunião ${reuniaoData.tipo} ${reuniaoData.numero_reuniao}</strong> do Conselho Municipal de Defesa do Meio Ambiente de Itanhomi/MG.</p>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1a5634; margin-top: 0;">Informações da Reunião:</h3>
+            <p style="margin: 5px 0;"><strong>Data e Hora:</strong> ${new Date(reuniaoData.data_hora).toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit', 
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}</p>
+            <p style="margin: 5px 0;"><strong>Local:</strong> ${reuniaoData.local}</p>
+            <p style="margin: 5px 0;"><strong>Tipo:</strong> ${reuniaoData.tipo === 'ordinaria' ? 'Ordinária' : 'Extraordinária'}</p>
+          </div>
+          
+          ${reuniaoData.pauta ? `
+          <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <h4 style="color: #856404; margin-top: 0;">Pauta:</h4>
+            <div style="white-space: pre-wrap; line-height: 1.6;">${reuniaoData.pauta}</div>
+          </div>
+          ` : ''}
+          
+          <div style="margin: 30px 0; padding: 15px; background-color: #d1ecf1; border-radius: 8px; border-left: 4px solid #bee5eb;">
+            <p style="margin: 0; font-weight: bold; color: #0c5460;">
+              ⚠️ Sua presença é fundamental para garantir o quorum necessário e a legitimidade das deliberações do conselho.
+            </p>
+          </div>
+          
+          <p>Em caso de impossibilidade de comparecimento, solicitamos que comunique com antecedência através dos canais oficiais do CODEMA.</p>
+          
+          <p style="margin-top: 30px;">Atenciosamente,</p>
+          <p style="font-weight: bold;">Secretaria do CODEMA<br/>Conselho Municipal de Defesa do Meio Ambiente<br/>Itanhomi/MG</p>
+        </div>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; border-top: 1px solid #dee2e6;">
+          <p style="font-size: 12px; color: #6c757d; margin: 0;">
+            Este é um email oficial do CODEMA Itanhomi/MG - Lei Municipal de criação do conselho
+          </p>
+          <p style="font-size: 12px; color: #6c757d; margin: 5px 0 0 0;">
+            Enviado em ${new Date().toLocaleString('pt-BR')}
+          </p>
+        </div>
+      </div>
+    `,
+  }),
   statusChange: (fullName: string, isActive: boolean, reason?: string) => ({
     subject: `Status da conta alterado - MuniConnect`,
     html: `
@@ -151,6 +216,52 @@ export class EmailService {
     } catch (error) {
       console.error('Erro ao enviar notificação de senha:', error);
       throw new Error(`Erro ao enviar notificação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    }
+  }
+
+  /**
+   * Envia convocação para reunião do CODEMA
+   */
+  static async sendConvocacao(
+    email: string,
+    fullName: string,
+    reuniaoData: {
+      numero_reuniao: string;
+      tipo: string;
+      data_hora: string;
+      local: string;
+      pauta?: string;
+    },
+    scheduledFor?: Date
+  ) {
+    try {
+      const template = emailTemplates.convocacao(fullName, reuniaoData);
+      
+      const { error } = await supabase
+        .from('email_queue')
+        .insert({
+          to_email: email,
+          subject: template.subject,
+          html_content: template.html,
+          text_content: `Convocação - Reunião ${reuniaoData.tipo} ${reuniaoData.numero_reuniao} em ${new Date(reuniaoData.data_hora).toLocaleString('pt-BR')} no local: ${reuniaoData.local}`,
+          email_type: 'convocacao',
+          scheduled_for: (scheduledFor || new Date()).toISOString(),
+          metadata: {
+            reuniao_numero: reuniaoData.numero_reuniao,
+            reuniao_tipo: reuniaoData.tipo,
+            reuniao_data: reuniaoData.data_hora
+          }
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Convocação adicionada à fila de emails para:', email);
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao enviar convocação:', error);
+      throw new Error(`Erro ao enviar convocação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   }
 

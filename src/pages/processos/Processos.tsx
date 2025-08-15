@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useProcessos } from "@/hooks/useProcessos";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,31 +24,17 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-interface Processo {
-  id: string;
-  numero_processo: string;
-  tipo_processo: string;
-  requerente: string;
-  descricao_atividade: string;
-  status: string;
-  prioridade: string;
-  data_protocolo: string;
-  prazo_parecer: string;
-  relator: {
-    full_name: string;
-  } | null;
-}
+import { ProtocoloGenerator } from "@/utils/generators/protocoloGenerator";
 
 const Processos = () => {
   const { user: _user, profile } = useAuth();
   const { toast } = useToast();
-  const [processos, setProcessos] = useState<Processo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { processos, loading, createProcesso: createProcessoHook } = useProcessos();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [showNewProcesso, setShowNewProcesso] = useState(false);
   const [conselheiros, setConselheiros] = useState<{ id: string; full_name: string; role: string }[]>([]);
+  const [relatoresMap, setRelatoresMap] = useState<Record<string, string>>({});
 
   const [newProcesso, setNewProcesso] = useState({
     tipo_processo: "",
@@ -61,30 +48,6 @@ const Processos = () => {
 
   const isSecretary = profile?.role && ['admin', 'secretario', 'vice_presidente', 'presidente'].includes(profile.role);
 
-  const fetchProcessos = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from("processos")
-        .select(`
-          *,
-          relator_profile:profiles!relator_id(full_name)
-        `)
-        .order("data_protocolo", { ascending: false });
-
-      if (error) throw error;
-      setProcessos(data || []);
-    } catch (error) {
-      console.error("Erro ao carregar processos:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os processos.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
   const fetchConselheiros = async () => {
     try {
       const { data, error } = await supabase
@@ -95,53 +58,55 @@ const Processos = () => {
 
       if (error) throw error;
       setConselheiros(data || []);
+      
+      // Create a map of relator_id to full_name for display
+      const map: Record<string, string> = {};
+      data?.forEach(c => {
+        map[c.id] = c.full_name;
+      });
+      setRelatoresMap(map);
     } catch (error) {
       console.error("Erro ao carregar conselheiros:", error);
     }
   };
 
   useEffect(() => {
-    fetchProcessos();
     fetchConselheiros();
-  }, [fetchProcessos]);
+  }, []);
 
   const createProcesso = async () => {
     try {
-      // Generate process number
-      const { data: numberData, error: numberError } = await supabase
-        .rpc('generate_document_number', { doc_type: 'processo' });
-
-      if (numberError) throw numberError;
+      // Generate protocol number
+      const numero_processo = await ProtocoloGenerator.gerarProtocolo('PROC');
 
       const prazo = new Date();
       prazo.setDate(prazo.getDate() + 30); // 30 days deadline
 
-      const { error } = await supabase
-        .from("processos")
-        .insert({
-          numero_processo: numberData,
-          ...newProcesso,
-          prazo_parecer: prazo.toISOString()
+      const result = await createProcessoHook({
+        numero_processo,
+        ...newProcesso,
+        data_protocolo: new Date().toISOString(),
+        prazo_parecer: prazo.toISOString(),
+        status: 'protocolado'
+      });
+
+      if (!result.error) {
+        toast({
+          title: "Sucesso",
+          description: `Processo ${numero_processo} protocolado com sucesso!`,
         });
 
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: "Processo protocolado com sucesso!",
-      });
-
-      setShowNewProcesso(false);
-      setNewProcesso({
-        tipo_processo: "",
-        requerente: "",
-        cpf_cnpj: "",
-        endereco_empreendimento: "",
-        descricao_atividade: "",
-        prioridade: "normal",
-        relator_id: ""
-      });
-      fetchProcessos();
+        setShowNewProcesso(false);
+        setNewProcesso({
+          tipo_processo: "",
+          requerente: "",
+          cpf_cnpj: "",
+          endereco_empreendimento: "",
+          descricao_atividade: "",
+          prioridade: "normal",
+          relator_id: ""
+        });
+      }
     } catch (error) {
       console.error("Erro ao criar processo:", error);
       toast({
@@ -393,10 +358,10 @@ const Processos = () => {
                         <Clock className="h-4 w-4" />
                         Protocolado em {format(new Date(processo.data_protocolo), "dd/MM/yyyy", { locale: ptBR })}
                       </span>
-                      {processo.relator && (
+                      {processo.relator_id && relatoresMap[processo.relator_id] && (
                         <span className="flex items-center gap-1">
                           <UserCheck className="h-4 w-4" />
-                          Relator: {processo.relator.full_name}
+                          Relator: {relatoresMap[processo.relator_id]}
                         </span>
                       )}
                     </div>

@@ -14,6 +14,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -24,7 +25,7 @@ import { Conselheiro } from '@/types/conselheiro';
 interface ConselheiroCardProps {
   conselheiro: Conselheiro;
   onEdit?: (conselheiro: Conselheiro) => void;
-  onDelete?: (id: string) => void;
+  onDelete?: () => void;
   canEdit?: boolean;
 }
 
@@ -39,15 +40,15 @@ const ConselheiroCard: React.FC<ConselheiroCardProps> = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ativo':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300';
       case 'inativo':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
       case 'licenciado':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300';
       case 'afastado':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -94,7 +95,7 @@ const ConselheiroCard: React.FC<ConselheiroCardProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Avatar className="h-12 w-12">
-                <AvatarFallback className="bg-primary/10">
+                <AvatarFallback className="bg-primary text-primary-foreground">
                   {getInitials(conselheiro.nome_completo)}
                 </AvatarFallback>
               </Avatar>
@@ -111,7 +112,7 @@ const ConselheiroCard: React.FC<ConselheiroCardProps> = ({
             <div className="flex items-center space-x-2">
               {(isNearExpiration() || isExpired()) && (
                 <AlertTriangle 
-                  className={`h-5 w-5 ${isExpired() ? 'text-red-500' : 'text-yellow-500'}`}
+                  className={`h-5 w-5 ${isExpired() ? 'text-red-500' : 'text-amber-500'}`}
                 />
               )}
               <Badge className={getStatusColor(conselheiro.status)}>
@@ -135,8 +136,8 @@ const ConselheiroCard: React.FC<ConselheiroCardProps> = ({
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
-                      className="text-red-600"
-                      onClick={() => onDelete?.(conselheiro.id)}
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => onDelete?.()}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Remover
@@ -180,7 +181,7 @@ const ConselheiroCard: React.FC<ConselheiroCardProps> = ({
             <div className="flex justify-between text-xs text-muted-foreground mt-3 pt-3 border-t">
               <span>Faltas: {conselheiro.total_faltas}</span>
               {conselheiro.faltas_consecutivas > 0 && (
-                <span className="text-yellow-600">
+                <span className="text-amber-600">
                   Consecutivas: {conselheiro.faltas_consecutivas}
                 </span>
               )}
@@ -199,6 +200,9 @@ const ConselheiroCard: React.FC<ConselheiroCardProps> = ({
               </Avatar>
               <span>{conselheiro.nome_completo}</span>
             </DialogTitle>
+            <DialogDescription>
+              Informações detalhadas do conselheiro
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6">
@@ -231,7 +235,7 @@ const ConselheiroCard: React.FC<ConselheiroCardProps> = ({
               </div>
               <div>
                 <label className="font-medium text-sm">Mandato Fim</label>
-                <p className={isExpired() ? 'text-red-600' : isNearExpiration() ? 'text-yellow-600' : ''}>
+                <p className={isExpired() ? 'text-red-600' : isNearExpiration() ? 'text-amber-600' : ''}>
                   {format(new Date(conselheiro.mandato_fim), 'dd/MM/yyyy', { locale: ptBR })}
                   {isExpired() && ' (Expirado)'}
                   {isNearExpiration() && !isExpired() && ' (Próximo ao vencimento)'}
@@ -264,7 +268,7 @@ const ConselheiroCard: React.FC<ConselheiroCardProps> = ({
                 </div>
                 <div>
                   <label className="font-medium text-sm">Faltas Consecutivas</label>
-                  <p className={conselheiro.faltas_consecutivas >= 3 ? 'text-red-600' : 'text-yellow-600'}>
+                  <p className={conselheiro.faltas_consecutivas >= 3 ? 'text-red-600' : 'text-amber-600'}>
                     {conselheiro.faltas_consecutivas}
                     {conselheiro.faltas_consecutivas >= 3 && ' (⚠️ Limite atingido)'}
                   </p>

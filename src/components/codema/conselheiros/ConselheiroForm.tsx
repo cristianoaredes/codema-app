@@ -3,8 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCreateConselheiro, useUpdateConselheiro } from '@/hooks/useConselheiros';
 import {
   Form,
   FormControl,
@@ -26,45 +26,14 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loading } from '@/components/ui';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Save, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Conselheiro, ConselheiroCreateInput } from '@/types/conselheiro';
 
-const conselheiroSchema = z.object({
-  nome_completo: z.string()
-    .min(3, 'Nome deve ter pelo menos 3 caracteres')
-    .max(100, 'Nome deve ter no máximo 100 caracteres'),
-  cpf: z.string()
-    .optional()
-    .refine((val) => !val || /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(val), 'CPF deve estar no formato XXX.XXX.XXX-XX'),
-  email: z.string()
-    .optional()
-    .refine((val) => !val || z.string().email().safeParse(val).success, 'Email deve ser válido'),
-  telefone: z.string()
-    .optional()
-    .refine((val) => !val || /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(val), 'Telefone deve estar no formato (XX) XXXXX-XXXX'),
-  endereco: z.string().optional(),
-  mandato_inicio: z.date({
-    required_error: 'Data de início do mandato é obrigatória',
-  }),
-  mandato_fim: z.date({
-    required_error: 'Data de fim do mandato é obrigatória',
-  }),
-  mandato_numero: z.number().int().positive().optional(),
-  entidade_representada: z.string()
-    .min(2, 'Entidade representada deve ter pelo menos 2 caracteres')
-    .max(200, 'Entidade representada deve ter no máximo 200 caracteres'),
-  segmento: z.enum(['governo', 'sociedade_civil', 'setor_produtivo'], {
-    required_error: 'Segmento é obrigatório',
-  }),
-  titular: z.boolean(),
-  observacoes: z.string().optional(),
-}).refine((data) => data.mandato_fim > data.mandato_inicio, {
-  message: 'Data de fim deve ser posterior à data de início',
-  path: ['mandato_fim'],
-});
+import { conselheiroSchema } from '@/schemas/conselheiro';
 
 type ConselheiroFormData = z.infer<typeof conselheiroSchema>;
 
@@ -81,6 +50,9 @@ const ConselheiroForm: React.FC<ConselheiroFormProps> = ({
 }) => {
   const { toast } = useToast();
   const isEditing = Boolean(conselheiro);
+  
+  const createMutation = useCreateConselheiro();
+  const updateMutation = useUpdateConselheiro();
 
   const form = useForm<ConselheiroFormData>({
     resolver: zodResolver(conselheiroSchema),
@@ -123,41 +95,19 @@ const ConselheiroForm: React.FC<ConselheiroFormProps> = ({
         mandato_fim: data.mandato_fim.toISOString(),
       };
 
-      let error;
-      
-      if (isEditing) {
-        ({ error } = await supabase
-          .from('conselheiros')
-          .update(payload)
-          .eq('id', conselheiro!.id));
+      if (isEditing && conselheiro) {
+        await updateMutation.mutateAsync({
+          id: conselheiro.id,
+          updates: payload
+        });
       } else {
-        ({ error } = await supabase
-          .from('conselheiros')
-          .insert([{
-            ...payload,
-            status: 'ativo',
-            faltas_consecutivas: 0,
-            total_faltas: 0,
-          }]));
+        await createMutation.mutateAsync(payload);
       }
-
-      if (error) throw error;
-
-      toast({
-        title: isEditing ? 'Conselheiro atualizado' : 'Conselheiro cadastrado',
-        description: isEditing 
-          ? 'As informações foram atualizadas com sucesso.' 
-          : 'O conselheiro foi cadastrado com sucesso.',
-      });
 
       onSuccess?.();
     } catch (error) {
       console.error('Erro ao salvar conselheiro:', error);
-      toast({
-        title: 'Erro ao salvar',
-        description: 'Ocorreu um erro ao salvar as informações. Tente novamente.',
-        variant: 'destructive',
-      });
+      // Toast messages are handled by the mutation hooks
     }
   };
 
@@ -490,12 +440,12 @@ const ConselheiroForm: React.FC<ConselheiroFormProps> = ({
               
               <Button 
                 type="submit"
-                disabled={form.formState.isSubmitting}
+                disabled={createMutation.isPending || updateMutation.isPending}
                 className="flex items-center space-x-2"
               >
                 <Save className="h-4 w-4" />
                 <span>
-                  {form.formState.isSubmitting 
+                  {(createMutation.isPending || updateMutation.isPending)
                     ? 'Salvando...' 
                     : isEditing ? 'Atualizar' : 'Cadastrar'}
                 </span>

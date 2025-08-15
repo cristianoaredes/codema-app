@@ -1,8 +1,8 @@
 export { useAuth, useAuthState, AuthContext } from './useAuth';
 export { useToast } from './use-toast';
-export { useNotifications } from './use-notifications';
 export { 
-  useConselheiros
+  useConselheiros,
+  useConselheirosNames
 } from './useConselheiros';
 export { 
   useImpedimentos
@@ -24,8 +24,7 @@ export {
 export { useAuditLogs } from './useAuditLogs';
 export { useBreadcrumbs } from './useBreadcrumbs';
 export { useGlobalSearch } from './useGlobalSearch';
-export { useUsabilityTracking } from './useUsabilityTracking';
 export { useKeyboardNavigation } from './useKeyboardNavigation';
-export { useMonitoring } from './useMonitoring';
 export { useErrorHandler } from './useErrorHandler';
 export { useMediaQuery, useIsMobile } from './use-media-query';
+export { useOuvidoriaReunioes } from './useOuvidoriaReunioes';

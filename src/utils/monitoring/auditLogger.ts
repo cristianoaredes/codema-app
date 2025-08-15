@@ -21,3 +21,19 @@ export async function logAction(
     console.error('Erro ao registrar log:', error);
   }
 }
+
+/**
+ * Versão resiliente: nunca lança exceção para não quebrar fluxos críticos
+ */
+export async function logActionSafe(
+  action: string,
+  entity: string,
+  entityId: string,
+  details?: Record<string, unknown>
+): Promise<void> {
+  try {
+    await logAction(action, entity, entityId, details);
+  } catch {
+    // swallow
+  }
+}

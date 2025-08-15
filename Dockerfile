@@ -39,25 +39,37 @@ RUN npm run build
 FROM node:20-alpine AS development
 WORKDIR /app
 
-# Install git for development tools
-RUN apk add --no-cache git
+# Install development tools and curl for healthchecks
+RUN apk add --no-cache git curl
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (use npm install for development flexibility)
+# Install all dependencies without running lifecycle scripts (avoid prepare before src exists)
 RUN --mount=type=cache,target=/root/.npm \
-    npm install && \
+    npm install --ignore-scripts && \
     npm cache clean --force
 
 # Copy source code (will be overridden by volume mount in development)
-COPY . .
+COPY --chown=nodejs:nodejs . .
+
+# Create and set permissions for Vite cache directory
+RUN mkdir -p /app/node_modules/.vite && \
+    chown -R nodejs:nodejs /app/node_modules/.vite && \
+    chmod -R 755 /app/node_modules/.vite
+
+# Switch to non-root user
+USER nodejs
 
 # Expose Vite dev server port
 EXPOSE 8080
 
-# Expose Vite HMR port
-EXPOSE 8080
+# Expose Vite HMR WebSocket port
+EXPOSE 24678
 
 # Set environment to development
 ENV NODE_ENV=development
@@ -68,39 +80,35 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 # Stage 4: Production
 FROM nginx:alpine AS production
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install curl for health checks and create non-root user
+RUN apk add --no-cache curl && \
+    addgroup -g 1001 -S nginx-user && \
+    adduser -S nginx-user -u 1001 -G nginx-user
 
-# Copy custom nginx config
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy built files from builder stage
+COPY --from=builder --chown=nginx-user:nginx-user /app/dist /usr/share/nginx/html
 
-# Create nginx configuration for SPA routing
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-    \
-    location /assets { \
-        add_header Cache-Control "public, max-age=31536000, immutable"; \
-    } \
-    \
-    gzip on; \
-    gzip_vary on; \
-    gzip_min_length 1024; \
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml image/x-icon; \
-}' > /etc/nginx/conf.d/default.conf
+# Copy nginx configuration (will be created in docker/nginx/)
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 
-# Expose port 80
-EXPOSE 80
+# Create necessary directories with proper permissions
+RUN touch /var/run/nginx.pid && \
+    chown -R nginx-user:nginx-user /var/run/nginx.pid && \
+    chown -R nginx-user:nginx-user /var/cache/nginx && \
+    chown -R nginx-user:nginx-user /var/log/nginx && \
+    chown -R nginx-user:nginx-user /etc/nginx/conf.d
+
+# Switch to non-root user
+USER nginx-user
+
+# Expose port 8080 (non-root cannot bind to 80)
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
+    CMD curl -f http://localhost:8080/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

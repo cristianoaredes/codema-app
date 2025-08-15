@@ -166,22 +166,40 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
 };
 
 export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, initialized } = useAuth();
   const location = useLocation();
+  const [timedOut, setTimedOut] = React.useState(false);
 
-  if (loading) {
+  // Adicionar timeout de segurança para evitar loading infinito
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading && !initialized) {
+        console.warn('⚠️ Auth loading timeout - mostrando página pública');
+        setTimedOut(true);
+      }
+    }, 3000); // 3 segundos de timeout
+
+    return () => clearTimeout(timer);
+  }, [loading, initialized]);
+
+  // Se o timeout expirou ou inicialização completou sem loading, mostrar conteúdo
+  if (!timedOut && loading && !initialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-sm">Carregando...</p>
+        </div>
       </div>
     );
   }
 
-  if (user) {
+  if (user && initialized) {
     // User is logged in, redirect them from the public page (e.g., login page)
     const from = location.state?.from?.pathname || '/dashboard';
     return <Navigate to={from} replace />;
   }
 
+  // Mostrar página pública (login) se não há usuário ou se houve timeout
   return <>{children}</>;
 };

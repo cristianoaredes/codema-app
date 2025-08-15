@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -332,6 +332,9 @@ export function VersionControl({ ataId, currentVersion }: VersionControlProps) {
                             <DialogTitle>
                               Ata - Versão {version.versao}
                             </DialogTitle>
+                            <DialogDescription>
+                              Visualização completa da versão {version.versao} da ata
+                            </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">

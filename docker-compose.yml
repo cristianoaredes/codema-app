@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Main application
   app:
@@ -11,7 +9,8 @@ services:
         - NODE_ENV=development
     container_name: codema-app
     ports:
-      - "8080:8080"  # Vite dev server
+      - "8080:8080"      # Vite dev server
+      - "24678:24678"    # Vite HMR WebSocket
     volumes:
       # Mount source code for hot reload
       - ./src:/app/src:delegated
@@ -23,6 +22,8 @@ services:
       - ./postcss.config.js:/app/postcss.config.js:delegated
       # Persist node_modules
       - node_modules:/app/node_modules
+      # Vite cache for faster rebuilds
+      - vite_cache:/app/node_modules/.vite
     environment:
       - NODE_ENV=development
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
@@ -30,12 +31,29 @@ services:
       # Optional: Local development database
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/codema_dev
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - codema-network
     restart: unless-stopped
     stdin_open: true
     tty: true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # PostgreSQL Database for local development
   postgres:
@@ -47,6 +65,9 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=codema_dev
+      # Performance tuning
+      - POSTGRES_MAX_CONNECTIONS=100
+      - POSTGRES_SHARED_BUFFERS=256MB
     volumes:
       # Persist database data
       - postgres_data:/var/lib/postgresql/data
@@ -55,11 +76,21 @@ services:
     networks:
       - codema-network
     restart: unless-stopped
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   # Optional: Supabase Studio for local development
   # Uncomment if you want to use Supabase locally
@@ -77,20 +108,7 @@ services:
   #     - codema-network
   #   restart: unless-stopped
 
-  # Optional: Adminer for database management
-  adminer:
-    image: adminer:latest
-    container_name: codema-adminer
-    ports:
-      - "8081:8080"
-    environment:
-      - ADMINER_DEFAULT_SERVER=postgres
-      - ADMINER_DESIGN=pepa-linha
-    depends_on:
-      - postgres
-    networks:
-      - codema-network
-    restart: unless-stopped
+  # Optional: Adminer for database management (removed for minimal setup)
 
   # Optional: Redis for caching (if needed in future)
   # redis:
@@ -107,6 +125,8 @@ services:
 
 volumes:
   node_modules:
+    driver: local
+  vite_cache:
     driver: local
   postgres_data:
     driver: local

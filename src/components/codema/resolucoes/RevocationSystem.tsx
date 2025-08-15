@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,6 +270,9 @@ export function RevocationSystem({ resolucaoId, resolucao }: RevocationSystemPro
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Revogar Resolução {resolucao?.numero}</DialogTitle>
+                <DialogDescription>
+                  Configure o processo de revogação desta resolução
+                </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-4">

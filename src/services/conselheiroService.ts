@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Conselheiro, ConselheiroCreateInput, ConselheiroUpdateInput } from '@/types/conselheiro';
-import { ProtocoloGenerator } from '@/utils/generators/protocoloGenerator';
 
 export class ConselheiroService {
   /**
@@ -131,13 +130,108 @@ export class ConselheiroService {
       });
     }
     
-    // TODO: Integrate with notification system (email/whatsapp)
+    // Integrate with notification system (email/whatsapp)
     if (alerts.length > 0) {
       const { error } = await supabase
         .from('alertas_conselheiros')
         .insert(alerts);
       
-      if (error) console.error('Erro ao salvar alertas:', error);
+      if (error) {
+        console.error('Erro ao salvar alertas:', error);
+        return;
+      }
+
+      // Send email notifications for alerts
+      try {
+        // Buscar perfil do conselheiro para obter email
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('email, full_name, notification_preferences')
+          .eq('id', conselheiro.profile_id)
+          .single();
+
+        if (!profileError && profile?.email) {
+          // Send email notification for each alert
+          for (const alert of alerts) {
+            let subject = '';
+            let htmlContent = '';
+
+            // Customize email content based on alert type
+            if (alert.tipo === 'mandato_expirado') {
+              subject = 'Alerta: Mandato Expirado - CODEMA';
+              htmlContent = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                  <h2 style="color: #dc2626;">Alerta de Mandato - CODEMA</h2>
+                  <p>Prezado(a) ${profile.full_name},</p>
+                  <p><strong>Seu mandato como conselheiro do CODEMA expirou.</strong></p>
+                  <p>Para continuar participando do conselho, é necessário renovar seu mandato.</p>
+                  <p>Entre em contato com a secretaria do CODEMA para mais informações.</p>
+                  <p>Atenciosamente,<br/>Secretaria do CODEMA</p>
+                </div>
+              `;
+            } else if (alert.tipo === 'mandato_vencendo') {
+              const daysText = mandateCheck.daysRemaining === 1 ? 'dia' : 'dias';
+              subject = `Alerta: Mandato vence em ${mandateCheck.daysRemaining} ${daysText} - CODEMA`;
+              htmlContent = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                  <h2 style="color: #f59e0b;">Alerta de Mandato - CODEMA</h2>
+                  <p>Prezado(a) ${profile.full_name},</p>
+                  <p><strong>Seu mandato como conselheiro vence em ${mandateCheck.daysRemaining} ${daysText}.</strong></p>
+                  <p>Recomendamos que providencie a renovação com antecedência para evitar interrupções.</p>
+                  <p>Entre em contato com a secretaria do CODEMA para iniciar o processo de renovação.</p>
+                  <p>Atenciosamente,<br/>Secretaria do CODEMA</p>
+                </div>
+              `;
+            } else if (alert.tipo === 'faltas_excessivas') {
+              subject = 'Alerta: Faltas Excessivas - CODEMA';
+              htmlContent = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                  <h2 style="color: #dc2626;">Alerta de Presença - CODEMA</h2>
+                  <p>Prezado(a) ${profile.full_name},</p>
+                  <p><strong>Registramos faltas excessivas em reuniões do CODEMA.</strong></p>
+                  <p>${alert.mensagem}</p>
+                  <p>A participação regular é fundamental para o bom funcionamento do conselho.</p>
+                  <p>Em caso de dificuldades para participar, entre em contato conosco.</p>
+                  <p>Atenciosamente,<br/>Secretaria do CODEMA</p>
+                </div>
+              `;
+            } else if (alert.tipo === 'faltas_warning') {
+              subject = 'Aviso: Faltas Consecutivas - CODEMA';
+              htmlContent = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                  <h2 style="color: #f59e0b;">Aviso de Presença - CODEMA</h2>
+                  <p>Prezado(a) ${profile.full_name},</p>
+                  <p><strong>Registramos faltas consecutivas em reuniões do CODEMA.</strong></p>
+                  <p>${alert.mensagem}</p>
+                  <p>Lembramos da importância de sua participação nas próximas reuniões.</p>
+                  <p>Atenciosamente,<br/>Secretaria do CODEMA</p>
+                </div>
+              `;
+            }
+
+            // Queue email notification
+            if (subject && htmlContent) {
+              await supabase
+                .from('email_queue')
+                .insert({
+                  to_email: profile.email,
+                  subject,
+                  html_content: htmlContent,
+                  text_content: alert.mensagem,
+                  email_type: 'alert',
+                  scheduled_for: new Date().toISOString()
+                });
+
+              console.log(`Alerta enviado por email para: ${profile.email} - Tipo: ${alert.tipo}`);
+            }
+          }
+        } else {
+          console.warn('Perfil sem email encontrado para conselheiro:', conselheiro.id);
+        }
+      } catch (emailError) {
+        console.error('Erro ao enviar notificação de alerta por email:', emailError);
+        // Log but don't fail the main alert creation operation
+      }
     }
   }
 
@@ -229,7 +323,7 @@ export class ConselheiroService {
   static async logConselheiroChange(
     conselheiroId: string,
     action: 'CREATE' | 'UPDATE' | 'DELETE' | 'STATUS_CHANGE',
-    details: Record<string, any>
+    details: Record<string, unknown>
   ): Promise<void> {
     const { error } = await supabase
       .from('conselheiros_historico')

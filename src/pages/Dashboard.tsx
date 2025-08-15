@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useAtas } from "@/hooks/useAtas";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DashboardCard, QuickActionCard } from "@/components/dashboard/DashboardCard";
 import { CardSkeleton } from "@/components/ui/skeleton";
+import { useIsMobile, useIsTablet } from "@/utils/responsive";
 import { 
   Calendar,
   FileText,
@@ -16,6 +18,8 @@ import {
   Settings,
   MoreVertical,
   MapPin,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
@@ -67,11 +71,17 @@ interface Report {
 
 const Dashboard = () => {
   const { user, profile, hasAdminAccess, hasCODEMAAccess } = useAuth();
+  
+  // Hooks de dados
+  const { data: atas = [], error: atasError } = useAtas();
+  
   // Estado para simulação de perfil
   const [simulatedRole, setSimulatedRole] = useState<UserRole | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const welcomeGuide = useWelcomeGuide();
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   const [stats, setStats] = useState<DashboardStats>({
     totalReports: 0,
     reunioesAgendadas: 0,
@@ -130,7 +140,6 @@ const Dashboard = () => {
       if (hasCODEMAAccess || ['conselheiro_titular', 'conselheiro_suplente', 'secretario', 'presidente', 'admin'].includes(currentProfileRole)) {
         queries.push(
           supabase.from("reunioes").select("*", { count: 'exact' }),
-          supabase.from("atas").select("*", { count: 'exact' }).eq("status", "pendente"),
           supabase.from("resolucoes").select("*", { count: 'exact' }).eq("status", "em_votacao")
         );
       }
@@ -172,10 +181,8 @@ const Dashboard = () => {
           newStats.reunioesAgendadas = results[reportIndex].count || 0;
           reportIndex++;
         }
-        if (results[reportIndex]) {
-          newStats.atasPendentes = results[reportIndex].count || 0;
-          reportIndex++;
-        }
+        // Atas pendentes - usar dados do hook useAtas
+        newStats.atasPendentes = atas.filter(ata => ata.status === 'pendente').length;
         if (results[reportIndex]) {
           newStats.resolucoesPendentes = results[reportIndex].count || 0;
           reportIndex++;
@@ -276,13 +283,13 @@ const Dashboard = () => {
         <WelcomeGuide onDismiss={welcomeGuide.dismiss} />
       )}
 
-      {/* Header */}
+      {/* Header - Mobile optimized */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+        <div className="space-y-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
             {roleConfig.title}
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
             {roleConfig.description}
           </p>
         </div>
@@ -317,10 +324,11 @@ const Dashboard = () => {
         )}
 
         <div className="flex gap-2">
-          <Button asChild>
+          <Button asChild size={isMobile ? "sm" : "default"}>
             <Link to="/criar-relatorio">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Relatório
+              <Plus className="mr-1 sm:mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Novo Relatório</span>
+              <span className="sm:hidden">Novo</span>
             </Link>
           </Button>
           <DropdownMenu>
@@ -343,8 +351,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Cards - Responsive grid */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
         ) : (
@@ -387,11 +395,11 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Mobile optimized */}
       {quickActions.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-4">Ações Rápidas</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Ações Rápidas</h2>
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {quickActions.map((action, index) => (
               <motion.div
                 key={action.id}
@@ -411,36 +419,36 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Recent Reports */}
+      {/* Recent Reports - Mobile optimized */}
       <Card>
-        <CardHeader>
-          <CardTitle>Relatórios Recentes</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Relatórios Recentes</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Últimas contribuições da comunidade
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           {loading ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <CardSkeleton key={i} />
               ))}
             </div>
           ) : recentReports.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {recentReports.map((report) => (
                 <div
                   key={report.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg hover:bg-accent transition-colors cursor-pointer active:scale-[0.98] touch-manipulation"
                   onClick={() => navigate(`/relatorios/${report.id}`)}
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <FileText className="h-5 w-5 text-primary" />
+                  <div className="flex items-start sm:items-center space-x-3 sm:space-x-4">
+                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-medium">{report.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm sm:text-base truncate">{report.title}</p>
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
                         <Badge variant={getStatusColor(report.status)}>
                           {report.status}
                         </Badge>
@@ -449,14 +457,14 @@ const Dashboard = () => {
                         </Badge>
                         {report.location && (
                           <span className="text-xs text-muted-foreground flex items-center">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {report.location}
+                            <MapPin className="h-3 w-3 mr-0.5" />
+                            <span className="truncate max-w-[100px] sm:max-w-none">{report.location}</span>
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-2 sm:mt-0 sm:ml-auto flex-shrink-0">
                     {new Date(report.created_at).toLocaleDateString("pt-BR")}
                   </div>
                 </div>

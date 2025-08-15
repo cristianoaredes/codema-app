@@ -6,8 +6,20 @@ import dyadComponentTagger from '@dyad-sh/react-vite-component-tagger';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0", // Changed from "::" to "0.0.0.0" for better Docker compatibility
     port: 8080,
+    // HMR configuration for Docker
+    hmr: {
+      protocol: process.env.VITE_HMR_PROTOCOL || 'ws',
+      host: process.env.VITE_HMR_HOST || 'localhost',
+      port: parseInt(process.env.VITE_HMR_PORT || '24678'),
+      clientPort: parseInt(process.env.VITE_HMR_CLIENT_PORT || '24678'),
+    },
+    // Watch configuration for Docker
+    watch: {
+      usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
+      interval: 100,
+    },
   },
   plugins: [dyadComponentTagger(), 
     react(),
@@ -21,22 +33,73 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // React core e router
-          if (id.includes('react-router-dom') || 
-              id.includes('react-router') ||
-              id.includes('@remix-run')) {
-            return 'react-router';
+          // React core: dividir em chunks muito menores
+          if (id.includes('react-dom/client') || 
+              id.includes('react-dom/server')) {
+            return 'react-dom-runtime';
+          }
+          
+          // React DOM features separados
+          if (id.includes('react-dom/unstable_testing-utils') ||
+              id.includes('react-dom/test-utils')) {
+            return 'react-dom-test';
           }
           
           if (id.includes('react-dom')) {
             return 'react-dom';
           }
           
+          // React JSX separado
+          if (id.includes('react/jsx-runtime') || 
+              id.includes('react/jsx-dev-runtime')) {
+            return 'react-jsx';
+          }
+          
+          // React core dividido por features
+          if (id.includes('react/scheduler') ||
+              id.includes('scheduler')) {
+            return 'react-scheduler';
+          }
+          
+          if (id.includes('react') && 
+              (id.includes('reconciler') || id.includes('fiber'))) {
+            return 'react-reconciler';
+          }
+          
+          // React DevTools
+          if (id.includes('react') && id.includes('devtools')) {
+            return 'react-devtools';
+          }
+          
+          // React internals
+          if (id.includes('react') && 
+              (id.includes('shared') || id.includes('is-valid-element'))) {
+            return 'react-shared';
+          }
+          
+          // React hooks
+          if (id.includes('react') && id.includes('hooks')) {
+            return 'react-hooks';
+          }
+          
           if (id.includes('react') && !id.includes('react-dom')) {
-            return 'react';
+            return 'react-core';
           }
 
-          // UI libraries
+          // Router: separar do React core
+          if (id.includes('react-router-dom') || 
+              id.includes('react-router') ||
+              id.includes('@remix-run')) {
+            return 'react-router';
+          }
+
+          // UI libraries: dividir em categorias menores
+          if (id.includes('@radix-ui/react-dialog') ||
+              id.includes('@radix-ui/react-dropdown-menu') ||
+              id.includes('@radix-ui/react-popover')) {
+            return 'ui-dialogs';
+          }
+          
           if (id.includes('@radix-ui') || 
               id.includes('@floating-ui')) {
             return 'ui-primitives';
@@ -58,6 +121,10 @@ export default defineConfig(({ mode }) => ({
             return 'react-query';
           }
           
+          if (id.includes('@supabase/supabase-js')) {
+            return 'supabase-client';
+          }
+          
           if (id.includes('@supabase')) {
             return 'supabase';
           }
@@ -69,11 +136,27 @@ export default defineConfig(({ mode }) => ({
             return 'editor';
           }
 
-          // PDF libraries
+          // PDF libraries: separar minuciosamente
+          if (id.includes('@react-pdf/renderer')) {
+            return 'pdf-renderer';
+          }
+          
+          if (id.includes('pdfjs-dist/legacy/build/pdf')) {
+            return 'pdfjs-core';
+          }
+          
+          if (id.includes('pdfjs-dist/web/pdf_viewer')) {
+            return 'pdfjs-viewer';
+          }
+          
           if (id.includes('pdfjs') || 
-              id.includes('pdf-lib') ||
-              id.includes('@react-pdf')) {
-            return 'pdf';
+              id.includes('pdf-lib')) {
+            return 'pdf-utils';
+          }
+          
+          // Separar PDF workers
+          if (id.includes('pdfjs-dist') && id.includes('worker')) {
+            return 'pdf-worker';
           }
 
           // Chart libraries
@@ -90,47 +173,101 @@ export default defineConfig(({ mode }) => ({
             return 'date-utils';
           }
 
-          // Utils
-          if (id.includes('clsx') || 
-              id.includes('tailwind-merge') ||
+          // Utils: dividir por tipo
+          if (id.includes('tailwind-merge') ||
               id.includes('class-variance-authority')) {
             return 'style-utils';
           }
+          
+          if (id.includes('clsx') || 
+              id.includes('classnames')) {
+            return 'class-utils';
+          }
 
-          // Specific heavy libraries
+          // Export utilities
           if (id.includes('html2canvas') || 
               id.includes('jspdf')) {
             return 'export-utils';
           }
 
+          // Notifications
           if (id.includes('sonner') || 
               id.includes('react-hot-toast')) {
             return 'notifications';
           }
 
-          // CODEMA specific modules
-          if (id.includes('pages/codema')) {
-            return 'codema';
+          // Feature-specific modules: dividir CODEMA por sub-módulos
+          if (id.includes('pages/codema/atas') ||
+              id.includes('components/codema/atas')) {
+            return 'codema-atas';
+          }
+          
+          if (id.includes('pages/codema/conselheiros') ||
+              id.includes('components/codema/conselheiros')) {
+            return 'codema-conselheiros';
+          }
+          
+          if (id.includes('pages/codema/resolucoes') ||
+              id.includes('components/codema/resolucoes')) {
+            return 'codema-resolucoes';
+          }
+          
+          if (id.includes('pages/codema/auditoria') ||
+              id.includes('pages/codema/protocolos')) {
+            return 'codema-admin';
+          }
+          
+          // CODEMA core components
+          if (id.includes('pages/codema') ||
+              id.includes('components/codema')) {
+            return 'codema-core';
           }
 
-          // Admin modules  
-          if (id.includes('pages/admin')) {
+          if (id.includes('pages/admin') ||
+              id.includes('components/admin')) {
             return 'admin';
           }
 
-          // FMA module
-          if (id.includes('pages/fma')) {
+          if (id.includes('pages/fma') ||
+              id.includes('components/fma')) {
             return 'fma';
           }
 
-          // Common components
+          if (id.includes('pages/ouvidoria') ||
+              id.includes('components/ouvidoria')) {
+            return 'ouvidoria';
+          }
+
+          // Componentes compartilhados
           if (id.includes('components/common')) {
             return 'common-components';
           }
 
-          // Auth components
+          // Auth components divididos
+          if (id.includes('components/auth') && 
+              (id.includes('AuthPage') || id.includes('AuthForm'))) {
+            return 'auth-forms';
+          }
+          
+          if (id.includes('components/auth') && 
+              (id.includes('ProtectedRoute') || id.includes('middleware'))) {
+            return 'auth-guards';
+          }
+          
           if (id.includes('components/auth')) {
-            return 'auth';
+            return 'auth-core';
+          }
+
+          if (id.includes('components/ui')) {
+            return 'ui-components';
+          }
+
+          // Node modules grandes específicos
+          if (id.includes('node_modules') && 
+              (id.includes('firebase') || 
+               id.includes('aws-sdk') ||
+               id.includes('lodash'))) {
+            return 'vendor-heavy';
           }
         },
         // Otimizações de output
@@ -159,6 +296,21 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 500,
     // Target modern browsers for smaller bundle
     target: 'es2020',
+    // Module preload polyfill for better loading
+    modulePreload: {
+      polyfill: true,
+      resolveDependencies: (filename, deps) => {
+        // Preload critical modules
+        if (filename.includes('index') || filename.includes('Dashboard')) {
+          return deps.filter(dep => 
+            dep.includes('react-core') || 
+            dep.includes('ui-components') ||
+            dep.includes('common-components')
+          );
+        }
+        return [];
+      }
+    },
   },
   optimizeDeps: {
     include: [

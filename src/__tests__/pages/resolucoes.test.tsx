@@ -89,7 +89,8 @@ describe('Página de Resoluções', () => {
     )
 
     await waitFor(() => expect(screen.getByText(/Resoluções do CODEMA/i)).toBeInTheDocument())
-    const btn = screen.getByRole('button', { name: /Nova Resolução/i })
+    const btns = screen.getAllByRole('button', { name: /Nova Resolução/i })
+    const btn = btns[0] // Use the first button found
     await userEvent.click(btn)
     // O diálogo deve abrir com título
     await waitFor(() => {

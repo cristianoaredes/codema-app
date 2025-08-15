@@ -6,7 +6,6 @@ import App from './App.tsx'
 // Expor funções utilitárias globalmente para debug via console
 import { updateUserToAdmin, checkUser, listAllAdmins } from './utils/user/updateUserRole'
 import { forceUserRefresh, checkUserDataConsistency, quickUserStatus } from './utils/auth'
-import { checkSupabaseAuthConfig, testPasswordReset, checkSMTPConfiguration } from './utils/auth'
 import { showRateLimitStatus, clearEmailAttempts, canSendEmail } from './utils/email'
 
 // Adicionar ao window para uso no console
@@ -18,9 +17,6 @@ declare global {
     forceUserRefresh: typeof forceUserRefresh;
     checkUserDataConsistency: typeof checkUserDataConsistency;
     quickUserStatus: typeof quickUserStatus;
-    checkSupabaseAuthConfig: typeof checkSupabaseAuthConfig;
-    testPasswordReset: typeof testPasswordReset;
-    checkSMTPConfiguration: typeof checkSMTPConfiguration;
     showRateLimitStatus: typeof showRateLimitStatus;
     clearEmailAttempts: typeof clearEmailAttempts;
     canSendEmail: typeof canSendEmail;
@@ -35,9 +31,6 @@ if (import.meta.env.DEV) {
   window.forceUserRefresh = forceUserRefresh;
   window.checkUserDataConsistency = checkUserDataConsistency;
   window.quickUserStatus = quickUserStatus;
-  window.checkSupabaseAuthConfig = checkSupabaseAuthConfig;
-  window.testPasswordReset = testPasswordReset;
-  window.checkSMTPConfiguration = checkSMTPConfiguration;
   window.showRateLimitStatus = showRateLimitStatus;
   window.clearEmailAttempts = clearEmailAttempts;
   window.canSendEmail = canSendEmail;
@@ -55,9 +48,6 @@ if (import.meta.env.DEV) {
     console.log('  - forceUserRefresh() - Força refresh da sessão');
     console.log('');
     console.log('📧 DEBUG DE EMAIL:');
-    console.log('  - checkSMTPConfiguration() - 📧 Verifica se SMTP customizado está configurado');
-    console.log('  - checkSupabaseAuthConfig() - ⚙️ Verifica configurações do Supabase');
-    console.log('  - testPasswordReset(email) - 🔑 Testa password reset para comparação');
     console.log('');
     console.log('📊 RATE LIMITING:');
     console.log('  - showRateLimitStatus() - 📊 Mostra status do rate limiting');

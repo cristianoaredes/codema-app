@@ -46,7 +46,9 @@
       "Bash(docker:*)",
       "mcp__supabase-global__list_tables",
       "mcp__supabase-global__execute_sql",
-      "mcp__supabase-global__apply_migration"
+      "mcp__supabase-global__apply_migration",
+      "mcp__desktop-commander__create_directory",
+      "mcp__desktop-commander__write_file"
     ],
     "deny": []
   }
