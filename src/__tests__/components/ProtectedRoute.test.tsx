@@ -1,17 +1,23 @@
 import React from 'react'
-import { describe, it } from 'vitest'
-import { render } from '@/test-utils/render'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute, PublicRoute } from '@/components/auth/ProtectedRoute'
 
-// Placeholders — executar depois com mocks de useAuth
-// Estes testes estão marcados como skip para não quebrar a suíte.
+vi.mock('@/hooks', () => ({ useAuth: vi.fn() }))
+import { useAuth } from '@/hooks'
+const mockedUseAuth = useAuth as unknown as Mock
 
 describe('ProtectedRoute', () => {
-  it.skip('redireciona para /auth quando requireAuth e usuário não autenticado', () => {
-    // TODO: mockar useAuth() para { user: null, loading: false }
+  beforeEach(() => {
+    mockedUseAuth.mockReset()
+  })
+
+  it('redireciona para /auth quando requireAuth e usuário não autenticado', async () => {
+    mockedUseAuth.mockReturnValue({ user: null, loading: false })
+
     render(
-      <MemoryRouter initialEntries={[{ pathname: '/privado' }]}>
+      <MemoryRouter initialEntries={[{ pathname: '/privado' }]}> 
         <Routes>
           <Route
             path="/privado"
@@ -25,13 +31,21 @@ describe('ProtectedRoute', () => {
         </Routes>
       </MemoryRouter>
     )
-    // Expectativas serão implementadas após o mock do hook
+
+    expect(screen.getByText('Página de Login')).toBeInTheDocument()
   })
 
-  it.skip('renderiza filhos quando usuário tem acesso CODEMA', () => {
-    // TODO: mockar useAuth() para { user: {...}, hasCODEMAAccess: true, loading: false }
+  it('renderiza filhos quando usuário tem acesso CODEMA', () => {
+    mockedUseAuth.mockReturnValue({ 
+      user: { id: 'u1' }, 
+      profile: { role: 'conselheiro_titular' }, 
+      loading: false, 
+      hasCODEMAAccess: true, 
+      hasAdminAccess: false 
+    })
+
     render(
-      <MemoryRouter initialEntries={[{ pathname: '/reunioes' }]}>
+      <MemoryRouter initialEntries={[{ pathname: '/reunioes' }]}> 
         <Routes>
           <Route
             path="/reunioes"
@@ -44,14 +58,48 @@ describe('ProtectedRoute', () => {
         </Routes>
       </MemoryRouter>
     )
+
+    expect(screen.getByText('Lista de Reuniões')).toBeInTheDocument()
+  })
+
+  it('mostra Acesso Negado quando papel requerido não corresponde', () => {
+    mockedUseAuth.mockReturnValue({ 
+      user: { id: 'u1' }, 
+      profile: { role: 'citizen' }, 
+      loading: false, 
+      hasCODEMAAccess: true, 
+      hasAdminAccess: false 
+    })
+
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/admin' }]}> 
+        <Routes>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRoles={['admin']}>
+                <div>Admin Area</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Acesso Negado')).toBeInTheDocument()
   })
 })
 
 describe('PublicRoute', () => {
-  it.skip('redireciona usuário autenticado para /dashboard', () => {
-    // TODO: mockar useAuth() para { user: {...}, loading: false }
+  beforeEach(() => {
+    mockedUseAuth.mockReset()
+  })
+
+  it('redireciona usuário autenticado para /dashboard', () => {
+    mockedUseAuth.mockReturnValue({ user: { id: 'u1' }, loading: false })
+
     render(
-      <MemoryRouter initialEntries={[{ pathname: '/auth' }]}>
+      <MemoryRouter initialEntries={[{ pathname: '/auth' }]}> 
         <Routes>
           <Route path="/dashboard" element={<div>Dashboard</div>} />
           <Route
@@ -65,5 +113,7 @@ describe('PublicRoute', () => {
         </Routes>
       </MemoryRouter>
     )
+
+    expect(screen.getByText('Dashboard')).toBeInTheDocument()
   })
 })
