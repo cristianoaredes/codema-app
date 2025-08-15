@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it } from 'vitest'
-import { render, screen } from '@/test-utils/render'
+import { render } from '@/test-utils/render'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute, PublicRoute } from '@/components/auth/ProtectedRoute'
 

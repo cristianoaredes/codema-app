@@ -2,14 +2,15 @@ import React from 'react'
 import { describe, it } from 'vitest'
 import { render } from '@/test-utils/render'
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation'
+import type { MenuItem } from '@/types/navigation'
 
 // Placeholder — teste marcado como skip até implementar com eventos reais de teclado
 function Demo() {
-  const items = React.useMemo(() => [
-    { id: '1', label: 'Item 1', path: '/' },
-    { id: '2', label: 'Item 2', path: '/2' },
-    { id: '3', label: 'Item 3', path: '/3' },
-  ], []) as any
+  const items = React.useMemo<MenuItem[]>(() => [
+    { id: '1', label: 'Item 1', href: '/' },
+    { id: '2', label: 'Item 2', href: '/2' },
+    { id: '3', label: 'Item 3', href: '/3' },
+  ], [])
   const { focusedIndex } = useKeyboardNavigation(items)
   return <div data-testid="focused-index">{focusedIndex}</div>
 }
