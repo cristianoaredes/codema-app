@@ -4,7 +4,7 @@
 
 ### Rotas e Páginas
 
-- Rotas protegidas (requer CODEMA):
+- Rotas protegidas (login requerido):
   - `/reunioes` → `src/pages/Reunioes.tsx`
   - `/reunioes/nova` → `src/pages/reunioes/NovaReuniao.tsx`
 
