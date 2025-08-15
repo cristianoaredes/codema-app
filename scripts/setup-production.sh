@@ -51,7 +51,9 @@ prompt_input() {
 # Function to validate URL
 validate_url() {
     local url="$1"
-    if [[ $url =~ ^https://[a-zA-Z0-9.-]+\.supabase\.co$ ]]; then
+    # Check if the URL starts with https://, has a valid subdomain, and ends with .supabase.co
+    # Optionally allow a port and/or path, but not credentials or query strings
+    if [[ "$url" =~ ^https://([a-zA-Z0-9-]+\.)+[a-zA-Z0-9-]+\.supabase\.co(:[0-9]+)?(/.*)?$ ]]; then
         return 0
     else
         return 1
