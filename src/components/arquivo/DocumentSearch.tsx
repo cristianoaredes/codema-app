@@ -139,7 +139,7 @@ export function DocumentSearch({
         status: data.status,
       };
 
-      const result = await ArchiveService.searchDocuments(filters, page, 20);
+      const result = await ArchiveService.searchDocuments(filters, page, DEFAULT_PAGE_SIZE);
       setResults(result);
 
       if (result.total === 0) {
