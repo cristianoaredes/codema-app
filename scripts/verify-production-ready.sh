@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # ============================================================================
 # CODEMA - Script de Verificação Final para Produção
