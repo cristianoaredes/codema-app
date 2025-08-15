@@ -71,7 +71,7 @@ const Documentacao = lazy(() => import("./pages/Documentacao"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 0, // Dados sempre considerados obsoletos
+      staleTime: 5 * 60 * 1000, // Dados considerados frescos por 5 minutos
       refetchOnWindowFocus: true, // Refetch ao focar na janela
       retry: 1, // Reduzir tentativas para evitar cache de erros
     },
