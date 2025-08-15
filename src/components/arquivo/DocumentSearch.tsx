@@ -285,7 +285,16 @@ export function DocumentSearch({
       const data = form.getValues();
       performSearch(data, 1);
     }
-  }, [initialFilters]);
+  const initialFiltersString = React.useMemo(
+    () => JSON.stringify(initialFilters ?? {}),
+    [initialFilters]
+  );
+  useEffect(() => {
+    if (initialFilters && Object.keys(initialFilters).length > 0) {
+      const data = form.getValues();
+      performSearch(data, 1);
+    }
+  }, [initialFiltersString]);
 
   return (
     <div className={cn("space-y-6", className)}>
