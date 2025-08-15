@@ -2,6 +2,18 @@
 
 ## Status Atual da Implementação
 
+### Rotas e Páginas
+
+- Rotas protegidas (login requerido):
+  - `/reunioes` → `src/pages/Reunioes.tsx`
+  - `/reunioes/nova` → `src/pages/reunioes/NovaReuniao.tsx`
+
+Permissões:
+- As rotas acima estão protegidas por `ProtectedRoute` (login requerido) em `src/App.tsx`.
+
+Observações de estrutura:
+- O módulo não utiliza `src/pages/codema/reunioes/`. A listagem principal está em `src/pages/Reunioes.tsx` e a criação em `src/pages/reunioes/`.
+
 ### ✅ Implementado (90%)
 - Agendamento de reuniões ordinárias e extraordinárias
 - Sistema de convocação eletrônica
